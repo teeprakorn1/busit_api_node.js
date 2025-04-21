@@ -1,0 +1,111 @@
+CREATE DATABASE busitplus COLLATE utf8_general_ci;
+USE busitplus;
+
+CREATE TABLE Users(
+	Users_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Users_Email VARCHAR(255) NOT NULL UNIQUE,
+    Users_Username VARCHAR(63) NOT NULL,
+    Users_Password VARCHAR(127) NOT NULL,
+    Users_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Users_ImageFile VARCHAR(255),
+    Users_Type VARCHAR(15) NOT NULL,
+    Users_IsActive BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE Faculty(
+	Faculty_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Faculty_Name VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE Department(
+	Department_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Department_Name VARCHAR(255) NOT NULL UNIQUE,
+    Faculty_ID INT(13) NOT NULL,
+	FOREIGN KEY (Faculty_ID) REFERENCES Faculty(Faculty_ID)
+);
+
+CREATE TABLE Staff(
+	Staff_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Staff_Code CHAR(15) NOT NULL UNIQUE,
+    Staff_FirstName VARCHAR(63) NOT NULL,
+    Staff_LastName VARCHAR(63) NOT NULL,
+    Staff_Phone CHAR(15),
+    Staff_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Staff_IsResign BOOLEAN DEFAULT TRUE,
+    Users_ID INT(13) NOT NULL,
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
+);
+
+CREATE TABLE Teacher(
+	Teacher_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Teacher_Code CHAR(15) NOT NULL UNIQUE,
+    Teacher_FirstName VARCHAR(63) NOT NULL,
+    Teacher_LastName VARCHAR(63) NOT NULL,
+    Teacher_Phone CHAR(15),
+    Teacher_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Teacher_IsResign BOOLEAN DEFAULT TRUE,
+    Teacher_IsDean BOOLEAN DEFAULT TRUE,
+    Users_ID INT(13) NOT NULL,
+    Department_ID INT(13) NOT NULL,
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
+    FOREIGN KEY (Department_ID) REFERENCES Department(Department_ID)
+);
+
+CREATE TABLE Student(
+	Student_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Student_Code CHAR(15) NOT NULL UNIQUE,
+    Student_FirstName VARCHAR(63) NOT NULL,
+    Student_LastName VARCHAR(63) NOT NULL,
+    Student_Phone CHAR(15),
+    Student_AcademicYear YEAR NOT NULL,
+    Student_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Student_IsGraduated BOOLEAN DEFAULT TRUE,
+    Users_ID INT(13) NOT NULL,
+    Teacher_ID INT(13) NOT NULL,
+    Department_ID INT(13) NOT NULL,
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
+    FOREIGN KEY (Teacher_ID) REFERENCES Teacher(Teacher_ID),
+    FOREIGN KEY (Department_ID) REFERENCES Department(Department_ID)
+);
+
+CREATE TABLE DataEditType(
+	DataEditType_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
+    DataEditType_Name VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE DataEdit(
+	DataEdit_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    DataEdit_ThisId INT(13) NOT NULL UNIQUE,
+    DataEdit_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Staff_ID INT(13) NOT NULL,
+    DataEditType_ID TINYINT(11) NOT NULL,
+    FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID),
+    FOREIGN KEY (DataEditType_ID) REFERENCES DataEditType(DataEditType_ID)
+);
+
+CREATE TABLE OtherPhone(
+	OtherPhone_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    OtherPhone_Phone VARCHAR(15) NOT NULL,
+    Users_ID INT(13) NOT NULL,
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
+);
+
+CREATE TABLE TimestampType(
+	TimestampType_ID TINYINT(7) NOT NULL UNIQUE PRIMARY KEY,
+    TimestampType_Name VARCHAR(63) NOT NULL
+);
+
+CREATE TABLE Timestamp(
+	Timestamp_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Timestamp_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Users_ID INT(13) NOT NULL,
+    TimestampType_ID TINYINT(7) NOT NULL,
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
+    FOREIGN KEY (TimestampType_ID) REFERENCES TimestampType(TimestampType_ID)
+);
+
+CREATE TABLE ActivityStatus(
+	ActivityStatus_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
+    ActivityStatus_Name VARCHAR(63) NOT NULL 
+);
+
