@@ -3,13 +3,13 @@ USE busitplus;
 
 CREATE TABLE Users(
 	Users_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
-    Users_Email VARCHAR(255) NOT NULL UNIQUE,
+    Users_Email VARCHAR(255) NOT NULL,
     Users_Username VARCHAR(63) NOT NULL,
     Users_Password VARCHAR(127) NOT NULL,
-    Users_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Users_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Users_ImageFile VARCHAR(255),
     Users_Type VARCHAR(15) NOT NULL,
-    Users_IsActive BOOLEAN DEFAULT TRUE
+    Users_IsActive BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE Faculty(
@@ -30,8 +30,8 @@ CREATE TABLE Staff(
     Staff_FirstName VARCHAR(63) NOT NULL,
     Staff_LastName VARCHAR(63) NOT NULL,
     Staff_Phone CHAR(15),
-    Staff_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Staff_IsResign BOOLEAN DEFAULT TRUE,
+    Staff_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Staff_IsResign BOOLEAN NOT NULL DEFAULT FALSE,
     Users_ID INT(13) NOT NULL,
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
@@ -42,9 +42,9 @@ CREATE TABLE Teacher(
     Teacher_FirstName VARCHAR(63) NOT NULL,
     Teacher_LastName VARCHAR(63) NOT NULL,
     Teacher_Phone CHAR(15),
-    Teacher_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Teacher_IsResign BOOLEAN DEFAULT TRUE,
-    Teacher_IsDean BOOLEAN DEFAULT TRUE,
+    Teacher_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Teacher_IsResign BOOLEAN NOT NULL DEFAULT FALSE,
+    Teacher_IsDean BOOLEAN NOT NULL DEFAULT FALSE,
     Users_ID INT(13) NOT NULL,
     Department_ID INT(13) NOT NULL,
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
@@ -58,8 +58,8 @@ CREATE TABLE Student(
     Student_LastName VARCHAR(63) NOT NULL,
     Student_Phone CHAR(15),
     Student_AcademicYear YEAR NOT NULL,
-    Student_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Student_IsGraduated BOOLEAN DEFAULT TRUE,
+    Student_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Student_IsGraduated BOOLEAN NOT NULL DEFAULT FALSE,
     Users_ID INT(13) NOT NULL,
     Teacher_ID INT(13) NOT NULL,
     Department_ID INT(13) NOT NULL,
@@ -70,13 +70,13 @@ CREATE TABLE Student(
 
 CREATE TABLE DataEditType(
 	DataEditType_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
-    DataEditType_Name VARCHAR(255) NOT NULL UNIQUE
+    DataEditType_Name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE DataEdit(
 	DataEdit_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
-    DataEdit_ThisId INT(13) NOT NULL UNIQUE,
-    DataEdit_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    DataEdit_ThisId INT(13) NOT NULL,
+    DataEdit_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Staff_ID INT(13) NOT NULL,
     DataEditType_ID TINYINT(11) NOT NULL,
     FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID),
@@ -97,7 +97,7 @@ CREATE TABLE TimestampType(
 
 CREATE TABLE Timestamp(
 	Timestamp_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
-    Timestamp_RegisTime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Timestamp_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Users_ID INT(13) NOT NULL,
     TimestampType_ID TINYINT(7) NOT NULL,
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
@@ -109,3 +109,105 @@ CREATE TABLE ActivityStatus(
     ActivityStatus_Name VARCHAR(63) NOT NULL 
 );
 
+CREATE TABLE Activity(
+	Activity_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Activity_Title VARCHAR(255) NOT NULL,
+    Activity_Description VARCHAR(1023) NOT NULL,
+    Activity_LocationGPS POINT,
+    Activity_LocationDetail VARCHAR(255),
+    Activity_Total INT(13),
+    Activity_StartTime DATETIME NOT NULL,
+    Activity_EndTime DATETIME NOT NULL,
+    Activity_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Activity_Certificate VARCHAR(255),
+    Activity_ImageFile VARCHAR(255),
+    Activity_IsRequire BOOLEAN NOT NULL NOT NULL DEFAULT FALSE,
+    Staff_ID INT(13),
+    ActivityStatus_ID TINYINT(11),
+    FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID),
+    FOREIGN KEY (ActivityStatus_ID) REFERENCES ActivityStatus(ActivityStatus_ID)
+);
+
+CREATE TABLE ActivityDetail (
+    ActivityDetail_ID INT(13) NOT NULL,
+    Department_ID INT(13) NOT NULL,
+    ActivityDetail_Total INT(13) NOT NULL,
+    PRIMARY KEY (ActivityDetail_ID, Department_ID)
+);
+
+CREATE TABLE RegistrationStatus(
+	RegistrationStatus_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
+    RegistrationStatus_Name VARCHAR(63) NOT NULL 
+);
+
+CREATE TABLE Registration (
+    Users_ID INT(13) NOT NULL,
+    Activity_ID INT(13) NOT NULL,
+    Registration_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Registration_CheckInTime DATETIME,
+    Registration_CheckOutTime DATETIME,
+    RegistrationStatus_ID TINYINT(11),
+    PRIMARY KEY (Users_ID, Activity_ID),
+    FOREIGN KEY (RegistrationStatus_ID) REFERENCES RegistrationStatus(RegistrationStatus_ID)
+);
+
+CREATE TABLE RegistrationPictureStatus(
+	RegistrationPictureStatus_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
+    RegistrationPictureStatus_Name VARCHAR(63) NOT NULL 
+);
+
+CREATE TABLE RegistrationPicture (
+    RegistrationPicture_ID INT(13) NOT NULL,
+    RegistrationPicture_ImageFile VARCHAR(255) NOT NULL,
+    RegistrationPicture_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Users_ID INT(13),
+    Activity_ID INT(13),
+    RegistrationPictureStatus_ID TINYINT(11),
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID),
+    FOREIGN KEY (RegistrationPictureStatus_ID) REFERENCES RegistrationPictureStatus(RegistrationPictureStatus_ID)
+);
+
+CREATE TABLE UsersForgetPassword(
+	UsersForgetPassword_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    RegistrationPicture_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Users_ID INT(13),
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
+);
+
+CREATE TABLE Evaluation(
+	Evaluation_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Evaluation_Title VARCHAR(255) NOT NULL,
+	Evaluation_Detail VARCHAR(1023) NOT NULL,
+    Activity_ID INT(13),
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID)
+);
+
+CREATE TABLE Question(
+	Question_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Question_Titile VARCHAR(511) NOT NULL,
+    Question_Detail VARCHAR(1023) NOT NULL,
+    Evaluation_ID INT(13),
+    FOREIGN KEY (Evaluation_ID) REFERENCES Evaluation(Evaluation_ID)
+);
+
+CREATE TABLE QuestionDetail(
+	QuestionDetail_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    QuestionDetail_Rating INT(1) NOT NULL,
+    QuestionDetail_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    QuestionDetail_Suggestion VARCHAR(1023) NOT NULL,
+    Question_ID INT(13),
+    Users_ID INT(13),
+    FOREIGN KEY (Question_ID) REFERENCES Question(Question_ID),
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
+);
+
+CREATE TABLE Notification(
+	Notifications_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+    Notification_Detail VARCHAR(511) NOT NULL,
+    Notification_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	Users_ID INT(13),
+    Activity_ID INT(13),
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID)
+);
