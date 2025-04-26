@@ -70,6 +70,21 @@ paths:
                     type: boolean
                     example: false
                     description: Indicates failure.
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "This API is not allowed in production."
+                    description: Error message.
+                  status:
+                    type: boolean
+                    example: false
+                    description: Indicates failure.
         '500':
           description: Internal Server Error
           content:
@@ -156,6 +171,21 @@ paths:
                     type: boolean
                     example: false
                     description: Indicates failure.
+        '403':
+            description: Forbidden
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "This API is not allowed in production."
+                      description: Error message.
+                    status:
+                      type: boolean
+                      example: false
+                      description: Indicates failure.
         '500':
           description: Internal Server Error
           content:
@@ -248,12 +278,12 @@ paths:
                     example: false
                     description: Indicates failure.
 
-  /api/login:
+  /api/login/application:
     post:
-      summary: User login
-      description: Authenticates a user with email and password, and returns a token upon success.
+      summary: Application login 
+      description: Application Login a user with email and password, and return a JWT token.
       tags:
-        - Authentication
+        - Login
       requestBody:
         required: true
         content:
@@ -266,10 +296,23 @@ paths:
               properties:
                 Users_Email:
                   type: string
-                  example: "user@example.com"
+                  example: "student.admin@rmutto.ac.th"
                 Users_Password:
                   type: string
-                  example: "yourpassword123"
+                  example: "Cs12345678"
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+              properties:
+                Users_Email:
+                  type: string
+                  example: "student.admin@rmutto.ac.th"
+                Users_Password:
+                  type: string
+                  example: "Cs12345678"
       responses:
         '200':
           description: Login successful
@@ -280,41 +323,16 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: Authentication token
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    description: JWT token for authentication
                   message:
                     type: string
-                    example: "The password is correct."
+                    example: "The login was successful."
                   status:
                     type: boolean
                     example: true
-        '201':
-          description: Incorrect password
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "The password is incorrect."
-                  status:
-                    type: boolean
-                    example: false
-        '202':
-          description: Email not found or incorrect password
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "The password is incorrect."
-                  status:
-                    type: boolean
-                    example: false
         '400':
-          description: Missing or invalid parameters
+          description: Invalid input parameters
           content:
             application/json:
               schema:
@@ -326,8 +344,34 @@ paths:
                   status:
                     type: boolean
                     example: false
+        '401':
+          description: Incorrect email or password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "The password is incorrect."
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: Invalid user type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User type details not found."
+                  status:
+                    type: boolean
+                    example: false
         '500':
-          description: Server error
+          description: Internal server error
           content:
             application/json:
               schema:
