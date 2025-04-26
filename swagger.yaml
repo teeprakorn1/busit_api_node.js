@@ -247,3 +247,95 @@ paths:
                     type: boolean
                     example: false
                     description: Indicates failure.
+
+  /api/login:
+    post:
+      summary: User login
+      description: Authenticates a user with email and password, and returns a token upon success.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+              properties:
+                Users_Email:
+                  type: string
+                  example: "user@example.com"
+                Users_Password:
+                  type: string
+                  example: "yourpassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Authentication token
+                  message:
+                    type: string
+                    example: "The password is correct."
+                  status:
+                    type: boolean
+                    example: true
+        '201':
+          description: Incorrect password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "The password is incorrect."
+                  status:
+                    type: boolean
+                    example: false
+        '202':
+          description: Email not found or incorrect password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "The password is incorrect."
+                  status:
+                    type: boolean
+                    example: false
+        '400':
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Please fill in the correct parameters as required."
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "An error occurred on the server."
+                  status:
+                    type: boolean
+                    example: false

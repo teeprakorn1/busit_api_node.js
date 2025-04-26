@@ -2,7 +2,7 @@ CREATE DATABASE busitplus COLLATE utf8_general_ci;
 USE busitplus;
 
 CREATE TABLE Users(
-	Users_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Users_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Users_Email VARCHAR(255) NOT NULL,
     Users_Username VARCHAR(63) NOT NULL,
     Users_Password VARCHAR(127) NOT NULL,
@@ -13,19 +13,19 @@ CREATE TABLE Users(
 );
 
 CREATE TABLE Faculty(
-	Faculty_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Faculty_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Faculty_Name VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE Department(
-	Department_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Department_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Department_Name VARCHAR(255) NOT NULL UNIQUE,
     Faculty_ID INT(13) NOT NULL,
 	FOREIGN KEY (Faculty_ID) REFERENCES Faculty(Faculty_ID)
 );
 
 CREATE TABLE Staff(
-	Staff_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Staff_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Staff_Code CHAR(15) NOT NULL UNIQUE,
     Staff_FirstName VARCHAR(63) NOT NULL,
     Staff_LastName VARCHAR(63) NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE Staff(
 );
 
 CREATE TABLE Teacher(
-	Teacher_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Teacher_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Teacher_Code CHAR(15) NOT NULL UNIQUE,
     Teacher_FirstName VARCHAR(63) NOT NULL,
     Teacher_LastName VARCHAR(63) NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE Teacher(
 );
 
 CREATE TABLE Student(
-	Student_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Student_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Student_Code CHAR(15) NOT NULL UNIQUE,
     Student_FirstName VARCHAR(63) NOT NULL,
     Student_LastName VARCHAR(63) NOT NULL,
@@ -69,12 +69,12 @@ CREATE TABLE Student(
 );
 
 CREATE TABLE DataEditType(
-	DataEditType_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
+	DataEditType_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     DataEditType_Name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE DataEdit(
-	DataEdit_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	DataEdit_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     DataEdit_ThisId INT(13) NOT NULL,
     DataEdit_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Staff_ID INT(13) NOT NULL,
@@ -84,19 +84,19 @@ CREATE TABLE DataEdit(
 );
 
 CREATE TABLE OtherPhone(
-	OtherPhone_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	OtherPhone_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     OtherPhone_Phone VARCHAR(15) NOT NULL,
     Users_ID INT(13) NOT NULL,
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
 
 CREATE TABLE TimestampType(
-	TimestampType_ID TINYINT(7) NOT NULL UNIQUE PRIMARY KEY,
+	TimestampType_ID TINYINT(7) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     TimestampType_Name VARCHAR(63) NOT NULL
 );
 
 CREATE TABLE Timestamp(
-	Timestamp_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Timestamp_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Timestamp_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Users_ID INT(13) NOT NULL,
     TimestampType_ID TINYINT(7) NOT NULL,
@@ -105,12 +105,12 @@ CREATE TABLE Timestamp(
 );
 
 CREATE TABLE ActivityStatus(
-	ActivityStatus_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
+	ActivityStatus_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     ActivityStatus_Name VARCHAR(63) NOT NULL 
 );
 
 CREATE TABLE Activity(
-	Activity_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Activity_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Activity_Title VARCHAR(255) NOT NULL,
     Activity_Description VARCHAR(1023) NOT NULL,
     Activity_LocationGPS POINT,
@@ -136,7 +136,7 @@ CREATE TABLE ActivityDetail (
 );
 
 CREATE TABLE RegistrationStatus(
-	RegistrationStatus_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
+	RegistrationStatus_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationStatus_Name VARCHAR(63) NOT NULL 
 );
 
@@ -152,12 +152,12 @@ CREATE TABLE Registration (
 );
 
 CREATE TABLE RegistrationPictureStatus(
-	RegistrationPictureStatus_ID TINYINT(11) NOT NULL UNIQUE PRIMARY KEY,
+	RegistrationPictureStatus_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationPictureStatus_Name VARCHAR(63) NOT NULL 
 );
 
 CREATE TABLE RegistrationPicture (
-    RegistrationPicture_ID INT(13) NOT NULL,
+    RegistrationPicture_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationPicture_ImageFile VARCHAR(255) NOT NULL,
     RegistrationPicture_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Users_ID INT(13),
@@ -169,14 +169,14 @@ CREATE TABLE RegistrationPicture (
 );
 
 CREATE TABLE UsersForgetPassword(
-	UsersForgetPassword_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	UsersForgetPassword_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationPicture_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Users_ID INT(13),
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
 
 CREATE TABLE Evaluation(
-	Evaluation_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Evaluation_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Evaluation_Title VARCHAR(255) NOT NULL,
 	Evaluation_Detail VARCHAR(1023) NOT NULL,
     Activity_ID INT(13),
@@ -184,7 +184,7 @@ CREATE TABLE Evaluation(
 );
 
 CREATE TABLE Question(
-	Question_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Question_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Question_Titile VARCHAR(511) NOT NULL,
     Question_Detail VARCHAR(1023) NOT NULL,
     Evaluation_ID INT(13),
@@ -192,7 +192,7 @@ CREATE TABLE Question(
 );
 
 CREATE TABLE QuestionDetail(
-	QuestionDetail_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	QuestionDetail_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     QuestionDetail_Rating INT(1) NOT NULL,
     QuestionDetail_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     QuestionDetail_Suggestion VARCHAR(1023) NOT NULL,
@@ -203,7 +203,7 @@ CREATE TABLE QuestionDetail(
 );
 
 CREATE TABLE Notification(
-	Notifications_ID INT(13) NOT NULL UNIQUE PRIMARY KEY,
+	Notifications_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Notification_Detail VARCHAR(511) NOT NULL,
     Notification_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	Users_ID INT(13),
@@ -211,3 +211,25 @@ CREATE TABLE Notification(
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
     FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID)
 );
+
+INSERT INTO faculty (Faculty_Name) 
+VALUES ('คณะบริหารธุรกิจและเทคโนโลยีสารสนเทศ');
+
+INSERT INTO department (Department_Name, Faculty_ID)
+VALUES ('วิทยาการคอมพิวเตอร์', '1');
+
+INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
+('teacher.admin@rmutto.ac.th', 'teacher.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
+('student.admin@rmutto.ac.th', 'student.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student'),
+('staff.admin@rmutto.ac.th', 'staff.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'staff');
+
+INSERT INTO teacher (Teacher_Code, Teacher_FirstName, Teacher_LastName, Users_ID, Department_ID)
+VALUES ('111111111111-1', 'Teacher', 'Admin', '1', '1');
+
+INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
+VALUES ('222222222222-2', 'Student', 'Admin', '2025', '2', '1', '1');
+
+INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Users_ID)
+VALUES ('333333333333-3', 'Staff', 'Admin', '3');
+
+
