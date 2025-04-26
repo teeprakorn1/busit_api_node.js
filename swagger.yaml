@@ -383,3 +383,472 @@ paths:
                   status:
                     type: boolean
                     example: false
+
+  /api/timestamp/insert:
+    post:
+      tags:
+        - Timestamp
+      summary: Timestamp Insert
+      description: Insert a timestamp entry into the database with Users_ID and TimestampType_ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_ID
+                - TimestampType_ID
+              properties:
+                Users_ID:
+                  type: integer
+                  example: 1
+                  description: The ID of the user.
+                TimestampType_ID:
+                  type: integer
+                  example: 1
+                  description: The ID of the timestamp type.
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_ID
+                - TimestampType_ID
+              properties:
+                Users_ID:
+                  type: integer
+                  example: 1
+                  description: The ID of the user.
+                TimestampType_ID:
+                  type: integer
+                  example: 1
+                  description: The ID of the timestamp type.
+      responses:
+        '200':
+          description: Timestamp inserted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Timestamp inserted successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Missing or invalid parameters.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please fill in the correct parameters as required.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error during timestamp insertion.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred on the server.
+                  status:
+                    type: boolean
+                    example: false
+        '501':
+          description: Timestamp not inserted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Timestamp not inserted.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/timestamp/get/users/{Users_ID}:
+    get:
+      tags:
+        - Timestamp
+      summary: Get timestamps by User ID
+      description: Retrieve all timestamps associated with a specific user by their Users_ID.
+      parameters:
+        - in: path
+          name: Users_ID
+          required: true
+          schema:
+            type: integer
+          description: The ID of the user.
+      responses:
+        '200':
+          description: Successfully retrieved timestamps.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Timestamp_ID:
+                          type: integer
+                          example: 1
+                        Users_ID:
+                          type: integer
+                          example: 1
+                        Timestamp_RegisTime:
+                          type: string
+                          format: date-time
+                          example: 2025-04-26T12:00:00Z
+                        TimestampType_ID:
+                          type: integer
+                          example: 1
+                        TimestampType_Name:
+                          type: string
+                          example: "timestamp_application_login"
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Missing or invalid Users_ID parameter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please fill in the correct parameters as required.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: No timestamps found for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No timestamps found for this user.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error while retrieving timestamps.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred on the server.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/timestamp/get/type/{TimestampType_ID}:
+    get:
+      tags:
+        - Timestamp
+      summary: Get timestamps by TimestampType_ID
+      description: Retrieve all timestamps associated with a specific timestamp type by its ID.
+      parameters:
+        - in: path
+          name: TimestampType_ID
+          required: true
+          schema:
+            type: integer
+          description: The ID of the timestamp type.
+      responses:
+        '200':
+          description: Successfully retrieved timestamps.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Timestamp_ID:
+                          type: integer
+                          example: 1
+                        Users_ID:
+                          type: integer
+                          example: 1
+                        Timestamp_RegisTime:
+                          type: string
+                          format: date-time
+                          example: 2025-04-26T12:00:00Z
+                        TimestampType_ID:
+                          type: integer
+                          example: 1
+                        TimestampType_Name:
+                          type: string
+                          example: "timestamp_application_login"
+                  status:
+                    type: boolean
+                    example: true
+                    responses:
+        '200':
+          description: Successfully retrieved timestamps.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Timestamp_ID:
+                          type: integer
+                          example: 1
+                        Users_ID:
+                          type: integer
+                          example: 1
+                        Timestamp_RegisTime:
+                          type: string
+                          format: date-time
+                          example: 2025-04-26T12:00:00Z
+                        TimestampType_ID:
+                          type: integer
+                          example: 1
+                        TimestampType_Name:
+                          type: string
+                          example: "timestamp_application_login"
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Missing or invalid TimestampType_ID parameter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please fill in the correct parameters as required.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: No timestamps found for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No timestamps found for this user.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error while retrieving timestamps.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred on the server.
+                  status:
+                    type: boolean
+                    example: false
+                
+  /api/profile/otherphone/add:
+    post:
+      tags:
+        - Profile
+      summary: Add other phone number for a user
+      description: Add an additional phone number for a specified user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_ID
+                - OtherPhone_Phone
+              properties:
+                Users_ID:
+                  type: integer
+                  example: 1
+                OtherPhone_Phone:
+                  type: string
+                  example: "0123456789"
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_ID
+                - OtherPhone_Phone
+              properties:
+                Users_ID:
+                  type: integer
+                  example: 1
+                OtherPhone_Phone:
+                  type: string
+                  example: "0123456789"
+      responses:
+        '200':
+          description: Other phone number added successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Other phone number added successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad Request - Incorrect parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please fill in the correct parameters as required.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred on the server.
+                  status:
+                    type: boolean
+                    example: false
+        '501':
+          description: Not Implemented - Other phone number not added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Other phone number not added.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/profile/otherphone/get/{Users_ID}:
+    get:
+      summary: "Get other phone numbers for a user"
+      tags:
+        - Profile
+      description: "Retrieve all other phone numbers associated with a specific user by their Users_ID."
+      parameters:
+        - name: "Users_ID"
+          in: "path"
+          required: true
+          type: "string"
+          example: "1"
+          description: "The ID of the user whose other phone numbers are being retrieved."
+      responses:
+        '200':
+          description: "Successfully retrieved other phone numbers."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  message:
+                    type: "array"
+                    items:
+                      type: "object"
+                      properties:
+                        OtherPhone_ID:
+                          type: "integer"
+                          example: 1
+                          description: "The unique ID of the other phone number."
+                        Users_ID:
+                          type: "string"
+                          example: 123
+                          description: "The ID of the user."
+                        OtherPhone_Phone:
+                          type: "string"
+                          example: 0812345678
+                          description: "The other phone number."
+                  status:
+                    type: "boolean"
+                    description: "Indicates if the request was successful."
+                    example: true
+        '400':
+          description: "Bad request. Missing or invalid parameters."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  message:
+                    type: "string"
+                    description: "Explanation of what went wrong."
+                    example: "Please fill in the correct parameters as required."
+                  status:
+                    type: "boolean"
+                    example: false
+        '404':
+          description: "No other phone numbers found for this user."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  message:
+                    type: "string"
+                    description: "Explanation of the result."
+                    example: "No other phone numbers found for this user."
+                  status:
+                    type: "boolean"
+                    example: false
+        '500':
+          description: "Internal server error. An unexpected error occurred."
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  message:
+                    type: "string"
+                    description: "Explanation of what went wrong."
+                    example: "An unexpected error occurred."
+                  status:
+                    type: "boolean"
+                    example: false

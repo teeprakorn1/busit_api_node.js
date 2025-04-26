@@ -232,4 +232,6 @@ VALUES ('222222222222-2', 'Student', 'Admin', '2025', '2', '1', '1');
 INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Users_ID)
 VALUES ('333333333333-3', 'Staff', 'Admin', '3');
 
-
+INSERT INTO timestamptype (TimestampType_Name)
+VALUES ('timestamp_application_login'),('timestamp_website_login'),
+('timestamp_add_otherphone_users'),('timestamp_delete_otherphone_users');
