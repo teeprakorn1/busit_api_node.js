@@ -42,9 +42,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-//////////////////////////////////SWAGGER CONFIG///////////////////////////////////////
-//Swagger Verification
+////////////////////////////////// SWAGGER CONFIG ///////////////////////////////////////
 const swaggerDocument = YAML.load('./swagger.yaml');
+
+// Swagger Authorization Middleware
 const protectSwagger = (req, res, next) => {
   const token = req.headers['authorization'];
   if (!token || token !== `Bearer ${process.env.SWAGGER_TOKEN}`) {
@@ -53,101 +54,65 @@ const protectSwagger = (req, res, next) => {
   next();
 };
 
-//Swagger Mode 0 (Development) or 1 (Production)
-if (process.env.NODE_ENV === '1') {
+// Apply Swagger Middleware
+if (process.env.NODE_ENV === '1') { // Production
   app.use('/api-docs', protectSwagger, swaggerUi.serve, swaggerUi.setup(swaggerDocument, { explorer: true }));
-} else {
+} else { // Development
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, { explorer: true }));
 }
 
-//////////////////////////////////TEST API///////////////////////////////////////
-//TEST ENCRYPT
+////////////////////////////////// TEST API ///////////////////////////////////////
+// Encrypt Test
 app.post('/api/test/encrypt', async (req, res) => {
-    const {password} = req.body;
-    if (!password) { res.status(400).json({ message: 'Password is required.', status: false });}  
-    const NewPassword = await bcrypt.hash(password, saltRounds);
-    res.send({ message: NewPassword ,status: true });
-});
-
-//TEST DECRYPT
-app.post('/api/test/decrypt', async (req, res) => {
-    const {password, hash} = req.body;
-    if (!password || !hash) { res.status(400).json({ message: 'Password and hash are required.', status: false });}
-    const isCorrect = await bcrypt.compare(password, hash);
-    if (isCorrect) {
-        res.send({ message: "The password is correct.",status: true });
-    }else{
-        res.status(201).send({ message: "The password is incorrect.",status: false });
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required.', status: false });
     }
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    res.json({ message: hashedPassword, status: true });
+  } catch (error) {
+    console.error('Error encrypting password:', error);
+    res.status(500).json({ message: 'Internal server error.', status: false });
+  }
 });
 
-// //////////////////////////////////Tokens API///////////////////////////////////////
-// //Verify Tokens API
-// app.post('/api/VerifyToken', VerifyTokens, function (req, res) {
-//   const isSuccess = req.Users_decoded;
-//   if (isSuccess) {
-//     res.send({
-//       Users_ID: req.Users_decoded.Users_ID,
-//       Users_Username: req.Users_decoded.Users_Username,
-//       UsersType_ID: req.Users_decoded.UsersType_ID,
-//       status: true
-//     });
-//   } else {
-//     res.send({ status: false });
-//   }
-// });
+// Decrypt Test
+app.post('/api/test/decrypt', async (req, res) => {
+  try {
+    const { password, hash } = req.body;
+    if (!password || !hash) {
+      return res.status(400).json({ message: 'Password and hash are required.', status: false });
+    }
+    const isMatch = await bcrypt.compare(password, hash);
+    if (isMatch) {
+      return res.json({ message: 'The password is correct.', status: true });
+    } else {
+      return res.status(200).json({ message: 'The password is incorrect.', status: false });
+    }
+  } catch (error) {
+    console.error('Error comparing password:', error);
+    res.status(500).json({ message: 'Internal server error.', status: false });
+  }
+});
 
-// //////////////////////////////////Login API///////////////////////////////////////
-// //API Login
-// app.post('/api/login', loginRateLimiter, async (req, res) => {
-//   let { Users_Email, Users_Password } = req.body;
-
-//   if (!Users_Email || !Users_Password ||
-//     typeof Users_Email !== 'string' || typeof Users_Password !== 'string') {
-//     return res.send({ message: 'Please fill in the correct parameters as required.', status: false });
-//   }
-
-//   Users_Email = xss(validator.escape(Users_Email));
-//   Users_Password = xss(validator.escape(Users_Password));
-
-//   const sql_check_username = "SELECT COUNT(*) AS count FROM Users WHERE Users_Email = ? AND Users_IsActive = 1";
-//   db.query(sql_check_username, [Users_Email], async (err, result) => {
-//     if (err) { return res.status(500).send({ message: 'An error occurred on the server.', status: false }); }
-
-//     if (result[0].count > 0) {
-//       const sql_get_password = "SELECT Users_Password FROM Users WHERE Users_Email = ? AND Users_IsActive = 1";
-//       db.query(sql_get_password, [Users_Email], async (err, result) => {
-//         if (err) { return res.status(500).send({ message: 'An error occurred on the server.', status: false }); }
-
-//         const isCorrect = await bcrypt.compare(Users_Password, result[0].Users_Password);
-//         if (isCorrect) {
-//           const sql = "SELECT * FROM Users WHERE Users_Email = ? AND Users_IsActive = 1";
-//           db.query(sql, [Users_Email], async (err, result) => {
-//             if (err) { return res.status(500).send({ message: 'An error occurred on the server.', status: false }); }
-//             const results = result[0];
-
-//             const sql_insert_timestamp = "INSERT INTO Userstimestamp (Users_ID)VALUES(?)";
-//             db.query(sql_insert_timestamp, [results.Users_ID], async (err) => {
-//               if (err) { return res.status(500).send({ message: 'Unable to record time', status: false }); }
-//               const Users = {};
-//               const Tokens = GenerateTokens(results.Users_ID, results.Users_Email, results.UsersType_ID);
-//               Users['token'] = Tokens;
-//               Users['message'] = "The password is correct."
-//               Users['status'] = true
-//               res.send(Users);
-//             });
-//           });
-//         } else {
-//           res.send({ message: "The password is incorrect.", status: false });
-//         }
-//       });
-//     } else {
-//       res.send({ message: "The password is incorrect.", status: false });
-//     }
-//   });
-// });
-
-// /////////////////////////////////////////////////////////////////////////
+////////////////////////////////// Tokens API ///////////////////////////////////////
+// Verify Token
+app.post('/api/verifyToken', VerifyTokens, (req, res) => {
+  const userData = req.Users_decoded;
+  if (userData) {
+    return res.status(200).json({
+      Users_ID: userData.Users_ID,
+      Users_Email: userData.Users_Email,
+      Users_Username: userData.Users_Username,
+      UsersType_ID: userData.UsersType_ID,
+      Users_Type: userData.Users_Type,
+      message: 'Token is valid.',
+      status: true,
+    });
+  }
+  return res.status(402).json({ message: 'Invalid Token.', status: false });
+});
 
 app.listen(process.env.SERVER_PORT, () => {
   console.log(`Example app listening on port ${process.env.SERVER_PORT}`)

@@ -70,6 +70,21 @@ paths:
                     type: boolean
                     example: false
                     description: Indicates failure.
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal server error."
+                    description: Error message.
+                  status:
+                    type: boolean
+                    example: false
+                    description: Indicates failure.
 
   /api/test/decrypt:
     post:
@@ -126,21 +141,6 @@ paths:
                     type: boolean
                     example: true
                     description: Indicates success.
-        '201':
-          description: Password decrypted unsuccessfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "The password is incorrect."
-                    description: Verification message.
-                  status:
-                    type: boolean
-                    example: false
-                    description: Indicates failure.
         '400':
           description: Bad Request
           content:
@@ -151,6 +151,97 @@ paths:
                   message:
                     type: string
                     example: "Password and hash are required."
+                    description: Error message.
+                  status:
+                    type: boolean
+                    example: false
+                    description: Indicates failure.
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal server error."
+                    description: Error message.
+                  status:
+                    type: boolean
+                    example: false
+                    description: Indicates failure.
+
+  /api/verifyToken:
+    post:
+      summary: Verify Token
+      description: Verifies a JWT token from the `x-access-token` header and returns the decoded payload.
+      tags:
+        - Verify
+      parameters:
+        - name: x-access-token
+          in: header
+          required: true
+          schema:
+            type: string
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          description: The JWT token to verify.
+      responses:
+        '200':
+          description: Token verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token is valid."
+                    description: Verification message.
+                  status:
+                    type: boolean
+                    example: true
+                    description: Indicates success.
+        '201':
+          description: Token verification failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token is invalid."
+                    description: Verification message.
+                  status:
+                    type: boolean
+                    example: false
+                    description: Indicates failure.
+        '401':
+          description: token not provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token is required for authentication." 
+                    description: token not provided message.
+                  status:
+                    type: boolean
+                    example: false
+                    description: Indicates failure.
+        '402': 
+          description: Token invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid Token."
                     description: Error message.
                   status:
                     type: boolean
