@@ -852,3 +852,73 @@ paths:
                   status:
                     type: "boolean"
                     example: false
+
+  /api/profile/data/get:
+    post:
+      summary: Get user profile data by token
+      description: Returns the profile data of the user based on decoded token (student, teacher, or staff).
+      tags:
+        - Profile
+      parameters:
+        - name: x-access-token
+          in: header
+          required: true
+          schema:
+            type: string
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          description: The JWT token to verify.
+      responses:
+        '200':
+          description: Profile data retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: array
+                    items:
+                      type: object
+                    example: [{"Student_ID": 1, "name": "John Doe", "email": "john@example.com"}]
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad request due to missing or invalid parameters.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Please fill in the correct parameters as required."
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: No profile data found for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No profile data found for this user."
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "An unexpected error occurred."
+                  status:
+                    type: boolean
+                    example: false

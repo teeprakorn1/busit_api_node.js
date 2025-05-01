@@ -13,6 +13,7 @@ require('dotenv').config();
 const RateLimiter = require('./Rate_Limiter/LimitTime_Login');
 const GenerateTokens = require('./Jwt_Tokens/Tokens_Generator');
 const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
+const { verify } = require('jsonwebtoken');
 
 const app = express();
 const saltRounds = 14;
@@ -250,7 +251,8 @@ app.get('/api/timestamp/get/users/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), 
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
       if (result.length > 0) {
-        return res.status(200).json({ message: result, status: true });
+        const ResultData = result;
+        return res.status(200).json(ResultData);
       } else {
         return res.status(404).json({ message: 'No timestamps found for this user.', status: false });
       }
@@ -278,7 +280,8 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
       if (result.length > 0) {
-        return res.status(200).json({ message: result, status: true });
+        const ResultData = result;
+        return res.status(200).json(ResultData);
       } else {
         return res.status(404).json({ message: 'No timestamps found for this type.', status: false });
       }
@@ -361,7 +364,11 @@ app.get('/api/profile/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
       if (result.length > 0) {
-        return res.status(200).json({ message: result, status: true });
+        const results = result[0];
+        const profileData = results;
+        profileData['message'] = 'Other phone numbers retrieved successfully.';
+        profileData['status'] = true;
+        res.status(200).json(profileData);
       } else {
         return res.status(404).json({ message: 'No other phone numbers found for this user.', status: false });
       }
@@ -371,6 +378,40 @@ app.get('/api/profile/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
 });
+
+// API Get Data Profile by VerifyTokens
+app.post('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.Users_decoded;
+  const usersTypeID = userData.UsersType_ID;
+  const usersType = userData.Users_Type;
+
+  try {
+    const usersType_upper = usersType.charAt(0).toUpperCase() + usersType.slice(1);
+    const tableName = db.escapeId(usersType);
+    const columnName = db.escapeId(`${usersType_upper}_ID`);
+
+    const sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ?`;
+    db.query(sql, [usersTypeID], (err, result) => {
+      if (err) {
+        console.error('Database error (profile data)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length > 0) {
+        const results = result[0];
+        const profileData = results;
+        profileData['message'] = 'Profile data retrieved successfully.';
+        profileData['status'] = true;
+        res.status(200).json(profileData);
+      } else {
+        return res.status(404).json({ message: 'No profile data found for this user.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
 
 /////////////////////////////////////////////////////////////////////////
 
