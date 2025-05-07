@@ -1,19 +1,20 @@
 const jwt = require('jsonwebtoken');
 
-// Verify Token
 const Tokens_Verification = (req, res, next) => {
-  const token = (req.body && req.body.token) || (req.query && req.query.token) || (req.headers && req.headers['x-access-token']);
+  const authHeader = req.headers['authorization'];
 
-  if (!token) {
-    return res.status(401).send({ message: 'Token is required for authentication.', status: false });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authorization token is required.', status: false });
   }
 
+  const token = authHeader.split(' ')[1];
+
   try {
-    const decode = jwt.verify(token, process.env.PRIVATE_TOKEN_KEY);
-    req.Users_decoded = decode;
+    const decoded = jwt.verify(token, process.env.PRIVATE_TOKEN_KEY);
+    req.user = decoded;
     next();
   } catch (err) {
-    return res.status(402).send({ message: 'Invalid Token.', status: false });
+    return res.status(401).json({ message: 'Invalid or expired token.', status: false });
   }
 };
 

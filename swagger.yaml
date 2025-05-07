@@ -205,17 +205,11 @@ paths:
   /api/verifyToken:
     post:
       summary: Verify Token
-      description: Verifies a JWT token from the `x-access-token` header and returns the decoded payload.
+      description: Verifies a JWT token from the `Authorization` header in Bearer format.
       tags:
         - Verify
-      parameters:
-        - name: x-access-token
-          in: header
-          required: true
-          schema:
-            type: string
-            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-          description: The JWT token to verify.
+      security:
+        - bearerAuth: [] 
       responses:
         '200':
           description: Token verified successfully
@@ -226,29 +220,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Token is valid."
-                    description: Verification message.
+                    example: Token is valid.
                   status:
                     type: boolean
                     example: true
-                    description: Indicates success.
-        '201':
-          description: Token verification failed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Token is invalid."
-                    description: Verification message.
-                  status:
-                    type: boolean
-                    example: false
-                    description: Indicates failure.
         '401':
-          description: token not provided
+          description: Token missing or invalid
           content:
             application/json:
               schema:
@@ -256,14 +233,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Token is required for authentication." 
-                    description: token not provided message.
+                    example: Authorization token is required or invalid.
                   status:
                     type: boolean
                     example: false
-                    description: Indicates failure.
-        '402': 
-          description: Token invalid
+        '403':
+          description: Token expired or malformed
           content:
             application/json:
               schema:
@@ -271,12 +246,10 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Invalid Token."
-                    description: Error message.
+                    example: Invalid or expired token.
                   status:
                     type: boolean
                     example: false
-                    description: Indicates failure.
 
   /api/login/application:
     post:
@@ -859,14 +832,8 @@ paths:
       description: Returns the profile data of the user based on decoded token (student, teacher, or staff).
       tags:
         - Profile
-      parameters:
-        - name: x-access-token
-          in: header
-          required: true
-          schema:
-            type: string
-            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-          description: The JWT token to verify.
+      security:
+        - bearerAuth: [] 
       responses:
         '200':
           description: Profile data retrieved successfully.
@@ -875,14 +842,49 @@ paths:
               schema:
                 type: object
                 properties:
+                  Student_ID:
+                    type: integer
+                    example: 123
+                  Student_Code:
+                    type: string
+                    example: "122122211222-1"
+                  Student_FirstName:
+                    type: string
+                    example: "Shogun"
+                  Student_LastName:
+                    type: string
+                    example: "Phrabadang"
+                  Student_Phone:
+                    type: string
+                    example: "0812345678"
+                  Student_AcademicYear:
+                    type: string
+                    example: "2025"
+                  Student_RegisTime:
+                    type: string
+                    format: date-time
+                    example: "2025-04-26T10:52:54.000Z"
+                  Student_IsGraduated:
+                    type: boolean
+                    example: false
+                  Users_ID:
+                    type: integer
+                    example: 123
+                  Teacher_ID:
+                    type: integer
+                    example: 456
+                  Department_ID:
+                    type: integer
+                    example: 789
+                  Users_Type_Table:
+                    type: string
+                    example: "student"
                   message:
-                    type: array
-                    items:
-                      type: object
-                    example: [{"Student_ID": 1, "name": "John Doe", "email": "john@example.com"}]
+                    type: string
+                    example: "Profile data retrieved successfully."
                   status:
                     type: boolean
-                    example: true
+                    example: false
         '400':
           description: Bad request due to missing or invalid parameters.
           content:
@@ -922,3 +924,10 @@ paths:
                   status:
                     type: boolean
                     example: false
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

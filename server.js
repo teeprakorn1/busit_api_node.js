@@ -106,7 +106,7 @@ app.post('/api/test/decrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res)
 ////////////////////////////////// Tokens API ///////////////////////////////////////
 // Verify Token
 app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (req, res) => {
-  const userData = req.Users_decoded;
+  const userData = req.user;
   if (userData) {
     return res.status(200).json({
       Users_ID: userData.Users_ID,
@@ -381,7 +381,7 @@ app.get('/api/profile/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12
 
 // API Get Data Profile by VerifyTokens
 app.post('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
-  const userData = req.Users_decoded;
+  const userData = req.user;
   const usersTypeID = userData.UsersType_ID;
   const usersType = userData.Users_Type;
 
@@ -390,7 +390,8 @@ app.post('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens
     const tableName = db.escapeId(usersType);
     const columnName = db.escapeId(`${usersType_upper}_ID`);
 
-    const sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ?`;
+    const sql = `SELECT ty.*,dp.Department_Name,f.Faculty_Name FROM ((${tableName} ty 
+    INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) WHERE ${columnName} = ?`;
     db.query(sql, [usersTypeID], (err, result) => {
       if (err) {
         console.error('Database error (profile data)', err);
@@ -399,6 +400,7 @@ app.post('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens
       if (result.length > 0) {
         const results = result[0];
         const profileData = results;
+        profileData['Users_Type_Table'] = usersType;
         profileData['message'] = 'Profile data retrieved successfully.';
         profileData['status'] = true;
         res.status(200).json(profileData);
