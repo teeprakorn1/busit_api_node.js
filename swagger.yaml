@@ -357,6 +357,168 @@ paths:
                     type: boolean
                     example: false
 
+  /api/otp/sendotp:
+    post:
+      summary: Send OTP
+      description: This endpoint sends a one-time password (OTP) to a user's email address.
+      tags:
+        - OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP sent successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid email input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please provide a valid email address.
+                  status:
+                    type: boolean
+                    example: false
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Exceeded the OTP request limit.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred while sending OTP.
+                  status:
+                    type: boolean
+                    example: false
+
+
+  /api/otp/verifyotp:
+    post:
+      tags:
+        - OTP
+      summary: Verify OTP
+      description: Verifies the OTP (One-Time Password) submitted by the user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                otp:
+                  type: string
+                  example: "123456"
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                otp:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: OTP is valid and verified successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP verification successful
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid OTP or bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP is invalid.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error during OTP verification.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred while verifying OTP.
+                  status:
+                    type: boolean
+                    example: false
+
   /api/timestamp/insert:
     post:
       tags:

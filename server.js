@@ -13,6 +13,7 @@ require('dotenv').config();
 const RateLimiter = require('./Rate_Limiter/LimitTime_Login');
 const GenerateTokens = require('./Jwt_Tokens/Tokens_Generator');
 const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
+const { sendOTP, verifyOTP } = require('./OTP_Services/otpService');
 const { verify } = require('jsonwebtoken');
 
 const app = express();
@@ -30,10 +31,15 @@ const db = mysql.createPool({
 });
 
 //Global MySQL Error Handler
-db.on('error', (err) => {
-  console.error('MySQL Error:', err);
-  if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
-    console.log('Lost MySQL connection.');
+db.getConnection((err) => {
+  if (err) {
+    console.error(' Database connection error:', err.code);
+    
+    if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
+      return res.status(503).json({ message: 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง' });
+    }
+
+    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล' });
   }
 });
 
@@ -68,7 +74,7 @@ app.post('/api/test/encrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res)
   }
 
   try {
-    const { password } = req.body;
+    const { password } = req.body || {};
     if (!password) {
       return res.status(400).json({ message: 'Password is required.', status: false });
     }
@@ -87,7 +93,7 @@ app.post('/api/test/decrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res)
   }
 
   try {
-    const { password, hash } = req.body;
+    const { password, hash } = req.body|| {};
     if (!password || !hash) {
       return res.status(400).json({ message: 'Password and hash are required.', status: false });
     }
@@ -121,10 +127,10 @@ app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (re
   return res.status(402).json({ message: 'Invalid Token.', status: false });
 });
 
-//////////////////////////////////Login API///////////////////////////////////////
+////////////////////////////////// Login API ///////////////////////////////////////
 //API Login Application
 app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, res) => {
-  let { Users_Email, Users_Password } = req.body;
+  let { Users_Email, Users_Password } = req.body|| {};
 
   if (!Users_Email || !Users_Password ||
     typeof Users_Email !== 'string' || typeof Users_Password !== 'string') {
@@ -201,11 +207,49 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
 //API Login Web Admin**
 
 //reset password API**
+////////////////////////////////// OTP API ///////////////////////////////////////
+//API Send OTP
+app.post('/api/otp/sendotp', async (req, res) => {
+  const { email } = req.body|| {};
 
-//////////////////////////////////Timestamp API///////////////////////////////////////
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
+  }
+
+  try {
+    await sendOTP(email, 'resetpassword');
+    res.status(200).json({ message: 'OTP sent successfully.', status: true });
+  } catch (error) {
+    if (error.message.includes('Exceeded the OTP request limit.')) {
+      return res.status(429).json({ message: error.message, status: false });
+    }
+    res.status(500).json({ message: 'An error occurred while sending OTP.', status: false });
+  }
+});
+
+//API Verify OTP
+app.post('/api/otp/verifyotp', async (req, res) => {
+  const { email, otp } = req.body|| {};
+  if (!email || !otp || typeof email !== 'string' || typeof otp !== 'string') {
+    return res.status(400).json({ message: 'Please provide a valid email and OTP.', status: false });
+  }
+  try {
+    const result = await verifyOTP(email, otp);
+    if (result.success) {
+      return res.status(200).json({ message: result.message, status: true });
+    } else {
+      return res.status(400).json({ message: result.message, status: false });
+    }
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({ message: 'An error occurred while verifying OTP.', status: false });
+  }
+});
+
+////////////////////////////////// Timestamp API ///////////////////////////////////////
 //API Timestamp Insert
 app.post('/api/timestamp/insert' , RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
-  const { Users_ID, TimestampType_ID } = req.body;
+  const { Users_ID, TimestampType_ID } = req.body|| {};
 
   if (!Users_ID || !TimestampType_ID) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
@@ -299,7 +343,7 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
 
 //API add Other Phone Number
 app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
-  let { Users_ID, OtherPhone_Phone } = req.body;
+  let { Users_ID, OtherPhone_Phone } = req.body|| {};
 
   if (!Users_ID || !OtherPhone_Phone) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
