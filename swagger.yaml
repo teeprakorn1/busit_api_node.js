@@ -202,6 +202,251 @@ paths:
                     example: false
                     description: Indicates failure.
 
+  /api/test/sendotp:
+    post:
+      summary: Send OTP
+      description: This endpoint sends a one-time password (OTP) to a user's email address.
+      tags:
+        - Test
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP sent successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid email input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please provide a valid email address.
+                  status:
+                    type: boolean
+                    example: false
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Exceeded the OTP request limit.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred while sending OTP.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/test/verifyotp:
+    post:
+      tags:
+        - Test
+      summary: Verify OTP
+      description: Verifies the OTP (One-Time Password) submitted by the user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                otp:
+                  type: string
+                  example: "123456"
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                otp:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: OTP is valid and verified successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP verification successful
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid OTP or bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP is invalid.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error during OTP verification.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred while verifying OTP.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/test/sendemail:
+    post:
+      summary: Send Email
+      description: >
+        Send a test email to the specified address.
+      tags:
+        - Test
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The recipient email address
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The recipient email address
+      responses:
+        '200':
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email sent successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid or missing email address
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please provide a valid email address.
+                  status:
+                    type: boolean
+                    example: false
+        '403':
+          description: API not allowed in production environment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: This API is not allowed in production.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error while sending email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred while sending email.
+                  status:
+                    type: boolean
+                    example: false
+
   /api/verifyToken:
     post:
       summary: Verify Token
@@ -247,6 +492,293 @@ paths:
                   message:
                     type: string
                     example: Invalid or expired token.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/system/resetpassword:
+    post:
+      summary: Reset user password
+      description: Reset password using the current password. Requires the user email, current password, and new password.
+      tags:
+        - System
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Current_Password
+                - New_Password
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                Current_Password:
+                  type: string
+                  format: password
+                  example: oldpassword123
+                New_Password:
+                  type: string
+                  format: password
+                  example: newpassword456
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Current_Password
+                - New_Password
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                Current_Password:
+                  type: string
+                  format: password
+                  example: oldpassword123
+                New_Password:
+                  type: string
+                  format: password
+                  example: newpassword456
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid input parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please fill in the correct parameters as required.
+                  status:
+                    type: boolean
+                    example: false
+        '401':
+          description: Current password is incorrect
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Current password is incorrect.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User not found.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server or database error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An unexpected error occurred.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/system/resetpassword-request-otp:
+    post:
+      summary: Request OTP for resetting password
+      description: Sends an OTP to the user's email address if it exists and is active in the system.
+      tags:
+        - System
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_Email
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: user@example.com
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_Email
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: user@example.com
+      responses:
+        '200':
+          description: OTP request processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP has been sent to your email.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid email input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please provide a valid email address.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server or email sending error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Failed to send OTP.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/system/resetpassword-verify-otp:
+    post:
+      summary: Reset password using OTP verification
+      description: Verifies OTP and resets the user password if valid. Sends a notification email after successful password change.
+      tags:
+        - System
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+                - otp
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                Users_Password:
+                  type: string
+                  format: password
+                  example: newpassword123
+                otp:
+                  type: string
+                  example: 123456
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+                - otp
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                Users_Password:
+                  type: string
+                  format: password
+                  example: newpassword123
+                otp:
+                  type: string
+                  example: 123456
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid input or OTP verification failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OTP is invalid or expired.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User not found.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server or database error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An unexpected error occurred.
                   status:
                     type: boolean
                     example: false
@@ -353,168 +885,6 @@ paths:
                   message:
                     type: string
                     example: "An error occurred on the server."
-                  status:
-                    type: boolean
-                    example: false
-
-  /api/otp/sendotp:
-    post:
-      summary: Send OTP
-      description: This endpoint sends a one-time password (OTP) to a user's email address.
-      tags:
-        - OTP
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: user@example.com
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: user@example.com
-      responses:
-        '200':
-          description: OTP sent successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: OTP sent successfully.
-                  status:
-                    type: boolean
-                    example: true
-        '400':
-          description: Invalid email input
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Please provide a valid email address.
-                  status:
-                    type: boolean
-                    example: false
-        '429':
-          description: Rate limit exceeded
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Exceeded the OTP request limit.
-                  status:
-                    type: boolean
-                    example: false
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: An error occurred while sending OTP.
-                  status:
-                    type: boolean
-                    example: false
-
-
-  /api/otp/verifyotp:
-    post:
-      tags:
-        - OTP
-      summary: Verify OTP
-      description: Verifies the OTP (One-Time Password) submitted by the user.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-                - otp
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: user@example.com
-                otp:
-                  type: string
-                  example: "123456"
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - email
-                - otp
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: user@example.com
-                otp:
-                  type: string
-                  example: "123456"
-      responses:
-        '200':
-          description: OTP is valid and verified successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: OTP verification successful
-                  status:
-                    type: boolean
-                    example: true
-        '400':
-          description: Invalid OTP or bad request.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: OTP is invalid.
-                  status:
-                    type: boolean
-                    example: false
-        '500':
-          description: Internal server error during OTP verification.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: An error occurred while verifying OTP.
                   status:
                     type: boolean
                     example: false

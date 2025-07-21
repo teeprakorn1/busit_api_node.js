@@ -1,14 +1,13 @@
-function otpEmailTemplate(email, otp , message) {
+function notificationEmailTemplate(email, {
+  heading = "แจ้งเตือนจากระบบ",
+  subheading = "คุณได้รับอีเมลฉบับนี้จาก BusitPlus",
+  message = "นี่คืออีเมลสำหรับการทดสอบระบบ"
+} = {}) {
   const logoURL = "https://drive.google.com/uc?export=view&id=1Xj2BWf7bdQzR_SBRNSNtYM2_YFnPfFeL";
 
-  // หมดอายุในอีก 5 นาที
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-  const formatter = new Intl.DateTimeFormat('th-TH', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-    timeZone: 'Asia/Bangkok'
-  });
-  const formattedExpire = formatter.format(expiresAt);
+  const safeMessage = message && message.trim()
+    ? `<p>${message}</p>`
+    : `<p>นี่คืออีเมลสำหรับการทดสอบระบบ</p>`;
 
   return `
   <!DOCTYPE html>
@@ -16,7 +15,7 @@ function otpEmailTemplate(email, otp , message) {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>OTP Verification</title>
+      <title>${heading}</title>
       <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
       <style>
         body {
@@ -59,24 +58,7 @@ function otpEmailTemplate(email, otp , message) {
           color: #2d3748;
           font-size: 16px;
           line-height: 1.6;
-        }
-        .otp-box {
           text-align: center;
-          margin: 32px 0;
-        }
-        .otp {
-          display: inline-block;
-          font-size: 38px;
-          font-weight: bold;
-          background-color: #edf2f7;
-          color: #2b6cb0;
-          padding: 14px 24px;
-          border-radius: 12px;
-          letter-spacing: 4px;
-        }
-        .expire {
-          color: #e53e3e;
-          font-weight: 500;
         }
         .note {
           text-align: center;
@@ -93,14 +75,9 @@ function otpEmailTemplate(email, otp , message) {
           color: #a0aec0;
           text-align: center;
         }
-
         @media only screen and (max-width: 600px) {
           .container {
             padding: 24px 20px;
-          }
-          .otp {
-            font-size: 28px;
-            padding: 10px 16px;
           }
         }
       </style>
@@ -113,37 +90,25 @@ function otpEmailTemplate(email, otp , message) {
         </div>
 
         <!-- Heading -->
-        <div class="heading">ยืนยันรหัส OTP ของคุณ</div>
-        <div class="subheading">เพื่อความปลอดภัยของบัญชี</div>
+        <div class="heading">${heading}</div>
+        <div class="subheading">${subheading}</div>
 
         <!-- Content -->
         <div class="content">
           <p>สวัสดีคุณ <strong>${email}</strong>,</p>
-          <p>มีการ${message} มายังบัญชีของคุณ กรุณาใช้รหัส OTP ด้านล่างเพื่อยืนยันตัวตนของคุณ:</p>
-        </div>
-
-        <!-- OTP Display -->
-        <div class="otp-box">
-          <div class="otp">${otp}</div>
-        </div>
-
-        <!-- Expire Time -->
-        <div class="content">
-          <p><span class="expire">รหัสนี้จะหมดอายุภายในวันที่ ${formattedExpire}</span></p>
+          ${safeMessage}
+          <p>นี่คืออีเมลแจ้งเตือนจากระบบของเรา หากคุณมีข้อสงสัยกรุณาติดต่อฝ่ายสนับสนุน</p>
         </div>
 
         <!-- Notes -->
         <div class="note">
-          ** อย่าเปิดเผยรหัส OTP กับผู้อื่น **<br />
-          เพื่อความปลอดภัยของบัญชีคุณ รหัส OTP เป็นข้อมูลส่วนบุคคลที่ไม่ควรเปิดเผยข้อมูลต่อผู้ใด
+          ขอบคุณที่ใช้บริการของเรา
         </div>
 
         <div class="divider"></div>
 
         <!-- Footer -->
         <div class="footer">
-          หากคุณไม่ได้ร้องขอรหัส OTP นี้<br />
-          โปรดละเว้นอีเมลนี้ และไม่ต้องดำเนินการใด ๆ<br />
           © 2025 BusitPlus. All rights reserved.
         </div>
       </div>
@@ -152,4 +117,4 @@ function otpEmailTemplate(email, otp , message) {
   `;
 }
 
-module.exports = otpEmailTemplate;
+module.exports = notificationEmailTemplate;

@@ -13,7 +13,7 @@ require('dotenv').config();
 const RateLimiter = require('./Rate_Limiter/LimitTime_Login');
 const GenerateTokens = require('./Jwt_Tokens/Tokens_Generator');
 const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
-const { sendOTP, verifyOTP } = require('./OTP_Services/otpService');
+const { sendOTP, verifyOTP, sendEmail } = require('./OTP_Services/otpService');
 const { verify } = require('jsonwebtoken');
 
 const app = express();
@@ -109,6 +109,72 @@ app.post('/api/test/decrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res)
   }
 });
 
+//Send OTP Test
+app.post('/api/test/sendotp', async (req, res) => {
+  if (process.env.NODE_ENV === '0') {
+    return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
+  }
+
+  const { email } = req.body|| {};
+
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
+  }
+
+  try {
+    await sendOTP(email);
+    res.status(200).json({ message: 'OTP sent successfully.', status: true });
+  } catch (error) {
+    if (error.message.includes('Exceeded the OTP request limit.')) {
+      return res.status(429).json({ message: error.message, status: false });
+    }
+    res.status(500).json({ message: 'An error occurred while sending OTP.', status: false });
+  }
+});
+
+//Verify OTP Test
+app.post('/api/test/verifyotp', async (req, res) => {
+  if (process.env.NODE_ENV === '0') {
+    return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
+  }
+
+  const { email, otp } = req.body|| {};
+  if (!email || !otp || typeof email !== 'string' || typeof otp !== 'string') {
+    return res.status(400).json({ message: 'Please provide a valid email and OTP.', status: false });
+  }
+  try {
+    const result = await verifyOTP(email, otp);
+    if (result.success) {
+      return res.status(200).json({ message: result.message, status: true });
+    } else {
+      return res.status(400).json({ message: result.message, status: false });
+    }
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({ message: 'An error occurred while sending email.', status: false });
+  }
+});
+
+//Send Email Test
+app.post('/api/test/sendemail', async (req, res) => {
+  if (process.env.NODE_ENV === '0') {
+    return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
+  }
+
+  const { email } = req.body|| {};
+
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
+  }
+
+  try {
+    await sendEmail(email);
+    res.status(200).json({ message: 'OTP sent successfully.', status: true });
+  } catch (error) {
+    res.status(500).json({ message: 'An error occurred while sending email.', status: false });
+  }
+});
+
 ////////////////////////////////// Tokens API ///////////////////////////////////////
 // Verify Token
 app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (req, res) => {
@@ -125,6 +191,151 @@ app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (re
     });
   }
   return res.status(402).json({ message: 'Invalid Token.', status: false });
+});
+
+////////////////////////////////// System API ///////////////////////////////////////
+//reset password by password API
+app.post('/api/system/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
+  const { Users_Email, Current_Password, New_Password } = req.body || {};
+  if (!Users_Email || !Current_Password || !New_Password ||
+      typeof Users_Email !== 'string' || typeof Current_Password !== 'string' || typeof New_Password !== 'string') {
+    return res.status(400).json({ message: 'Please fill in the correct parameters as required.', status: false });
+  }
+
+  if (!validator.isEmail(Users_Email)) {
+    return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
+  }
+
+  try {
+    const sql = "SELECT Users_ID, Users_Password FROM users WHERE Users_Email = ? AND Users_IsActive = 1";
+    db.query(sql, [Users_Email], async (err, result) => {
+      if (err) {
+        console.error('Database error (reset password)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'User not found.', status: false });
+      }
+
+      const user = result[0];
+      const passwordMatch = await bcrypt.compare(Current_Password, user.Users_Password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: 'Current password is incorrect.', status: false });
+      }
+      
+      const hashedPassword = await bcrypt.hash(New_Password, saltRounds);
+      const updateSql = "UPDATE users SET Users_Password = ? WHERE Users_ID = ?";
+      db.query(updateSql, [hashedPassword, user.Users_ID], (err, updateResult) => {
+        if (err) {
+          console.error('Database error (update password)', err);
+          return res.status(500).json({ message: 'An error occurred while updating the password.', status: false });
+        }
+
+        if (updateResult.affectedRows > 0) {
+          return res.status(200).json({ message: 'Password reset successfully.', status: true });
+        } else {
+          return res.status(500).json({ message: 'Password reset failed.', status: false });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Reset Password with OTP Request
+app.post('/api/system/resetpassword-request-otp', async (req, res) => {
+  const { Users_Email } = req.body || {};
+
+  if (!Users_Email || typeof Users_Email !== 'string' || !validator.isEmail(Users_Email)) {
+    return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
+  }
+
+  try {
+    const sql = "SELECT Users_ID FROM users WHERE Users_Email = ? AND Users_IsActive = 1";
+    db.query(sql, [Users_Email], async (err, result) => {
+      if (err) {
+        console.error('Database error (request OTP)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length === 0) {
+        return res.status(200).json({ message: 'If your email exists in our system, an OTP has been sent.', status: true });
+      }
+
+      try {
+        await sendOTP(Users_Email, 'resetpassword');
+        return res.status(200).json({ message: 'OTP has been sent to your email.', status: true });
+      } catch (sendErr) {
+        console.error('Send OTP error:', sendErr);
+        return res.status(500).json({ message: 'Failed to send OTP.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error (request OTP):', error);
+    return res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Reset Password with OTP Verification
+app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
+  const { Users_Email, Users_Password, otp } = req.body || {};
+
+  if (!Users_Email || !Users_Password || !otp ||
+      typeof Users_Email !== 'string' ||
+      typeof Users_Password !== 'string' ||
+      typeof otp !== 'string') {
+    return res.status(400).json({ message: 'Please provide all required fields.', status: false });
+  }
+
+  if (!validator.isEmail(Users_Email)) {
+    return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
+  }
+
+  try {
+    const otpResult = await verifyOTP(Users_Email, otp);
+    if (!otpResult.success) {
+      return res.status(400).json({ message: otpResult.message, status: false });
+    }
+    const sql = "SELECT Users_ID FROM users WHERE Users_Email = ? AND Users_IsActive = 1";
+    db.query(sql, [Users_Email], async (err, result) => {
+      if (err) {
+        console.error('Database error (reset password)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'User not found.', status: false });
+      }
+
+      const user = result[0];
+      const hashedPassword = await bcrypt.hash(Users_Password, saltRounds);
+      const updateSql = "UPDATE users SET Users_Password = ? WHERE Users_ID = ?";
+      db.query(updateSql, [hashedPassword, user.Users_ID], async (err, updateResult) => {
+        if (err) {
+          console.error('Database error (update password)', err);
+          return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+        }
+
+        if (updateResult.affectedRows > 0) {
+          res.status(200).json({ message: 'Password reset successfully.', status: true });
+          const notifyMsg = 'บัญชีของคุณได้รับการอัปเดตรหัสผ่านเรียบร้อยแล้ว หากคุณไม่ได้ทำรายการนี้ โปรดติดต่อฝ่ายสนับสนุนโดยด่วน';
+          try {
+            await sendEmail(Users_Email,"แจ้งเตือน: คุณได้เปลี่ยนรหัสผ่าน","หากไม่ใช่คุณ กรุณาติดต่อทีมงานด่วน","เปลี่ยนรหัสผ่านสำเร็จ",notifyMsg);
+
+          } catch (emailError) {
+            console.error('Error sending notification email:', emailError);
+          }
+        } else {
+          return res.status(500).json({ message: 'Password reset failed.', status: false });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Catch error (reset password)', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
 });
 
 ////////////////////////////////// Login API ///////////////////////////////////////
@@ -205,46 +416,6 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
 });
 
 //API Login Web Admin**
-
-//reset password API**
-////////////////////////////////// OTP API ///////////////////////////////////////
-//API Send OTP
-app.post('/api/otp/sendotp', async (req, res) => {
-  const { email } = req.body|| {};
-
-  if (!email || typeof email !== 'string') {
-    return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
-  }
-
-  try {
-    await sendOTP(email, 'resetpassword');
-    res.status(200).json({ message: 'OTP sent successfully.', status: true });
-  } catch (error) {
-    if (error.message.includes('Exceeded the OTP request limit.')) {
-      return res.status(429).json({ message: error.message, status: false });
-    }
-    res.status(500).json({ message: 'An error occurred while sending OTP.', status: false });
-  }
-});
-
-//API Verify OTP
-app.post('/api/otp/verifyotp', async (req, res) => {
-  const { email, otp } = req.body|| {};
-  if (!email || !otp || typeof email !== 'string' || typeof otp !== 'string') {
-    return res.status(400).json({ message: 'Please provide a valid email and OTP.', status: false });
-  }
-  try {
-    const result = await verifyOTP(email, otp);
-    if (result.success) {
-      return res.status(200).json({ message: result.message, status: true });
-    } else {
-      return res.status(400).json({ message: result.message, status: false });
-    }
-  } catch (error) {
-    console.error('Error verifying OTP:', error);
-    res.status(500).json({ message: 'An error occurred while verifying OTP.', status: false });
-  }
-});
 
 ////////////////////////////////// Timestamp API ///////////////////////////////////////
 //API Timestamp Insert
