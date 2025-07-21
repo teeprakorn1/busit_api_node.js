@@ -58,6 +58,9 @@ CREATE TABLE Student(
     Student_LastName VARCHAR(63) NOT NULL,
     Student_Phone CHAR(15),
     Student_AcademicYear YEAR NOT NULL,
+    Student_Birthdate DATE,
+    Student_Religion VARCHAR(63),
+    Student_MedicalProblem VARCHAR(511),
     Student_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Student_IsGraduated BOOLEAN NOT NULL DEFAULT FALSE,
     Users_ID INT(13) NOT NULL,
@@ -85,6 +88,7 @@ CREATE TABLE DataEdit(
 
 CREATE TABLE OtherPhone(
 	OtherPhone_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
+    OtherPhone_Name VARCHAR(63) NOT NULL,
     OtherPhone_Phone VARCHAR(15) NOT NULL,
     Users_ID INT(13) NOT NULL,
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
