@@ -1183,7 +1183,127 @@ paths:
                   status:
                     type: boolean
                     example: false
-                
+
+  /api/profile/student/update:
+    post:
+      tags:
+        - Profile
+      summary: Update student profile
+      description: Updates partial student profile. Requires authentication via Bearer token. Only accessible by users with type "student".
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Student_Phone:
+                  type: string
+                  example: "0812345678"
+                  description: Phone number in format 0XXXXXXXXX
+                Student_Birthdate:
+                  type: string
+                  example: "21-12-2003"
+                  description: Date of birth in format DD-MM-YYYY
+                Student_Religion:
+                  type: string
+                  maxLength: 63
+                  example: "พุทธ"
+                Student_MedicalProblem:
+                  type: string
+                  maxLength: 511
+                  example: "ไม่มี"
+              additionalProperties: false
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                Student_Phone:
+                  type: string
+                  example: "0812345678"
+                  description: Phone number in format 0XXXXXXXXX
+                Student_Birthdate:
+                  type: string
+                  example: "21-12-2003"
+                  description: Date of birth in format DD-MM-YYYY
+                Student_Religion:
+                  type: string
+                  maxLength: 63
+                  example: "พุทธ"
+                Student_MedicalProblem:
+                  type: string
+                  maxLength: 511
+                  example: "ไม่มี"
+              additionalProperties: false
+      responses:
+        '200':
+          description: Successfully updated student profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student profile updated successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid input (e.g. wrong date format or too long fields)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid birthdate format. Use DD-MM-YYYY.
+                  status:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user is not a student
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only students can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: No changes made or student not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No changes made or student not found.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server/database error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error occurred.
+                  status:
+                    type: boolean
+                    example: false
+
   /api/profile/otherphone/add:
     post:
       tags:
