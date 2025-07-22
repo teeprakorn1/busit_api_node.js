@@ -11,6 +11,7 @@ const swaggerUi = require('swagger-ui-express');
 
 require('dotenv').config();
 
+const requestLogger = require('./Log_Services/requestLogger');
 const RateLimiter = require('./Rate_Limiter/LimitTime_Login');
 const GenerateTokens = require('./Jwt_Tokens/Tokens_Generator');
 const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
@@ -45,6 +46,7 @@ db.getConnection((err) => {
 });
 
 app.use(express.json());
+app.use(requestLogger);
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
