@@ -1,7 +1,6 @@
 const { createLogger, format, transports } = require('winston');
+const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
-
-const logDir = path.resolve(__dirname, '..', 'logs');
 
 const logFormat = format.printf(({ timestamp, level, message }) => {
   return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
@@ -9,11 +8,26 @@ const logFormat = format.printf(({ timestamp, level, message }) => {
 
 const logger = createLogger({
   level: 'info',
-  format: format.combine(format.timestamp(), logFormat),
+  format: format.combine(
+    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    logFormat
+  ),
   transports: [
     new transports.Console(),
-    new transports.File({ filename: path.join(logDir, 'combined.log') }),
-    new transports.File({ filename: path.join(logDir, 'error.log'), level: 'error' })
+    new DailyRotateFile({
+      filename: path.join(__dirname, '../logs', 'app-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      maxFiles: '120d',
+      zippedArchive: true 
+    }),
+
+    new DailyRotateFile({
+      filename: path.join(__dirname, '../logs', 'error-%DATE%.log'),
+      datePattern: 'YYYY-MM-DD',
+      level: 'error',
+      maxFiles: '120d',
+      zippedArchive: true
+    })
   ]
 });
 

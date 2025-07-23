@@ -607,11 +607,105 @@ app.post('/api/profile/student/update',
   }
 );
 
-//API Edit Teacher Profile Application**
+//API Edit Teacher Profile Application
+app.post('/api/profile/teacher/update',
+  RateLimiter(0.5 * 60 * 1000, 12),
+  VerifyTokens,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_ID = userData?.Users_ID;
+    const Users_Type = userData?.Users_Type;
 
-//API Edit Staff Profile Application**
+    if (!Users_ID || typeof Users_ID !== 'number') {
+      return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
+    }
+
+    if (Users_Type?.toLowerCase() !== 'teacher') {
+      return res.status(403).json({ message: "Permission denied. Only Teachers can perform this action.", status: false });
+    }
+
+    let {
+      Teacher_Phone,
+      Teacher_Birthdate,
+      Teacher_Religion,
+      Teacher_MedicalProblem
+    } = req.body || {};
+
+    if (Teacher_Phone && !validator.isMobilePhone(Teacher_Phone, 'any', { strictMode: false })) {
+      return res.status(400).json({ message: "Invalid phone number format.", status: false });
+    }
+
+    if (Teacher_Birthdate) {
+      const birthdateMoment = moment(Teacher_Birthdate, 'DD-MM-YYYY', true);
+      if (!birthdateMoment.isValid()) {
+        return res.status(400).json({ message: "Invalid birthdate format. Use DD-MM-YYYY.", status: false });
+      }
+      Teacher_Birthdate = birthdateMoment.format('YYYY-MM-DD');
+    }
+
+    if (Teacher_Religion && Teacher_Religion.length > 63) {
+      return res.status(400).json({ message: "Religion text too long (max 63 characters).", status: false });
+    }
+
+    if (Teacher_MedicalProblem && Teacher_MedicalProblem.length > 511) {
+      return res.status(400).json({ message: "Medical problem text too long (max 511 characters).", status: false });
+    }
+
+    const allowedFields = {
+      Teacher_Phone,
+      Teacher_Birthdate,
+      Teacher_Religion,
+      Teacher_MedicalProblem
+    };
+
+    const fieldsToUpdate = [];
+    const values = [];
+
+    for (const [key, value] of Object.entries(allowedFields)) {
+      if (value !== undefined) {
+        fieldsToUpdate.push(`${key} = ?`);
+        values.push(value);
+      }
+    }
+
+    if (fieldsToUpdate.length === 0) {
+      return res.status(400).json({ message: "No fields provided for update.", status: false });
+    }
+
+    const sqlCheck = "SELECT Teacher_ID FROM teacher WHERE Users_ID = ?";
+    db.query(sqlCheck, [Users_ID], (err, result) => {
+      if (err) {
+        console.error("Database error (teacher check)", err);
+        return res.status(500).json({ message: "Database error occurred.", status: false });
+      }
+
+      if (result.length === 0) {
+        return res.status(404).json({ message: "teacher profile not found.", status: false });
+      }
+
+      const Teacher_ID = result[0].Teacher_ID;
+      const sqlUpdate = `UPDATE teacher SET ${fieldsToUpdate.join(", ")} WHERE Teacher_ID = ?`;
+      values.push(Teacher_ID);
+
+      db.query(sqlUpdate, values, (err, updateResult) => {
+        if (err) {
+          console.error("Database error (teacher update)", err);
+          return res.status(500).json({ message: "Database error occurred.", status: false });
+        }
+
+        if (updateResult.affectedRows > 0) {
+          return res.status(200).json({ message: "Teacher profile updated successfully.", status: true });
+        } else {
+          return res.status(404).json({ message: "No changes made or teacher not found.", status: false });
+        }
+      });
+    });
+  }
+);
 
 //API add Profile Image in Users of Application**
+
+//API get Profile Image in Users of Application**
 
 //API add Other Phone Number
 app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {

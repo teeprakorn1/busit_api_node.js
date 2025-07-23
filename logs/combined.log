@@ -1,8 +1,0 @@
-[2025-07-22T17:27:49.912Z] INFO: → GET /api-docs/ from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
-[2025-07-22T17:27:49.934Z] INFO: → GET /api-docs/swagger-ui.css from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
-[2025-07-22T17:27:49.940Z] INFO: → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
-[2025-07-22T17:27:49.942Z] INFO: → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
-[2025-07-22T17:27:49.945Z] INFO: → GET /api-docs/swagger-ui-init.js from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
-[2025-07-22T17:27:50.157Z] INFO: → GET /api-docs/favicon-32x32.png from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
-[2025-07-22T17:31:11.723Z] INFO: → POST /api/login/application from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
-[2025-07-22T17:31:40.189Z] INFO: → POST /api/verifyToken from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
