@@ -1424,6 +1424,110 @@ paths:
                     type: boolean
                     example: false
 
+  /api/profile/upload/image:
+    post:
+      summary: Upload profile image
+      description: Upload a profile image for the logged-in user. Accepts JPEG or PNG, resizes and converts to JPG before saving.
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                Users_ImageFile:
+                  type: string
+                  format: binary
+              required:
+                - Users_ImageFile
+      responses:
+        '200':
+          description: Profile image uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Profile image uploaded successfully.
+                  filename:
+                    type: string
+                    example: a2f3c1e7-1234-4567-8910-image.jpg
+        '400':
+          description: Bad request Missing or invalid image or token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please provide an image file.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User not found.
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error occurred during image upload.
+
+  /api/images/profile-images/{filename}:
+    get:
+      summary: Get user profile image
+      description: Serve a user profile image by filename.
+      tags:
+        - Profile
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the image file (e.g., abc123.jpg)
+      responses:
+        '200':
+          description: Successful image response
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Image not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Image not found.
+
   /api/profile/otherphone/add:
     post:
       tags:
