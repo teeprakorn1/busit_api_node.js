@@ -24,6 +24,7 @@ const GenerateTokens = require('./Jwt_Tokens/Tokens_Generator');
 const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
 const { sendOTP, verifyOTP, sendEmail } = require('./OTP_Services/otpService');
 const { verify } = require('jsonwebtoken');
+const { query } = require('winston');
 
 const app = express();
 const saltRounds = 14;
@@ -210,8 +211,9 @@ app.post('/api/test/sendemail', async (req, res) => {
   }
 });
 
+//แก้ไข Token API ของ website กับ application แยกกัน (TODO: แยกให้เสร็จ)**
 ////////////////////////////////// Tokens API ///////////////////////////////////////
-// Verify Token
+// Verify Token**
 app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (req, res) => {
   const userData = req.user;
   if (userData) {
@@ -374,7 +376,7 @@ app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
 });
 
 ////////////////////////////////// Login API ///////////////////////////////////////
-//API Login Application
+//API Login Application**
 app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, res) => {
   let { Users_Email, Users_Password } = req.body|| {};
 
@@ -450,7 +452,7 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
   }
 });
 
-//API Login Web Admin
+//API Login Web Admin**
 app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) => {
   let { Users_Email, Users_Password } = req.body|| {};
 
@@ -614,10 +616,372 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
 });
 
 //////////////////////////////////Admin Website API///////////////////////////////////////
+//API Edit Student Admin Website
+app.put('/api/admin/student/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Users_Type = userData?.Users_Type;
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const Target_Users_ID = parseInt(req.params.Users_ID, 10);
+  if (!Target_Users_ID || isNaN(Target_Users_ID)) {
+    return res.status(400).json({ message: "Missing or invalid Users_ID parameter.", status: false });
+  }
+
+  let { Student_Phone, Student_Birthdate, Student_Religion, Student_MedicalProblem } = req.body || {};
+
+  if (Student_Phone) {
+    if (!validator.isMobilePhone(Student_Phone, 'any', { strictMode: false })) {
+      return res.status(400).json({ message: "Invalid phone number format.", status: false });
+    }
+
+    if (Student_Phone.length > 20 || Student_Phone.length < 8) {
+      return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
+    }
+
+    if (!/^\d+$/.test(Student_Phone)) {
+      return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
+    }
+  }
+
+  if (Student_Birthdate) {
+    const birthdateMoment = moment(Student_Birthdate, 'DD-MM-YYYY', true);
+    if (!birthdateMoment.isValid()) {
+      return res.status(400).json({ message: "Invalid birthdate format. Use DD-MM-YYYY.", status: false });
+    }
+    Student_Birthdate = birthdateMoment.format('YYYY-MM-DD');
+  }
+
+  if (Student_Religion && Student_Religion.length > 63) {
+    return res.status(400).json({ message: "Religion text too long (max 63 characters).", status: false });
+  }
+
+  if (Student_MedicalProblem && Student_MedicalProblem.length > 511) {
+    return res.status(400).json({ message: "Medical problem text too long (max 511 characters).", status: false });
+  }
+
+  const allowedFields = { Student_Phone, Student_Birthdate, Student_Religion, Student_MedicalProblem };
+  const fieldsToUpdate = [];
+  const values = [];
+  const modifiedFields = [];
+
+  for (const [key, value] of Object.entries(allowedFields)) {
+    if (value !== undefined) {
+      fieldsToUpdate.push(`${key} = ?`);
+      values.push(value);
+      modifiedFields.push(key);
+    }
+  }
+
+  if (fieldsToUpdate.length === 0) {
+    return res.status(400).json({ message: "No fields provided for update.", status: false });
+  }
+
+  const sqlCheck = "SELECT Student_ID FROM student WHERE Users_ID = ?";
+  db.query(sqlCheck, [Target_Users_ID], (err, result) => {
+    if (err) {
+      console.error("Database error (student check)", err);
+      return res.status(500).json({ message: "Database error occurred.", status: false });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Student profile not found.", status: false });
+    }
+
+    const Student_ID = result[0].Student_ID;
+    const sqlUpdate = `UPDATE student SET ${fieldsToUpdate.join(", ")} WHERE Student_ID = ?`;
+    values.push(Student_ID);
+
+    db.query(sqlUpdate, values, (err, updateResult) => {
+      if (err) {
+        console.error("Database error (student update)", err);
+        return res.status(500).json({ message: "Database error occurred.", status: false });
+      }
+
+      if (updateResult.affectedRows > 0) {
+        return res.status(200).json({ Users_ID: Target_Users_ID,
+           updated_by: Requester_Users_ID, updated_fields: modifiedFields, message: "Student profile updated successfully.", status: true
+        });
+      } else {
+        return res.status(404).json({ message: "No changes made or student not found.", status: false });
+      }
+    });
+  });
+});
+
+//API Edit Teacher Admin Website
+app.put('/api/admin/teacher/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Users_Type = userData?.Users_Type;
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const Target_Users_ID = parseInt(req.params.Users_ID, 10);
+  if (!Target_Users_ID || isNaN(Target_Users_ID)) {
+    return res.status(400).json({ message: "Missing or invalid Users_ID parameter.", status: false });
+  }
+
+  let { Teacher_Phone, Teacher_Birthdate, Teacher_Religion, Teacher_MedicalProblem } = req.body || {};
+
+  if (Teacher_Phone) {
+    if (!validator.isMobilePhone(Teacher_Phone, 'any', { strictMode: false })) {
+      return res.status(400).json({ message: "Invalid phone number format.", status: false });
+    }
+
+    if (Teacher_Phone.length > 20 || Teacher_Phone.length < 8) {
+      return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
+    }
+
+    if (!/^\d+$/.test(Teacher_Phone)) {
+      return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
+    }
+  }
+
+  if (Teacher_Birthdate) {
+    const birthdateMoment = moment(Teacher_Birthdate, 'DD-MM-YYYY', true);
+    if (!birthdateMoment.isValid()) {
+      return res.status(400).json({ message: "Invalid birthdate format. Use DD-MM-YYYY.", status: false });
+    }
+    Teacher_Birthdate = birthdateMoment.format('YYYY-MM-DD');
+  }
+
+  if (Teacher_Religion && Teacher_Religion.length > 63) {
+    return res.status(400).json({ message: "Religion text too long (max 63 characters).", status: false });
+  }
+
+  if (Teacher_MedicalProblem && Teacher_MedicalProblem.length > 511) {
+    return res.status(400).json({ message: "Medical problem text too long (max 511 characters).", status: false });
+  }
+
+  const allowedFields = { Teacher_Phone, Teacher_Birthdate, Teacher_Religion, Teacher_MedicalProblem };
+  const fieldsToUpdate = [];
+  const values = [];
+  const modifiedFields = [];
+
+  for (const [key, value] of Object.entries(allowedFields)) {
+    if (value !== undefined) {
+      fieldsToUpdate.push(`${key} = ?`);
+      values.push(value);
+      modifiedFields.push(key);
+    }
+  }
+
+  if (fieldsToUpdate.length === 0) {
+    return res.status(400).json({ message: "No fields provided for update.", status: false });
+  }
+
+  const sqlCheck = "SELECT Teacher_ID FROM teacher WHERE Users_ID = ?";
+  db.query(sqlCheck, [Target_Users_ID], (err, result) => {
+    if (err) {
+      console.error("Database error (teacher check)", err);
+      return res.status(500).json({ message: "Database error occurred.", status: false });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Teacher profile not found.", status: false });
+    }
+
+    const Teacher_ID = result[0].Teacher_ID;
+    const sqlUpdate = `UPDATE teacher SET ${fieldsToUpdate.join(", ")} WHERE Teacher_ID = ?`;
+    values.push(Teacher_ID);
+
+    db.query(sqlUpdate, values, (err, updateResult) => {
+      if (err) {
+        console.error("Database error (teacher update)", err);
+        return res.status(500).json({ message: "Database error occurred.", status: false });
+      }
+
+      if (updateResult.affectedRows > 0) {
+        return res.status(200).json({ Users_ID: Target_Users_ID,
+           updated_by: Requester_Users_ID, updated_fields: modifiedFields, message: "Teacher profile updated successfully.", status: true
+        });
+      } else {
+        return res.status(404).json({ message: "No changes made or teacher not found.", status: false });
+      }
+    });
+  });
+});
+
+//API get Other Phone Number by Users_ID of Admin Website
+app.get('/api/admin/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Users_Type = userData?.Users_Type;
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const Target_Users_ID = parseInt(req.params.Users_ID, 10);
+  if (!Target_Users_ID || isNaN(Target_Users_ID)) {
+    return res.status(400).json({ message: "Missing or invalid Users_ID parameter.", status: false });
+  }
+
+  try {
+    const sql = "SELECT OtherPhone_ID, Users_ID, OtherPhone_Name, OtherPhone_Phone FROM otherphone WHERE Users_ID = ?";
+    db.query(sql, [Target_Users_ID], (err, result) => {
+      if (err) {
+        console.error('Database error while getting other phones for Users_ID:', Users_ID, err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length > 0) {
+        res.status(200).json({ data: result, message: 'Other phone numbers retrieved successfully.', status: true });
+      } else {
+        return res.status(404).json({ data: [], message: 'No other phone numbers found for this user.', status: false, });
+      }
+    });
+  } catch (error) {
+    console.error('Unexpected error while retrieving other phones', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API get Other Phone Number by OtherPhone_ID of Admin Website
+app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Users_Type = userData?.Users_Type;
+  const OtherPhone_ID = req.params.OtherPhone_ID;
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+
+  if (!OtherPhone_ID || isNaN(Number(OtherPhone_ID))) {
+    return res.status(400).json({ message: "Invalid OtherPhone_ID parameter.", status: false });
+  }
+
+  try {
+    const sql = "SELECT OtherPhone_ID, Users_ID, OtherPhone_Name, OtherPhone_Phone FROM otherphone WHERE OtherPhone_ID = ?";
+    db.query(sql, [OtherPhone_ID], (err, result) => {
+      if (err) {
+        console.error('Database error (get by ID)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length > 0) {
+        const results = result[0];
+        const phoneData = results;
+        phoneData['message'] = 'Other phone number retrieved successfully.';
+        phoneData['status'] = true;
+        res.status(200).json(phoneData);
+      } else {
+        return res.status(404).json({ message: 'Other phone number not found or access denied.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error (get by ID)', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//(TODO: แก้ให้เป็น Department_ID ที่มีใน Staff)**
+// API Get Users Data by Users_ID of Admin Website**
+app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Users_ID = req.params.Users_ID;
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (!Users_ID || isNaN(Number(Users_ID))) {
+    return res.status(400).json({ message: "Invalid Users_ID parameter.", status: false });
+  }
+
+  try {
+    const checkSql = "SELECT Users_Type FROM users WHERE Users_ID = ?";
+    db.query(checkSql, [Users_ID], (err, checkResult) => {
+      if (err) {
+        console.error('Database error (check user type)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (checkResult.length === 0) {
+        return res.status(404).json({ message: 'User not found.', status: false });
+      }
+
+      const usersType = checkResult[0].Users_Type;
+      const usersType_upper = usersType.charAt(0).toUpperCase() + usersType.slice(1);
+      const tableName = db.escapeId(usersType);
+      const columnName = db.escapeId(`${usersType_upper}_ID`);
+      const usersTypeIDColumnName = `${usersType_upper}_ID`;
+
+      const checkUserTypeSql = `SELECT ${columnName} FROM ${tableName} WHERE Users_ID = ?`;
+      db.query(checkUserTypeSql, [Users_ID], (err, userTypeResult) => {
+        if (err) {
+          console.error('Database error (check user type in specific table)', err);
+          return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+        }
+
+        if (userTypeResult.length === 0) {
+          return res.status(404).json({ message: 'User type details not found.', status: false });
+        }
+
+        const usersTypeID = userTypeResult[0][usersTypeIDColumnName];
+        if (!usersTypeID) {
+          return res.status(404).json({ message: 'User type ID not found.', status: false });
+        }
+
+        const sql = `SELECT ty.*, dp.Department_Name, f.Faculty_Name FROM (${tableName} ty
+          INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID WHERE ${columnName} = ? LIMIT 1`;
+
+        db.query(sql, [usersTypeID], (err, result) => {
+          if (err) {
+            console.error('Database error (profile data)', err);
+            return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+          }
+
+          if (result.length > 0) {
+            const profileData = result[0];
+            profileData['Users_Type_Table'] = usersType;
+            profileData['message'] = 'Profile data retrieved successfully.';
+            profileData['status'] = true;
+            res.status(200).json(profileData);
+          } else {
+            return res.status(404).json({ message: 'No profile data found for this user.', status: false });
+          }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
 
 //////////////////////////////////Profile Application API///////////////////////////////////////
 //API Edit Student Profile Application
-app.post('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.put('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
@@ -706,7 +1070,7 @@ app.post('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyT
 });
 
 //API Edit Teacher Profile Application
-app.post('/api/profile/teacher/update', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.put('/api/profile/teacher/update', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
@@ -1097,11 +1461,16 @@ app.get('/api/profile/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 *
   }
 });
 
-// API Get Data Profile by VerifyTokens
-app.post('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+//(TODO: แก้ให้เป็น Department_ID ที่มีใน Staff)**
+// API Get Data Profile by VerifyTokens**
+app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const usersTypeID = userData.UsersType_ID;
   const usersType = userData.Users_Type;
+
+   if (!usersType || !usersTypeID) {
+    return res.status(400).json({ message: "Missing user type or ID.", status: false });
+  }
 
   try {
     const usersType_upper = usersType.charAt(0).toUpperCase() + usersType.slice(1);
@@ -1109,7 +1478,7 @@ app.post('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens
     const columnName = db.escapeId(`${usersType_upper}_ID`);
 
     const sql = `SELECT ty.*,dp.Department_Name,f.Faculty_Name FROM ((${tableName} ty 
-    INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) WHERE ${columnName} = ?`;
+    INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) WHERE ${columnName} = ? LIMIT 1`;
     db.query(sql, [usersTypeID], (err, result) => {
       if (err) {
         console.error('Database error (profile data)', err);
@@ -1131,7 +1500,6 @@ app.post('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
 });
-
 
 /////////////////////////////////////////////////////////////////////////
 

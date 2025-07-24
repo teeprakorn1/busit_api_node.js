@@ -36,3 +36,9 @@
 [2025-07-24 22:55:31] INFO: → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
 [2025-07-24 22:55:31] INFO: → GET /api-docs/swagger-ui-init.js from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
 [2025-07-24 22:55:31] INFO: → GET /api-docs/favicon-32x32.png from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-24 22:55:50] INFO: → GET /api-docs/ from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-24 22:55:50] INFO: → GET /api-docs/swagger-ui.css from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-24 22:55:50] INFO: → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-24 22:55:50] INFO: → GET /api-docs/swagger-ui-init.js from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-24 22:55:50] INFO: → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-24 22:55:50] INFO: → GET /api-docs/favicon-32x32.png from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36

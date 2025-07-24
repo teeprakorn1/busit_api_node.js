@@ -1326,8 +1326,410 @@ paths:
                     type: boolean
                     example: false
 
+  /api/admin/student/update/{Users_ID}:
+    put:
+      summary: Update student profile (Admin only)
+      description: Allows a staff user to update student profile data by Users_ID.
+      tags:
+        - Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Users_ID
+          in: path
+          required: true
+          description: Users_ID of the student to be updated
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Student_Phone:
+                  type: string
+                  example: "0812345678"
+                Student_Birthdate:
+                  type: string
+                  format: date
+                  description: Format DD-MM-YYYY
+                  example: "12-08-2004"
+                Student_Religion:
+                  type: string
+                  example: "พุทธ"
+                Student_MedicalProblem:
+                  type: string
+                  example: "ภูมิแพ้"
+              additionalProperties: false
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                Student_Phone:
+                  type: string
+                  example: "0812345678"
+                Student_Birthdate:
+                  type: string
+                  format: date
+                  description: Format DD-MM-YYYY
+                  example: "12-08-2004"
+                Student_Religion:
+                  type: string
+                  example: "พุทธ"
+                Student_MedicalProblem:
+                  type: string
+                  example: "ภูมิแพ้"
+              additionalProperties: false
+      responses:
+        '200':
+          description: Successfully updated student profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Users_ID:
+                    type: integer
+                  updated_by:
+                    type: integer
+                  updated_fields:
+                    type: array
+                    items:
+                      type: string
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+        '400':
+          description: Bad Request (invalid input or missing data)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Permission Denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Student profile not found or no changes made
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/teacher/update/{Users_ID}:
+    put:
+      summary: Update teacher profile (Admin only)
+      description: Allows a staff user to update teacher profile data by Users_ID.
+      tags:
+        - Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Users_ID
+          in: path
+          required: true
+          description: Users_ID of the teacher to be updated
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Student_Phone:
+                  type: string
+                  example: "0812345678"
+                Student_Birthdate:
+                  type: string
+                  format: date
+                  description: Format DD-MM-YYYY
+                  example: "12-08-2004"
+                Student_Religion:
+                  type: string
+                  example: "พุทธ"
+                Student_MedicalProblem:
+                  type: string
+                  example: "ภูมิแพ้"
+              additionalProperties: false
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                Student_Phone:
+                  type: string
+                  example: "0812345678"
+                Student_Birthdate:
+                  type: string
+                  format: date
+                  description: Format DD-MM-YYYY
+                  example: "12-08-2004"
+                Student_Religion:
+                  type: string
+                  example: "พุทธ"
+                Student_MedicalProblem:
+                  type: string
+                  example: "ภูมิแพ้"
+              additionalProperties: false
+      responses:
+        '200':
+          description: Successfully updated teacher profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Users_ID:
+                    type: integer
+                  updated_by:
+                    type: integer
+                  updated_fields:
+                    type: array
+                    items:
+                      type: string
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+        '400':
+          description: Bad Request (invalid input or missing data)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Permission Denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Teacher profile not found or no changes made
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/otherphone/get/{Users_ID}:
+    get:
+      summary: Get other phone numbers by Users_ID (Admin only)
+      description: Retrieve other phone numbers associated with a specific Users_ID. Only accessible by staff users.
+      tags:
+        - Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Users_ID
+          in: path
+          required: true
+          description: Users_ID of the user whose other phone numbers are requested
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved other phone numbers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        OtherPhone_ID:
+                          type: integer
+                        Users_ID:
+                          type: integer
+                        OtherPhone_Name:
+                          type: string
+                        OtherPhone_Phone:
+                          type: string
+                  message:
+                    type: string
+                    example: Other phone numbers retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad Request (invalid token or Users_ID parameter)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Permission Denied (not staff)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No other phone numbers found for this user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: {}
+                    example: []
+                  message:
+                    type: string
+                    example: No other phone numbers found for this user.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/otherphone/getbyphoneid/{OtherPhone_ID}:
+    get:
+      summary: Get other phone number by OtherPhone_ID (Admin only)
+      description: Retrieve a single other phone number record by its OtherPhone_ID. Only accessible by staff users.
+      tags:
+        - Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: OtherPhone_ID
+          in: path
+          required: true
+          description: The ID of the other phone number record to retrieve
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved the other phone number
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  OtherPhone_ID:
+                    type: integer
+                  Users_ID:
+                    type: integer
+                  OtherPhone_Name:
+                    type: string
+                  OtherPhone_Phone:
+                    type: string
+                  message:
+                    type: string
+                    example: Other phone number retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad Request (missing or invalid token or OtherPhone_ID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Permission denied (not staff)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Other phone number not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/data/{Users_ID}:
+    get:
+      summary: Get user profile data by Users_ID (Admin only)
+      description: Retrieve detailed profile data for a user by their Users_ID. Only accessible by staff users.
+      tags:
+        - Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Users_ID
+          in: path
+          required: true
+          description: The ID of the user to retrieve profile data for
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved profile data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Department_Name:
+                    type: string
+                  Faculty_Name:
+                    type: string
+                  Users_Type_Table:
+                    type: string
+                  message:
+                    type: string
+                    example: Profile data retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad Request (missing or invalid token or Users_ID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Permission denied (not staff)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User or profile data not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/profile/student/update:
-    post:
+    put:
       tags:
         - Profile
       summary: Update student profile
@@ -1447,7 +1849,7 @@ paths:
                     example: false
 
   /api/profile/teacher/update:
-    post:
+    put:
       tags:
         - Profile
       summary: Update teacher profile
@@ -2051,7 +2453,7 @@ paths:
                     example: false
 
   /api/profile/data/get:
-    post:
+    get:
       summary: Get user profile data by token
       description: Returns the profile data of the user based on decoded token (student, teacher, or staff).
       tags:
@@ -2155,3 +2557,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          type: boolean
