@@ -384,11 +384,11 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
   }
 
   Users_Email = xss(validator.escape(Users_Email));
-  Users_Password = xss(validator.escape(Users_Password));
+  Users_Password = xss(Users_Password)
 
   try {
-    const sql = "SELECT Users_ID, Users_Email, Users_Username, Users_Password,"+
-    " Users_Type FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND Users_IsActive = 1";
+    const sql = "SELECT Users_ID, Users_Email, Users_Username, Users_Password, Users_Type "+
+    "FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND (Users_Type = 'teacher' OR Users_Type = 'student') AND Users_IsActive = 1";
     db.query(sql, [Users_Email, Users_Email], async (err, result) => {
       if (err) { 
         console.error('Database error (users)', err);
@@ -396,13 +396,13 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
       }
 
       if (result.length === 0) {
-        return res.status(401).json({ message: "The password is incorrect.", status: false });
+        return res.status(401).json({ message: "Email or password is incorrect.", status: false });
       }
 
       const user = result[0];
       const passwordMatch = await bcrypt.compare(Users_Password, user.Users_Password);
       if (!passwordMatch) {
-        return res.status(401).json({ message: "The password is incorrect.", status: false });
+        return res.status(401).json({ message: "Email or password is incorrect.", status: false });
       }
 
       // Check Users_Type
@@ -450,7 +450,78 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
   }
 });
 
-//API Login Web Admin**
+//API Login Web Admin
+app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) => {
+  let { Users_Email, Users_Password } = req.body|| {};
+
+  if (!Users_Email || !Users_Password ||
+    typeof Users_Email !== 'string' || typeof Users_Password !== 'string') {
+    return res.status(400).json({ message: 'Please fill in the correct parameters as required.', status: false });
+  }
+
+  Users_Email = xss(validator.escape(Users_Email));
+  Users_Password = xss(Users_Password)
+
+  try {
+    const sql = "SELECT Users_ID, Users_Email, Users_Username, Users_Password, Users_Type "+
+    "FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND (Users_Type = 'teacher' OR Users_Type = 'staff') AND Users_IsActive = 1";
+    db.query(sql, [Users_Email, Users_Email], async (err, result) => {
+      if (err) { 
+        console.error('Database error (users)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false }); 
+      }
+
+      if (result.length === 0) {
+        return res.status(401).json({ message: "Email or password is incorrect.", status: false });
+      }
+
+      const user = result[0];
+      const passwordMatch = await bcrypt.compare(Users_Password, user.Users_Password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: "Email or password is incorrect.", status: false });
+      }
+
+      // Check Users_Type
+      let sql_users_type, users_type_name_id;
+      if (user.Users_Type === 'teacher') {
+        sql_users_type = "SELECT Teacher_ID FROM teacher WHERE Users_ID = ?";
+        users_type_name_id = 'Teacher_ID';
+      } else if (user.Users_Type === 'staff') {
+        sql_users_type = "SELECT Staff_ID FROM staff WHERE Users_ID = ?";
+        users_type_name_id = 'Staff_ID';
+      } else {
+        return res.status(400).json({ message: 'Invalid user type.', status: false });
+      }
+
+      db.query(sql_users_type, [user.Users_ID], async (err, result_users_type) => {
+        if (err) {
+          console.error('Database error (user type)', err);
+          return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+        }
+
+        if (result_users_type.length === 0) {
+          return res.status(404).json({ message: 'User type details not found.', status: false });
+        }
+
+        const userType = result_users_type[0];
+        const UsersType_ID = userType[users_type_name_id];
+
+        const token = GenerateTokens(user.Users_ID, 
+          user.Users_Email, user.Users_Username, UsersType_ID, user.Users_Type);
+
+        const responseData = {
+          token: token,
+          message: "The login was successful.",
+          status: true
+        };
+        res.status(200).json(responseData);
+      });
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
 
 ////////////////////////////////// Timestamp API ///////////////////////////////////////
 //API Timestamp Insert
@@ -542,6 +613,8 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
   }
 });
 
+//////////////////////////////////Admin Website API///////////////////////////////////////
+
 //////////////////////////////////Profile Application API///////////////////////////////////////
 //API Edit Student Profile Application
 app.post('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
@@ -561,6 +634,14 @@ app.post('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyT
 
   if (Student_Phone && !validator.isMobilePhone(Student_Phone, 'any', { strictMode: false })) {
     return res.status(400).json({ message: "Invalid phone number format.", status: false });
+  }
+
+  if (Student_Phone.length > 20 || Student_Phone.length < 8) {
+    return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
+  }
+
+  if (!/^\d+$/.test(Student_Phone)) {
+    return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
   }
 
   if (Student_Birthdate) {
@@ -639,8 +720,17 @@ app.post('/api/profile/teacher/update', RateLimiter(0.5 * 60 * 1000, 12), Verify
   }
 
   let { Teacher_Phone, Teacher_Birthdate, Teacher_Religion, Teacher_MedicalProblem } = req.body || {};
+
   if (Teacher_Phone && !validator.isMobilePhone(Teacher_Phone, 'any', { strictMode: false })) {
     return res.status(400).json({ message: "Invalid phone number format.", status: false });
+  }
+
+  if (Teacher_Phone.length > 20 || Teacher_Phone.length < 8) {
+    return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
+  }
+
+  if (!/^\d+$/.test(Teacher_Phone)) {
+    return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
   }
 
   if (Teacher_Birthdate) {
@@ -785,8 +875,10 @@ app.post('/api/profile/upload/image', upload.single('Users_ImageFile') ,RateLimi
 });
 
 //API add Other Phone Number
-app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
-  let { Users_ID, OtherPhone_Phone } = req.body|| {};
+app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+  let { OtherPhone_Phone } = req.body || {};
 
   if (!Users_ID || !OtherPhone_Phone) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
@@ -797,33 +889,43 @@ app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), async 
   }
 
   if (!validator.isMobilePhone(OtherPhone_Phone, 'any', { strictMode: false })) {
-    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+    return res.status(400).json({ message: "Invalid phone number format.", status: false });
   }
 
-  if (OtherPhone_Phone.length > 20) {
-    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
-  }
-
-  if (OtherPhone_Phone.length < 8) {
-    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  if (OtherPhone_Phone.length > 20 || OtherPhone_Phone.length < 8) {
+    return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
   }
 
   if (!/^\d+$/.test(OtherPhone_Phone)) {
-    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+    return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
   }
 
   try {
-    const sql = "INSERT INTO otherphone (Users_ID, OtherPhone_Phone) VALUES (?, ?)";
-    db.query(sql, [Users_ID, OtherPhone_Phone], (err, result) => {
+    const checkSql = "SELECT COUNT(*) AS phoneCount FROM otherphone WHERE Users_ID = ?";
+    db.query(checkSql, [Users_ID], (err, checkResult) => {
       if (err) {
-        console.error('Database error (other phone)', err);
-        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+        console.error('Database error (check count)', err);
+        return res.status(500).json({ message: 'Server error while checking phone count.', status: false });
       }
-      if (result.affectedRows > 0) {
-        return res.status(200).json({ message: 'Other phone number added successfully.', status: true });
-      } else {
-        return res.status(501).json({ message: 'Other phone number not added.', status: false });
+
+      const phoneCount = checkResult[0]?.phoneCount || 0;
+      if (phoneCount >= 2) {
+        return res.status(400).json({ message: "You can only have up to 2 other phone numbers.", status: false });
       }
+
+      const sql = "INSERT INTO otherphone (Users_ID, OtherPhone_Phone) VALUES (?, ?)";
+      db.query(sql, [Users_ID, OtherPhone_Phone], (err, result) => {
+        if (err) {
+          console.error('Database error (insert)', err);
+          return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+        }
+
+        if (result.affectedRows > 0) {
+          return res.status(200).json({ message: 'Other phone number added successfully.', status: true });
+        } else {
+          return res.status(500).json({ message: 'Other phone number not added.', status: false });
+        }
+      });
     });
   } catch (error) {
     console.error('Catch error', error);
@@ -831,37 +933,166 @@ app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), async 
   }
 });
 
-//API delete Other Phone Number**
+//API delete Other Phone Number
+app.delete('/api/profile/otherphone/delete/:OtherPhone_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+  const { OtherPhone_ID } = req.params;
 
-//API edit Other Phone Number**
-
-//API get Other Phone Number by Users_ID
-app.get('/api/profile/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
-  const Users_ID = req.params.Users_ID;
-
-  if (!Users_ID) {
-    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  if (!OtherPhone_ID || isNaN(Number(OtherPhone_ID))) {
+    return res.status(400).json({ message: 'Invalid OtherPhone_ID.', status: false });
   }
 
   try {
-    const sql = "SELECT OtherPhone_ID, Users_ID, OtherPhone_Phone FROM otherphone WHERE Users_ID = ?";
+    const checkSql = "SELECT * FROM otherphone WHERE OtherPhone_ID = ? AND Users_ID = ?";
+    db.query(checkSql, [OtherPhone_ID, Users_ID], (err, checkResult) => {
+      if (err) {
+        console.error('Database error (check ownership)', err);
+        return res.status(500).json({ message: 'Server error while verifying phone owner.', status: false });
+      }
+
+      if (checkResult.length === 0) {
+        return res.status(403).json({ message: 'You do not have permission to delete this phone number.', status: false });
+      }
+
+      const deleteSql = "DELETE FROM otherphone WHERE OtherPhone_ID = ?";
+      db.query(deleteSql, [OtherPhone_ID], (err, result) => {
+        if (err) {
+          console.error('Database error (delete)', err);
+          return res.status(500).json({ message: 'Error deleting phone number.', status: false });
+        }
+
+        return res.status(200).json({ message: 'Other phone number deleted successfully.', status: true });
+      });
+    });
+  } catch (error) {
+    console.error('Catch error (delete)', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API edit Other Phone Number
+app.put('/api/profile/otherphone/edit/:OtherPhone_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+  const { OtherPhone_ID } = req.params;
+  const { OtherPhone_Name, OtherPhone_Phone } = req.body || {};
+
+  if (!OtherPhone_ID || !OtherPhone_Name || !OtherPhone_Phone) {
+    return res.status(400).json({ message: 'Missing required fields.', status: false });
+  }
+
+  if (typeof OtherPhone_Name !== 'string' || typeof OtherPhone_Phone !== 'string') {
+    return res.status(400).json({ message: 'Invalid data format.', status: false });
+  }
+
+  if (!validator.isMobilePhone(OtherPhone_Phone, 'any', { strictMode: false })) {
+    return res.status(400).json({ message: "Invalid phone number format.", status: false });
+  }
+
+  if (OtherPhone_Phone.length > 20 || OtherPhone_Phone.length < 8) {
+    return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
+  }
+
+  if (!/^\d+$/.test(OtherPhone_Phone)) {
+    return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
+  }
+
+  try {
+    const checkSql = "SELECT * FROM otherphone WHERE OtherPhone_ID = ? AND Users_ID = ?";
+    db.query(checkSql, [OtherPhone_ID, Users_ID], (err, checkResult) => {
+      if (err) {
+        console.error('Database error (check ownership)', err);
+        return res.status(500).json({ message: 'Error checking ownership.', status: false });
+      }
+
+      if (checkResult.length === 0) {
+        return res.status(403).json({ message: 'You do not have permission to edit this phone number.', status: false });
+      }
+
+      const updateSql = "UPDATE otherphone SET OtherPhone_Name = ?, OtherPhone_Phone = ? WHERE OtherPhone_ID = ?";
+      db.query(updateSql, [OtherPhone_Name, OtherPhone_Phone, OtherPhone_ID], (err, result) => {
+        if (err) {
+          console.error('Database error (update)', err);
+          return res.status(500).json({ message: 'Error updating phone number.', status: false });
+        }
+
+        if (result.affectedRows > 0) {
+          return res.status(200).json({ message: 'Other phone number updated successfully.', status: true });
+        } else {
+          return res.status(404).json({ message: 'Other phone number not found.', status: false });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Catch error (edit)', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API get Other Phone Number by Token
+app.get('/api/profile/otherphone/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+
+  if (!Users_ID || typeof Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
+  }
+
+  try {
+    const sql = "SELECT OtherPhone_ID, Users_ID, OtherPhone_Name, OtherPhone_Phone FROM otherphone WHERE Users_ID = ?";
     db.query(sql, [Users_ID], (err, result) => {
       if (err) {
-        console.error('Database error (other phone)', err);
+        console.error('Database error while getting other phones for Users_ID:', Users_ID, err);
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
+
       if (result.length > 0) {
-        const results = result[0];
-        const profileData = results;
-        profileData['message'] = 'Other phone numbers retrieved successfully.';
-        profileData['status'] = true;
-        res.status(200).json(profileData);
+        res.status(200).json({ data: result, message: 'Other phone numbers retrieved successfully.', status: true });
       } else {
-        return res.status(404).json({ message: 'No other phone numbers found for this user.', status: false });
+        return res.status(404).json({ data: [], message: 'No other phone numbers found for this user.', status: false, });
       }
     });
   } catch (error) {
-    console.error('Catch error', error);
+    console.error('Unexpected error while retrieving other phones', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API get Other Phone Number by OtherPhone_ID
+app.get('/api/profile/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+  const { OtherPhone_ID } = req.params;
+
+  if (!Users_ID || typeof Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
+  }
+
+  if (!OtherPhone_ID || isNaN(Number(OtherPhone_ID))) {
+    return res.status(400).json({ message: "Invalid OtherPhone_ID parameter.", status: false });
+  }
+
+  try {
+    const sql = "SELECT OtherPhone_ID, Users_ID, OtherPhone_Name, OtherPhone_Phone FROM otherphone WHERE OtherPhone_ID = ? AND Users_ID = ?";
+    db.query(sql, [OtherPhone_ID, Users_ID], (err, result) => {
+      if (err) {
+        console.error('Database error (get by ID)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length > 0) {
+        const results = result[0];
+        const phoneData = results;
+        phoneData['message'] = 'Other phone number retrieved successfully.';
+        phoneData['status'] = true;
+        res.status(200).json(phoneData);
+      } else {
+        return res.status(404).json({ message: 'Other phone number not found or access denied.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error (get by ID)', error);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
 });

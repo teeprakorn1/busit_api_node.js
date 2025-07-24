@@ -783,6 +783,42 @@ paths:
                     type: boolean
                     example: false
 
+  /api/images/profile-images/{filename}:
+    get:
+      summary: Get user profile image
+      description: Serve a user profile image by filename.
+      tags:
+        - Images
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the image file (e.g., abc123.jpg)
+      responses:
+        '200':
+          description: Successful image response
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Image not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Image not found.
+
   /api/login/application:
     post:
       summary: Application login 
@@ -864,6 +900,112 @@ paths:
                     example: false
         '404':
           description: Invalid user type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User type details not found."
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "An error occurred on the server."
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/login/website:
+    post:
+      tags:
+        - Login
+      summary: Login for Web Admin (teacher or staff)
+      description: Authenticate admin users (teacher or staff) with email or username and password. Returns JWT token on success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+              properties:
+                Users_Email:
+                  type: string
+                  example: "staff.admin@rmutto.ac.th"
+                Users_Password:
+                  type: string
+                  example: "Cs12345678"
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+              properties:
+                Users_Email:
+                  type: string
+                  example: "staff.admin@rmutto.ac.th"
+                Users_Password:
+                  type: string
+                  example: "Cs12345678"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token for authenticated requests
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  message:
+                    type: string
+                    example: "The login was successful."
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid input or unsupported user type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Please fill in the correct parameters as required."
+                  status:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - incorrect email or password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email or password is incorrect."
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: User type details not found
           content:
             application/json:
               schema:
@@ -1492,80 +1634,38 @@ paths:
                     type: string
                     example: Error occurred during image upload.
 
-  /api/images/profile-images/{filename}:
-    get:
-      summary: Get user profile image
-      description: Serve a user profile image by filename.
-      tags:
-        - Profile
-      parameters:
-        - name: filename
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Name of the image file (e.g., abc123.jpg)
-      responses:
-        '200':
-          description: Successful image response
-          content:
-            image/jpeg:
-              schema:
-                type: string
-                format: binary
-            image/png:
-              schema:
-                type: string
-                format: binary
-        '404':
-          description: Image not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Image not found.
-
   /api/profile/otherphone/add:
     post:
       tags:
         - Profile
-      summary: Add other phone number for a user
-      description: Add an additional phone number for a specified user.
+      summary: Add an additional phone number
+      description: Allows a user to add an additional phone number. Each user can have a maximum of 2 additional phone numbers.
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - Users_ID
-                - OtherPhone_Phone
               properties:
-                Users_ID:
-                  type: integer
-                  example: 1
                 OtherPhone_Phone:
                   type: string
-                  example: "0123456789"
+                  example: "0891234567"
+              required:
+                - OtherPhone_Phone
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required:
-                - Users_ID
-                - OtherPhone_Phone
               properties:
-                Users_ID:
-                  type: integer
-                  example: 1
                 OtherPhone_Phone:
                   type: string
-                  example: "0123456789"
+                  example: "0891234567"
+              required:
+                - OtherPhone_Phone
       responses:
         '200':
-          description: Other phone number added successfully.
+          description: Phone number added successfully
           content:
             application/json:
               schema:
@@ -1578,7 +1678,7 @@ paths:
                     type: boolean
                     example: true
         '400':
-          description: Bad Request - Incorrect parameters
+          description: Invalid input or maximum limit reached
           content:
             application/json:
               schema:
@@ -1586,12 +1686,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Please fill in the correct parameters as required.
+                    example: You can only have up to 2 other phone numbers.
                   status:
                     type: boolean
                     example: false
         '500':
-          description: Internal Server Error
+          description: Server-side error
           content:
             application/json:
               schema:
@@ -1603,8 +1703,26 @@ paths:
                   status:
                     type: boolean
                     example: false
-        '501':
-          description: Not Implemented - Other phone number not added
+
+  /api/profile/otherphone/delete/{OtherPhone_ID}:
+    delete:
+      tags:
+        - Profile
+      summary: Delete an additional phone number
+      description: Delete an additional phone number associated with the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: OtherPhone_ID
+          in: path
+          required: true
+          description: ID of the phone number to be deleted
+          schema:
+            type: integer
+            example: 3
+      responses:
+        '200':
+          description: Phone number deleted successfully
           content:
             application/json:
               schema:
@@ -1612,94 +1730,324 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Other phone number not added.
+                    example: Other phone number deleted successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid phone ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid OtherPhone_ID.
+                  status:
+                    type: boolean
+                    example: false
+        '403':
+          description: Unauthorized deletion attempt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: You do not have permission to delete this phone number.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server-side error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error deleting phone number.
                   status:
                     type: boolean
                     example: false
 
-  /api/profile/otherphone/get/{Users_ID}:
-    get:
-      summary: "Get other phone numbers for a user"
+  /api/profile/otherphone/edit/{OtherPhone_ID}:
+    put:
       tags:
         - Profile
-      description: "Retrieve all other phone numbers associated with a specific user by their Users_ID."
+      summary: Edit an additional phone number
+      description: Update the name and number of a user's additional phone number.
+      security:
+        - bearerAuth: []
       parameters:
-        - name: "Users_ID"
-          in: "path"
+        - name: OtherPhone_ID
+          in: path
           required: true
-          type: "string"
-          example: "1"
-          description: "The ID of the user whose other phone numbers are being retrieved."
+          description: ID of the additional phone number to be edited
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - OtherPhone_Name
+                - OtherPhone_Phone
+              properties:
+                OtherPhone_Name:
+                  type: string
+                  example: Work Phone
+                OtherPhone_Phone:
+                  type: string
+                  example: "0912345678"
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - OtherPhone_Name
+                - OtherPhone_Phone
+              properties:
+                OtherPhone_Name:
+                  type: string
+                  example: Work Phone
+                OtherPhone_Phone:
+                  type: string
+                  example: "0912345678"
       responses:
         '200':
-          description: "Successfully retrieved other phone numbers."
+          description: Phone number updated successfully
           content:
             application/json:
               schema:
-                type: "object"
+                type: object
                 properties:
                   message:
-                    type: "array"
-                    items:
-                      type: "object"
-                      properties:
-                        OtherPhone_ID:
-                          type: "integer"
-                          example: 1
-                          description: "The unique ID of the other phone number."
-                        Users_ID:
-                          type: "string"
-                          example: 123
-                          description: "The ID of the user."
-                        OtherPhone_Phone:
-                          type: "string"
-                          example: 0812345678
-                          description: "The other phone number."
+                    type: string
+                    example: Other phone number updated successfully.
                   status:
-                    type: "boolean"
-                    description: "Indicates if the request was successful."
+                    type: boolean
                     example: true
         '400':
-          description: "Bad request. Missing or invalid parameters."
+          description: Bad request - missing or invalid data
           content:
             application/json:
               schema:
-                type: "object"
+                type: object
                 properties:
                   message:
-                    type: "string"
-                    description: "Explanation of what went wrong."
-                    example: "Please fill in the correct parameters as required."
+                    type: string
+                    example: Invalid data format.
                   status:
-                    type: "boolean"
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not own the phone record
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: You do not have permission to edit this phone number.
+                  status:
+                    type: boolean
                     example: false
         '404':
-          description: "No other phone numbers found for this user."
+          description: Phone number not found
           content:
             application/json:
               schema:
-                type: "object"
+                type: object
                 properties:
                   message:
-                    type: "string"
-                    description: "Explanation of the result."
-                    example: "No other phone numbers found for this user."
+                    type: string
+                    example: Other phone number not found.
                   status:
-                    type: "boolean"
+                    type: boolean
                     example: false
         '500':
-          description: "Internal server error. An unexpected error occurred."
+          description: Server error
           content:
             application/json:
               schema:
-                type: "object"
+                type: object
                 properties:
                   message:
-                    type: "string"
-                    description: "Explanation of what went wrong."
-                    example: "An unexpected error occurred."
+                    type: string
+                    example: Error updating phone number.
                   status:
-                    type: "boolean"
+                    type: boolean
+                    example: false
+
+  /api/profile/otherphone/get:
+    get:
+      tags:
+        - Profile
+      summary: Get user's additional phone numbers
+      description: Retrieve all other phone numbers associated with the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of additional phone numbers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        OtherPhone_ID:
+                          type: integer
+                          example: 1
+                        Users_ID:
+                          type: integer
+                          example: 7
+                        OtherPhone_Name:
+                          type: string
+                          example: Emergency Contact
+                        OtherPhone_Phone:
+                          type: string
+                          example: "0823456789"
+                  message:
+                    type: string
+                    example: Other phone numbers retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Missing or invalid user ID from token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Missing or invalid Users_ID from token.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: No phone numbers found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: {}
+                  message:
+                    type: string
+                    example: No other phone numbers found for this user.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An unexpected error occurred.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/profile/otherphone/getbyphoneid/{OtherPhone_ID}:
+    get:
+      tags:
+        - Profile
+      summary: Get other phone number by ID
+      description: Retrieve a specific other phone number associated with the authenticated user by its ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: OtherPhone_ID
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 2
+          description: The ID of the other phone number to retrieve.
+      responses:
+        '200':
+          description: Other phone number retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  OtherPhone_ID:
+                    type: integer
+                    example: 2
+                  Users_ID:
+                    type: integer
+                    example: 7
+                  OtherPhone_Name:
+                    type: string
+                    example: Emergency Contact
+                  OtherPhone_Phone:
+                    type: string
+                    example: "0812345678"
+                  message:
+                    type: string
+                    example: Other phone number retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid OtherPhone_ID parameter.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: Phone number not found or does not belong to the user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Other phone number not found or access denied.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An unexpected error occurred.
+                  status:
+                    type: boolean
                     example: false
 
   /api/profile/data/get:

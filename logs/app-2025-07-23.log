@@ -39,3 +39,6 @@
 [2025-07-23 22:04:03] INFO: → POST /api/verifyToken from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
 [2025-07-23 22:04:38] INFO: → POST /api/profile/upload/image from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
 [2025-07-23 22:04:46] INFO: → POST /api/profile/upload/image from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-23 22:10:43] INFO: → POST /api/profile/upload/image from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-23 22:11:38] INFO: → POST /api/profile/data/get from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+[2025-07-23 22:12:05] INFO: → GET /api/images/profile-images/8fd8268a-b0a4-4012-ba99-65ad310f1c3f.jpg from IP ::1 (Unknown) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
