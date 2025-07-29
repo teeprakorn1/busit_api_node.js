@@ -223,6 +223,7 @@ app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (re
       Users_Username: userData.Users_Username,
       UsersType_ID: userData.UsersType_ID,
       Users_Type: userData.Users_Type,
+      Login_Type: userData.Login_Type,
       message: 'Token is valid.',
       status: true,
     });
@@ -436,7 +437,7 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
         const UsersType_ID = userType[users_type_name_id];
 
         const token = GenerateTokens(user.Users_ID, 
-          user.Users_Email, user.Users_Username, UsersType_ID, user.Users_Type);
+          user.Users_Email, user.Users_Username, UsersType_ID, user.Users_Type, 'application');
 
         const responseData = {
           token: token,
@@ -509,7 +510,7 @@ app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) 
         const UsersType_ID = userType[users_type_name_id];
 
         const token = GenerateTokens(user.Users_ID, 
-          user.Users_Email, user.Users_Username, UsersType_ID, user.Users_Type);
+          user.Users_Email, user.Users_Username, UsersType_ID, user.Users_Type, 'website');
 
         const responseData = {
           token: token,
@@ -621,9 +622,14 @@ app.put('/api/admin/student/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12),
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
 
   if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
   if (Users_Type !== 'staff') {
@@ -721,9 +727,14 @@ app.put('/api/admin/teacher/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12),
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
 
   if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
   if (Users_Type !== 'staff') {
@@ -821,9 +832,14 @@ app.get('/api/admin/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12),
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
 
   if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
   if (Users_Type !== 'staff') {
@@ -861,9 +877,14 @@ app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 6
   const Requester_Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
   const OtherPhone_ID = req.params.OtherPhone_ID;
+  const Login_Type = userData?.Login_Type;
 
   if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
   if (Users_Type !== 'staff') {
@@ -899,16 +920,20 @@ app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 6
   }
 });
 
-//(TODO: แก้ให้เป็น Department_ID ที่มีใน Staff)**
 // API Get Users Data by Users_ID of Admin Website**
 app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Requester_Users_Type = userData?.Users_Type;
   const Users_ID = req.params.Users_ID;
+  const Login_Type = userData?.Login_Type;
 
   if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
   if (Requester_Users_Type !== 'staff') {
@@ -952,8 +977,14 @@ app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTok
           return res.status(404).json({ message: 'User type ID not found.', status: false });
         }
 
-        const sql = `SELECT ty.*, dp.Department_Name, f.Faculty_Name FROM (${tableName} ty
-          INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID WHERE ${columnName} = ? LIMIT 1`;
+        let sql;
+        if (usersType === 'staff') {
+          sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ? LIMIT 1`;
+        } else {
+          sql = `SELECT ty.*, dp.Department_Name, f.Faculty_Name FROM (${tableName} ty
+            INNER JOIN department dp ON ty.Department_ID = dp.Department_ID)
+            INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID WHERE ${columnName} = ? LIMIT 1`;
+        }
 
         db.query(sql, [usersTypeID], (err, result) => {
           if (err) {
@@ -985,9 +1016,14 @@ app.put('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyTo
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
 
   if (!Users_ID || typeof Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
+  }
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
   }
 
   if (Users_Type?.toLowerCase() !== 'student') {
@@ -1074,9 +1110,14 @@ app.put('/api/profile/teacher/update', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
 
   if (!Users_ID || typeof Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
+  }
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
   }
 
   if (Users_Type?.toLowerCase() !== 'teacher') {
@@ -1163,9 +1204,14 @@ app.put('/api/profile/teacher/update', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
 app.post('/api/profile/upload/image', upload.single('Users_ImageFile') ,RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
+  const Login_Type = userData?.Login_Type;
 
   if (!Users_ID || typeof Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
+  }
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
   }
 
   if (!req.file) {
@@ -1243,9 +1289,14 @@ app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), Verify
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   let { OtherPhone_Phone } = req.body || {};
+  const Login_Type = userData?.Login_Type;
 
   if (!Users_ID || !OtherPhone_Phone) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  }
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
   }
 
   if (typeof Users_ID !== 'number' || typeof OtherPhone_Phone !== 'string') {
@@ -1302,9 +1353,18 @@ app.delete('/api/profile/otherphone/delete/:OtherPhone_ID', RateLimiter(0.5 * 60
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   const { OtherPhone_ID } = req.params;
+  const Login_Type = userData?.Login_Type;
+
+  if (!Users_ID || !OtherPhone_ID) {
+    return res.status(400).json({ message: 'Please provide valid Users_ID and OtherPhone_ID.', status: false });
+  }
 
   if (!OtherPhone_ID || isNaN(Number(OtherPhone_ID))) {
     return res.status(400).json({ message: 'Invalid OtherPhone_ID.', status: false });
+  }
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
   }
 
   try {
@@ -1341,6 +1401,20 @@ app.put('/api/profile/otherphone/edit/:OtherPhone_ID', RateLimiter(0.5 * 60 * 10
   const Users_ID = userData?.Users_ID;
   const { OtherPhone_ID } = req.params;
   const { OtherPhone_Name, OtherPhone_Phone } = req.body || {};
+  const Login_Type = userData?.Login_Type;
+
+  if (!Users_ID || !OtherPhone_ID) {
+    return res.status(400).json({ message: 'Please provide valid Users_ID and OtherPhone_ID.', status: false });
+  }
+
+  if (!OtherPhone_ID || isNaN(Number(OtherPhone_ID))) {
+    return res.status(400).json({ message: 'Invalid OtherPhone_ID.', status: false });
+  }
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
+  }
+
 
   if (!OtherPhone_ID || !OtherPhone_Name || !OtherPhone_Phone) {
     return res.status(400).json({ message: 'Missing required fields.', status: false });
@@ -1398,6 +1472,11 @@ app.put('/api/profile/otherphone/edit/:OtherPhone_ID', RateLimiter(0.5 * 60 * 10
 app.get('/api/profile/otherphone/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
+  }
 
   if (!Users_ID || typeof Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
@@ -1428,6 +1507,11 @@ app.get('/api/profile/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 *
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   const { OtherPhone_ID } = req.params;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
+  }
 
   if (!Users_ID || typeof Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
@@ -1461,14 +1545,18 @@ app.get('/api/profile/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 *
   }
 });
 
-//(TODO: แก้ให้เป็น Department_ID ที่มีใน Staff)**
 // API Get Data Profile by VerifyTokens**
 app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const usersTypeID = userData.UsersType_ID;
   const usersType = userData.Users_Type;
+  const Login_Type = userData?.Login_Type;
 
-   if (!usersType || !usersTypeID) {
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
+  }
+
+  if (!usersType || !usersTypeID) {
     return res.status(400).json({ message: "Missing user type or ID.", status: false });
   }
 
@@ -1477,16 +1565,26 @@ app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens,
     const tableName = db.escapeId(usersType);
     const columnName = db.escapeId(`${usersType_upper}_ID`);
 
-    const sql = `SELECT ty.*,dp.Department_Name,f.Faculty_Name FROM ((${tableName} ty 
-    INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) WHERE ${columnName} = ? LIMIT 1`;
+    let sql;
+
+    if (usersType === 'staff') {
+      sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ? LIMIT 1`;
+    } else {
+      sql = `SELECT ty.*, dp.Department_Name, f.Faculty_Name 
+            FROM (${tableName} ty 
+              INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) 
+              INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID 
+            WHERE ${columnName} = ? LIMIT 1`;
+    }
+
     db.query(sql, [usersTypeID], (err, result) => {
       if (err) {
         console.error('Database error (profile data)', err);
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
+
       if (result.length > 0) {
-        const results = result[0];
-        const profileData = results;
+        const profileData = result[0];
         profileData['Users_Type_Table'] = usersType;
         profileData['message'] = 'Profile data retrieved successfully.';
         profileData['status'] = true;

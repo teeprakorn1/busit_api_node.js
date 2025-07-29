@@ -1387,45 +1387,41 @@ paths:
           description: Successfully updated student profile
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  Users_ID:
-                    type: integer
-                  updated_by:
-                    type: integer
-                  updated_fields:
-                    type: array
-                    items:
-                      type: string
-                  message:
-                    type: string
-                  status:
-                    type: boolean
+              example:
+                Users_ID: 123
+                updated_by: 456
+                updated_fields: ["Student_Phone", "Student_Birthdate"]
+                message: "Student profile updated successfully."
+                status: true
+
         '400':
-          description: Bad Request (invalid input or missing data)
+          description: Bad Request - Invalid input or missing data
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid phone number format."
+                status: false
         '403':
           description: Permission Denied
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Permission denied. Only staff can perform this action."
+                status: false
         '404':
           description: Student profile not found or no changes made
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Student profile not found."
+                status: false
         '500':
           description: Server Error
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Database error occurred."
+                status: false
 
   /api/admin/teacher/update/{Users_ID}:
     put:
@@ -1449,18 +1445,18 @@ paths:
             schema:
               type: object
               properties:
-                Student_Phone:
+                Teacher_Phone:
                   type: string
                   example: "0812345678"
-                Student_Birthdate:
+                Teacher_Birthdate:
                   type: string
                   format: date
                   description: Format DD-MM-YYYY
-                  example: "12-08-2004"
-                Student_Religion:
+                  example: "12-08-1985"
+                Teacher_Religion:
                   type: string
                   example: "พุทธ"
-                Student_MedicalProblem:
+                Teacher_MedicalProblem:
                   type: string
                   example: "ภูมิแพ้"
               additionalProperties: false
@@ -1468,18 +1464,18 @@ paths:
             schema:
               type: object
               properties:
-                Student_Phone:
+                Teacher_Phone:
                   type: string
                   example: "0812345678"
-                Student_Birthdate:
+                Teacher_Birthdate:
                   type: string
                   format: date
                   description: Format DD-MM-YYYY
-                  example: "12-08-2004"
-                Student_Religion:
+                  example: "12-08-1985"
+                Teacher_Religion:
                   type: string
                   example: "พุทธ"
-                Student_MedicalProblem:
+                Teacher_MedicalProblem:
                   type: string
                   example: "ภูมิแพ้"
               additionalProperties: false
@@ -1488,45 +1484,44 @@ paths:
           description: Successfully updated teacher profile
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  Users_ID:
-                    type: integer
-                  updated_by:
-                    type: integer
-                  updated_fields:
-                    type: array
-                    items:
-                      type: string
-                  message:
-                    type: string
-                  status:
-                    type: boolean
+              example:
+                Users_ID: 123
+                updated_by: 456
+                updated_fields: ["Teacher_Phone", "Teacher_Birthdate"]
+                message: "Teacher profile updated successfully."
+                status: true
+
         '400':
           description: Bad Request (invalid input or missing data)
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid phone number format."
+                status: false
+
         '403':
           description: Permission Denied
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Permission denied. Only staff can perform this action."
+                status: false
+
         '404':
           description: Teacher profile not found or no changes made
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Teacher profile not found."
+                status: false
+
         '500':
           description: Server Error
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Database error occurred."
+                status: false
 
   /api/admin/otherphone/get/{Users_ID}:
     get:
@@ -1548,68 +1543,122 @@ paths:
           description: Successfully retrieved other phone numbers
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        OtherPhone_ID:
-                          type: integer
-                        Users_ID:
-                          type: integer
-                        OtherPhone_Name:
-                          type: string
-                        OtherPhone_Phone:
-                          type: string
-                  message:
-                    type: string
-                    example: Other phone numbers retrieved successfully.
-                  status:
-                    type: boolean
-                    example: true
+              example:
+                data:
+                  - OtherPhone_ID: 1
+                    Users_ID: 123
+                    OtherPhone_Name: "พ่อ"
+                    OtherPhone_Phone: "0812345678"
+                  - OtherPhone_ID: 2
+                    Users_ID: 123
+                    OtherPhone_Name: "แม่"
+                    OtherPhone_Phone: "0823456789"
+                message: "Other phone numbers retrieved successfully."
+                status: true
+
         '400':
           description: Bad Request (invalid token or Users_ID parameter)
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Missing or invalid token information."
+                status: false
+
         '403':
           description: Permission Denied (not staff)
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Permission denied. Only staff can perform this action."
+                status: false
+
         '404':
           description: No other phone numbers found for this user
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items: {}
-                    example: []
-                  message:
-                    type: string
-                    example: No other phone numbers found for this user.
-                  status:
-                    type: boolean
-                    example: false
+              example:
+                data: []
+                message: "No other phone numbers found for this user."
+                status: false
+
         '500':
           description: Server Error
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "An error occurred on the server."
+                status: false
+
+  /api/admin/otherphone/get/{Users_ID}:
+    get:
+      summary: Get other phone numbers by Users_ID (Admin only)
+      description: Retrieve other phone numbers associated with a specific Users_ID. Only accessible by staff users.
+      tags:
+        - Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Users_ID
+          in: path
+          required: true
+          description: Users_ID of the user whose other phone numbers are requested
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved other phone numbers
+          content:
+            application/json:
+              example:
+                data:
+                  - OtherPhone_ID: 1
+                    Users_ID: 123
+                    OtherPhone_Name: "แม่"
+                    OtherPhone_Phone: "0812345678"
+                  - OtherPhone_ID: 2
+                    Users_ID: 123
+                    OtherPhone_Name: "พ่อ"
+                    OtherPhone_Phone: "0898765432"
+                message: Other phone numbers retrieved successfully.
+                status: true
+
+        '400':
+          description: Bad Request (invalid token or Users_ID parameter)
+          content:
+            application/json:
+              example:
+                message: "Missing or invalid Users_ID parameter."
+                status: false
+
+        '403':
+          description: Permission Denied (not staff)
+          content:
+            application/json:
+              example:
+                message: "Permission denied. Only staff can perform this action."
+                status: false
+
+        '404':
+          description: No other phone numbers found for this user
+          content:
+            application/json:
+              example:
+                data: []
+                message: "No other phone numbers found for this user."
+                status: false
+
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              example:
+                message: "An error occurred on the server."
+                status: false
 
   /api/admin/otherphone/getbyphoneid/{OtherPhone_ID}:
     get:
       summary: Get other phone number by OtherPhone_ID (Admin only)
-      description: Retrieve a single other phone number record by its OtherPhone_ID. Only accessible by staff users.
+      description: Retrieve a single other phone number record using OtherPhone_ID. Only accessible by staff users.
       tags:
         - Admin
       security:
@@ -1623,110 +1672,48 @@ paths:
             type: integer
       responses:
         '200':
-          description: Successfully retrieved the other phone number
+          description: Successfully retrieved other phone number
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  OtherPhone_ID:
-                    type: integer
-                  Users_ID:
-                    type: integer
-                  OtherPhone_Name:
-                    type: string
-                  OtherPhone_Phone:
-                    type: string
-                  message:
-                    type: string
-                    example: Other phone number retrieved successfully.
-                  status:
-                    type: boolean
-                    example: true
+              example:
+                OtherPhone_ID: 2
+                Users_ID: 123
+                OtherPhone_Name: "แม่"
+                OtherPhone_Phone: "0812345678"
+                message: "Other phone number retrieved successfully."
+                status: true
+
         '400':
           description: Bad Request (missing or invalid token or OtherPhone_ID)
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid OtherPhone_ID parameter."
+                status: false
+
         '403':
-          description: Permission denied (not staff)
+          description: Permission denied (not staff or wrong login type)
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Permission denied. Only staff can perform this action."
+                status: false
+
         '404':
           description: Other phone number not found or access denied
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Other phone number not found or access denied."
+                status: false
 
-  /api/admin/data/{Users_ID}:
-    get:
-      summary: Get user profile data by Users_ID (Admin only)
-      description: Retrieve detailed profile data for a user by their Users_ID. Only accessible by staff users.
-      tags:
-        - Admin
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: Users_ID
-          in: path
-          required: true
-          description: The ID of the user to retrieve profile data for
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Successfully retrieved profile data
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  Department_Name:
-                    type: string
-                  Faculty_Name:
-                    type: string
-                  Users_Type_Table:
-                    type: string
-                  message:
-                    type: string
-                    example: Profile data retrieved successfully.
-                  status:
-                    type: boolean
-                    example: true
-        '400':
-          description: Bad Request (missing or invalid token or Users_ID)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Permission denied (not staff)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: User or profile data not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Server error
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "An error occurred on the server."
+                status: false
 
   /api/profile/student/update:
     put:
