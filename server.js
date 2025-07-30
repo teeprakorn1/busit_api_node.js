@@ -211,9 +211,8 @@ app.post('/api/test/sendemail', async (req, res) => {
   }
 });
 
-//แก้ไข Token API ของ website กับ application แยกกัน (TODO: แยกให้เสร็จ)**
 ////////////////////////////////// Tokens API ///////////////////////////////////////
-// Verify Token**
+// Verify Token
 app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (req, res) => {
   const userData = req.user;
   if (userData) {
@@ -377,7 +376,7 @@ app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
 });
 
 ////////////////////////////////// Login API ///////////////////////////////////////
-//API Login Application**
+//API Login Application
 app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, res) => {
   let { Users_Email, Users_Password } = req.body|| {};
 
@@ -416,9 +415,6 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
       } else if (user.Users_Type === 'teacher') {
         sql_users_type = "SELECT Teacher_ID FROM teacher WHERE Users_ID = ?";
         users_type_name_id = 'Teacher_ID';
-      } else if (user.Users_Type === 'staff') {
-        sql_users_type = "SELECT Staff_ID FROM staff WHERE Users_ID = ?";
-        users_type_name_id = 'Staff_ID';
       } else {
         return res.status(400).json({ message: 'Invalid user type.', status: false });
       }
@@ -453,7 +449,7 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
   }
 });
 
-//API Login Web Admin**
+//API Login Web Admin
 app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) => {
   let { Users_Email, Users_Password } = req.body|| {};
 
@@ -548,7 +544,7 @@ app.post('/api/timestamp/insert' , RateLimiter(0.5 * 60 * 1000, 12), async (req,
       }
       if (result.affectedRows > 0) {
         return res.status(200).json({ message: 'Timestamp inserted successfully.', status: true });
-      }else {
+      } else {
         return res.status(501).json({ message: 'Timestamp not inserted.', status: false });
       }
     });
@@ -920,7 +916,7 @@ app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 6
   }
 });
 
-// API Get Users Data by Users_ID of Admin Website**
+// API Get Users Data by Users_ID of Admin Website
 app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
@@ -1545,7 +1541,7 @@ app.get('/api/profile/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 *
   }
 });
 
-// API Get Data Profile by VerifyTokens**
+// API Get Data Profile by VerifyTokens
 app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const usersTypeID = userData.UsersType_ID;
