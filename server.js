@@ -52,17 +52,19 @@ if (!fs.existsSync(uploadDir_Profile)) {
 }
 
 // Multer configuration for file uploads
+const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/pjpeg', 'application/octet-stream'];
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // จำกัดไฟล์ 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
     if (!allowedTypes.includes(file.mimetype)) {
       return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง'), false);
     }
     cb(null, true);
   }
 });
+
 
 //Global MySQL Error Handler
 db.getConnection((err) => {
@@ -522,6 +524,7 @@ app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) 
   }
 });
 
+//(:TODO แก้ API ไปเพิ่ม Timestamp_Name ทั้งใน API และฐานข้อมูล)
 ////////////////////////////////// Timestamp API ///////////////////////////////////////
 //API Timestamp Insert
 app.post('/api/timestamp/insert' , RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
@@ -974,12 +977,18 @@ app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTok
         }
 
         let sql;
-        if (usersType === 'staff') {
+        if (usersType === 'student') {
+          sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile ,t.Teacher_FirstName, t.Teacher_LastName, dp.Department_Name, f.Faculty_Name FROM
+            ((((${tableName} ty INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID)
+            INNER JOIN teacher t ON ty.Teacher_ID = t.Teacher_ID) INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1;`;
+        }else if (usersType === 'teacher') {
+          sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile, dp.Department_Name, f.Faculty_Name FROM (((${tableName} ty 
+            INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) 
+            INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1`;
+        } else if (usersType === 'staff') {
           sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ? LIMIT 1`;
         } else {
-          sql = `SELECT ty.*, dp.Department_Name, f.Faculty_Name FROM (${tableName} ty
-            INNER JOIN department dp ON ty.Department_ID = dp.Department_ID)
-            INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID WHERE ${columnName} = ? LIMIT 1`;
+          return res.status(400).json({ message: "Invalid user type.", status: false });
         }
 
         db.query(sql, [usersTypeID], (err, result) => {
@@ -1214,6 +1223,12 @@ app.post('/api/profile/upload/image', upload.single('Users_ImageFile') ,RateLimi
     return res.status(400).json({ message: 'Please provide an image file.', status: false });
   }
 
+  const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+  if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
+    return res.status(400).json({ message: 'Invalid image file.' });
+  }
+
+
   try {
     const userId = parseInt(Users_ID);
     if (!req.file || !userId || Number.isNaN(userId) || userId <= 0) {
@@ -1225,9 +1240,10 @@ app.post('/api/profile/upload/image', upload.single('Users_ImageFile') ,RateLimi
     }
 
     const processedBuffer = await sharp(req.file.buffer)
-      .resize({ width: 1024 })
+      .resize({ width: 400, height: 400, fit: 'inside' })
       .jpeg({ quality: 85 })
       .toBuffer();
+
 
     const filename = uuidv4() + '.jpg';
     const savePath = path.join(uploadDir_Profile, filename);
@@ -1541,6 +1557,51 @@ app.get('/api/profile/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 *
   }
 });
 
+//API Verify Password By VerifyTokens
+app.post('/api/profile/verifypassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  let { Users_Password } = req.body || {};
+  const userData = req.user;
+  const Users_ID = userData.Users_ID;
+  const Login_Type = userData?.Login_Type;
+
+  if (!Users_ID || typeof Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
+  }
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
+  }
+
+  if (!Users_Password || typeof Users_Password !== 'string') {
+    return res.status(400).json({ message: 'Please fill in the correct parameters as required.', status: false });
+  }
+
+  Users_Password = xss(Users_Password)
+
+  try {
+    const sql = "SELECT Users_Password FROM users WHERE Users_ID = ? LIMIT 1";
+    db.query(sql, [Users_ID], (err, result) => {
+      if (err) {
+        console.error('Database error (verify password)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length > 0) {
+        const hashedPassword = result[0].Users_Password;
+        const isMatch = bcrypt.compareSync(Users_Password, hashedPassword);
+        if (isMatch) {
+          return res.status(200).json({ message: 'Password verified successfully.', status: true });
+        }
+        return res.status(401).json({ message: 'Incorrect password.', status: false });
+      }
+      return res.status(404).json({ message: 'User not found.', status: false });
+    }
+    );
+  } catch (error) {
+    console.error('Catch error (verify password)', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
 // API Get Data Profile by VerifyTokens
 app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
@@ -1563,14 +1624,16 @@ app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens,
 
     let sql;
 
-    if (usersType === 'staff') {
-      sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ? LIMIT 1`;
+    if (usersType === 'student') {
+      sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile ,t.Teacher_FirstName, t.Teacher_LastName, dp.Department_Name, f.Faculty_Name FROM
+        ((((${tableName} ty INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID)
+        INNER JOIN teacher t ON ty.Teacher_ID = t.Teacher_ID) INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1;`;
+    }else if (usersType === 'teacher') {
+      sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile, dp.Department_Name, f.Faculty_Name FROM (((${tableName} ty 
+        INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) 
+        INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1`;
     } else {
-      sql = `SELECT ty.*, dp.Department_Name, f.Faculty_Name 
-            FROM (${tableName} ty 
-              INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) 
-              INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID 
-            WHERE ${columnName} = ? LIMIT 1`;
+      return res.status(400).json({ message: "Invalid user type.", status: false });
     }
 
     db.query(sql, [usersTypeID], (err, result) => {
