@@ -1033,10 +1033,12 @@ paths:
 
   /api/timestamp/insert:
     post:
+      summary: Insert new timestamp
+      description: Create a new timestamp entry with a name and type for the current authenticated user.
       tags:
         - Timestamp
-      summary: Timestamp Insert
-      description: Insert a timestamp entry into the database with Users_ID and TimestampType_ID.
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -1044,35 +1046,31 @@ paths:
             schema:
               type: object
               required:
-                - Users_ID
+                - Timestamp_Name
                 - TimestampType_ID
               properties:
-                Users_ID:
-                  type: integer
-                  example: 1
-                  description: The ID of the user.
+                Timestamp_Name:
+                  type: string
+                  example: "Check-in Morning"
                 TimestampType_ID:
                   type: integer
                   example: 1
-                  description: The ID of the timestamp type.
           application/x-www-form-urlencoded:
             schema:
               type: object
               required:
-                - Users_ID
+                - Timestamp_Name
                 - TimestampType_ID
               properties:
-                Users_ID:
-                  type: integer
-                  example: 1
-                  description: The ID of the user.
+                Timestamp_Name:
+                  type: string
+                  example: "Check-in Morning"
                 TimestampType_ID:
                   type: integer
                   example: 1
-                  description: The ID of the timestamp type.
       responses:
         '200':
-          description: Timestamp inserted successfully.
+          description: Timestamp inserted successfully
           content:
             application/json:
               schema:
@@ -1085,7 +1083,7 @@ paths:
                     type: boolean
                     example: true
         '400':
-          description: Missing or invalid parameters.
+          description: Invalid request parameters
           content:
             application/json:
               schema:
@@ -1098,7 +1096,7 @@ paths:
                     type: boolean
                     example: false
         '500':
-          description: Server error during timestamp insertion.
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -1107,19 +1105,6 @@ paths:
                   message:
                     type: string
                     example: An error occurred on the server.
-                  status:
-                    type: boolean
-                    example: false
-        '501':
-          description: Timestamp not inserted.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Timestamp not inserted.
                   status:
                     type: boolean
                     example: false

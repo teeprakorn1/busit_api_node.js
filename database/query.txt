@@ -83,6 +83,7 @@ CREATE TABLE DataEdit(
 	DataEdit_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     DataEdit_ThisId INT(13) NOT NULL,
     DataEdit_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    DataEdit_Name VARCHAR(511),
     Staff_ID INT(13) NOT NULL,
     DataEditType_ID TINYINT(11) NOT NULL,
     FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID),
@@ -105,6 +106,7 @@ CREATE TABLE TimestampType(
 CREATE TABLE Timestamp(
 	Timestamp_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Timestamp_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Timestamp_Name VARCHAR(511),
     Users_ID INT(13) NOT NULL,
     TimestampType_ID TINYINT(7) NOT NULL,
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
@@ -241,4 +243,7 @@ VALUES ('333333333333-3', 'Staff', 'Admin', '3');
 
 INSERT INTO timestamptype (TimestampType_Name)
 VALUES ('timestamp_application_login'),('timestamp_website_login'),
-('timestamp_add_otherphone_users'),('timestamp_delete_otherphone_users');
+('timestamp_application_logout'),('timestamp_website_logout'),
+('timestamp_application_resetpassword'),('timestamp_application_update_profile_data'),
+('timestamp_application_update_profile_image'),('timestamp_add_otherphone_users'),
+('timestamp_update_otherphone_users'),('timestamp_delete_otherphone_users');

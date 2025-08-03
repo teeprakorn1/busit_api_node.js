@@ -527,20 +527,26 @@ app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) 
 //(:TODO แก้ API ไปเพิ่ม Timestamp_Name ทั้งใน API และฐานข้อมูล)
 ////////////////////////////////// Timestamp API ///////////////////////////////////////
 //API Timestamp Insert
-app.post('/api/timestamp/insert' , RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
-  const { Users_ID, TimestampType_ID } = req.body|| {};
+app.post('/api/timestamp/insert' , RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const usersID = userData.Users_ID;
 
-  if (!Users_ID || !TimestampType_ID) {
+  const { Timestamp_Name, TimestampType_ID } = req.body|| {};
+
+  if (!Timestamp_Name || !usersID || !TimestampType_ID) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
   }
+  if (typeof usersID !== 'number' || typeof TimestampType_ID !== 'number') {
+    return res.status(400).json({ message: "Users_ID and TimestampType_ID must be numbers.", status: false });
+  }
 
-  if (typeof Users_ID !== 'number' || typeof TimestampType_ID !== 'number') {
-    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  if (typeof Timestamp_Name !== 'string') {
+    return res.status(400).json({ message: "Timestamp_Name must be a string.", status: false });
   }
 
   try {
-    const sql = "INSERT INTO timestamp (Users_ID, TimestampType_ID) VALUES (?, ?)";
-    db.query(sql, [Users_ID, TimestampType_ID], (err, result) => {
+    const sql = "INSERT INTO timestamp (Timestamp_Name, Users_ID ,TimestampType_ID) VALUES (?, ?, ?)";
+    db.query(sql, [Timestamp_Name, usersID, TimestampType_ID], (err, result) => {
       if (err) {
         console.error('Database error (timestamp)', err);
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
@@ -566,7 +572,7 @@ app.get('/api/timestamp/get/users/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), 
   }
 
   try {
-    const sql = "SELECT ts.Timestamp_ID, ts.Users_ID, ts.Timestamp_RegisTime, ts.TimestampType_ID, tst.TimestampType_Name "+
+    const sql = "SELECT ts.Timestamp_ID, ts.Timestamp_Name, ts.Users_ID, ts.Timestamp_RegisTime, ts.TimestampType_ID, tst.TimestampType_Name "+
     "FROM (timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) WHERE Users_ID = ? ORDER BY ts.Timestamp_RegisTime DESC";
     db.query(sql, [Users_ID], (err, result) => {
       if (err) {
@@ -1598,6 +1604,76 @@ app.post('/api/profile/verifypassword', RateLimiter(0.5 * 60 * 1000, 12), Verify
     );
   } catch (error) {
     console.error('Catch error (verify password)', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API แก้**
+//API Reset Password By VerifyTokens
+app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData.Users_ID;
+  const Login_Type = userData?.Login_Type;
+
+  let { Current_Password, New_Password } = req.body || {};
+
+  if (!Users_ID || typeof Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
+  }
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
+  }
+
+  if (!Current_Password || typeof Current_Password !== 'string' || !New_Password || typeof New_Password !== 'string') {
+    return res.status(400).json({ message: 'Please fill in the correct parameters as required.', status: false });
+  }
+
+  Current_Password = xss(Current_Password);
+  New_Password = xss(New_Password);
+
+  if (New_Password.length < 8 || New_Password.length > 63) {
+    return res.status(400).json({ message: 'New password must be between 8 and 63 characters.', status: false });
+  }
+  if (Current_Password === New_Password) {
+    return res.status(400).json({ message: 'New password cannot be the same as the current password.', status: false });
+  }
+
+  try {
+    const sql = "SELECT Users_Password FROM users WHERE Users_ID = ? AND Users_IsActive = 1";
+    db.query(sql, [Users_ID], async (err, result) => {
+      if (err) {
+        console.error('Database error (reset password)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'User not found.', status: false });
+      }
+
+      const user = result[0];
+      const passwordMatch = await bcrypt.compare(Current_Password, user.Users_Password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: 'Current password is incorrect.', status: false });
+      }
+      
+      const hashedPassword = await bcrypt.hash(New_Password, saltRounds);
+      const updateSql = "UPDATE users SET Users_Password = ? WHERE Users_ID = ?";
+      db.query(updateSql, [hashedPassword, user.Users_ID], (err, updateResult) => {
+        if (err) {
+          console.error('Database error (update password)', err);
+          return res.status(500).json({ message: 'An error occurred while updating the password.', status: false });
+        }
+
+        if (updateResult.affectedRows > 0) {
+          return res.status(200).json({ message: 'Password reset successfully.', status: true });
+        } else {
+          return res.status(500).json({ message: 'Password reset failed.', status: false });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Catch error', error);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
 });
