@@ -19,26 +19,37 @@ function validateInput(req, res, next) {
   const errors = [];
   const body = req.body;
 
-  // --- Required Users fields ---
-  if (!body.Users_Email || !validator.isEmail(body.Users_Email)) {
-    errors.push('Users_Email is required and must be a valid email address');
+  // --- Users fields ---
+  if ('Users_Email' in body) {
+    if (!validator.isEmail(body.Users_Email)) {
+      errors.push('Users_Email must be a valid email address');
+    }
   }
 
-  if (!body.Users_Username || validator.isEmpty(body.Users_Username)) {
-    errors.push('Users_Username is required and cannot be empty');
-  } else if (!validator.isLength(body.Users_Username, { min: 3, max: 63 })) {
-    errors.push('Users_Username must be between 3 and 63 characters');
-  } else if (/\s/.test(body.Users_Username)) {
-    errors.push('Users_Username cannot contain spaces');
+  if ('Users_Username' in body) {
+    if (validator.isEmpty(body.Users_Username)) {
+      errors.push('Users_Username cannot be empty');
+    } else if (!validator.isLength(body.Users_Username, { min: 3, max: 63 })) {
+      errors.push('Users_Username must be between 3 and 63 characters');
+    } else if (/\s/.test(body.Users_Username)) {
+      errors.push('Users_Username cannot contain spaces');
+    }
   }
 
-  if (!body.Users_Password || !validatePasswordComplexity(body.Users_Password)) {
-    errors.push('Users_Password is required and must be at least 8 characters with uppercase, lowercase letters and numbers');
+  if ('Users_Password' in body) {
+    if (!validatePasswordComplexity(body.Users_Password)) {
+      errors.push('Users_Password must be at least 8 characters with uppercase, lowercase letters and numbers');
+    }
   }
 
-  if (!body.Users_Type || !['teacher', 'student', 'staff', 'admin'].includes(body.Users_Type)) {
-    errors.push('Users_Type is required and must be one of the allowed values');
+  const allowedUserTypes = ['teacher', 'student', 'staff', 'admin'];
+  
+  if ('Users_Type' in body && body.Users_Type !== '') {
+    if (!allowedUserTypes.includes(body.Users_Type)) {
+      errors.push(`Users_Type must be one of: ${allowedUserTypes.join(', ')}`);
+    }
   }
+
 
   // Optional Users fields
   if ('Users_IsActive' in body) {

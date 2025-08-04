@@ -23,6 +23,7 @@ const requestLogger = require('./Log_Services/requestLogger');
 const RateLimiter = require('./Rate_Limiter/LimitTime_Login');
 const GenerateTokens = require('./Jwt_Tokens/Tokens_Generator');
 const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
+const validateInput = require('./Security_Services/validateInput');
 const { sendOTP, verifyOTP, sendEmail } = require('./OTP_Services/otpService');
 const { verify } = require('jsonwebtoken');
 const { query } = require('winston');
@@ -107,10 +108,13 @@ app.use(sanitizeRequest);
 app.use(requestLogger);
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/images/profile-images', express.static(uploadDir_Profile));
+
+//อนาคตต้องมาแก้ contentSecurityPolicy ของ helmet**
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }));
+
 app.use(cors());
 
 ////////////////////////////////// SWAGGER CONFIG ///////////////////////////////////////
@@ -134,7 +138,7 @@ if (process.env.NODE_ENV === '1') { // (Production)
 
 ////////////////////////////////// TEST API ///////////////////////////////////////
 // Encrypt Test
-app.post('/api/test/encrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res) => {
+app.post('/api/test/encrypt', RateLimiter(0.5 * 60 * 1000, 15) ,async (req, res) => {
   if (process.env.NODE_ENV === '0') {
     return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
   }
