@@ -10,6 +10,7 @@ const bcrypt = require('bcrypt');
 const moment = require('moment');
 const validator = require('validator');
 const fileType = require('file-type');
+const helmet = require('helmet');
 const { v4: uuidv4 } = require('uuid');
 const sharp = require('sharp');
 
@@ -65,7 +66,6 @@ const upload = multer({
   }
 });
 
-
 //Global MySQL Error Handler
 db.getConnection((err) => {
   if (err) {
@@ -79,10 +79,38 @@ db.getConnection((err) => {
   }
 });
 
+function sanitizeRequest(req, res, next) {
+  for (let prop in req.body) {
+    if (typeof req.body[prop] === 'string') {
+      req.body[prop] = xss(req.body[prop]);
+    }
+  }
+
+  for (let prop in req.query) {
+    if (typeof req.query[prop] === 'string') {
+      req.query[prop] = xss(req.query[prop]);
+    }
+  }
+
+  for (let prop in req.params) {
+    if (typeof req.params[prop] === 'string') {
+      req.params[prop] = xss(req.params[prop]);
+    }
+  }
+
+  next();
+}
+
+
 app.use(express.json());
+app.use(sanitizeRequest);
 app.use(requestLogger);
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/images/profile-images', express.static(uploadDir_Profile));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(cors());
 
 ////////////////////////////////// SWAGGER CONFIG ///////////////////////////////////////

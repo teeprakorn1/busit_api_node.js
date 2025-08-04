@@ -14,6 +14,11 @@
             "date": 1754227689340,
             "name": "E:\\busit_project\\busit_nodejs\\logs\\error-2025-08-03.log",
             "hash": "9f42484f148d6abab2df90a54acc015dd443e68ec652c48f151fe50b5685a418"
+        },
+        {
+            "date": 1754331775385,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\error-2025-08-05.log",
+            "hash": "3f6a432d1dc389e7ab46fd36a89eff1f68babb04d50267d4419cec452838714b"
         }
     ],
     "hashType": "sha256"
