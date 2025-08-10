@@ -1,4 +1,4 @@
-CREATE DATABASE busitplus COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS busitplus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE busitplus;
 
 CREATE TABLE Users(
@@ -84,6 +84,8 @@ CREATE TABLE DataEdit(
     DataEdit_ThisId INT(13) NOT NULL,
     DataEdit_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     DataEdit_Name VARCHAR(511),
+    DataEdit_IP_Address VARCHAR(45),
+    DataEdit_UserAgent VARCHAR(1023),
     Staff_ID INT(13) NOT NULL,
     DataEditType_ID TINYINT(11) NOT NULL,
     FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID),
@@ -107,6 +109,8 @@ CREATE TABLE Timestamp(
 	Timestamp_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Timestamp_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Timestamp_Name VARCHAR(511),
+    Timestamp_IP_Address VARCHAR(45),
+    Timestamp_UserAgent VARCHAR(1023),
     Users_ID INT(13) NOT NULL,
     TimestampType_ID TINYINT(7) NOT NULL,
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
@@ -240,6 +244,11 @@ VALUES ('222222222222-2', 'Student', 'Admin', '2025', '2', '1', '1');
 
 INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Users_ID)
 VALUES ('333333333333-3', 'Staff', 'Admin', '3');
+
+INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
+('teepakorn.kum@rmutto.ac.th', 'teepakorn.kum', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student');
+INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
+VALUES ('000000000000-0', 'ทีปกร', 'คุ้มวงศ์', '2022', '4', '1', '1');
 
 INSERT INTO timestamptype (TimestampType_Name)
 VALUES ('timestamp_application_login'),('timestamp_website_login'),

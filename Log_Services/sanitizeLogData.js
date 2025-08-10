@@ -1,5 +1,14 @@
 function sanitizeLogData(data) {
-  const sensitiveFields = ['password', 'otp', 'token', 'users_password', 'access_token', 'refresh_token'];
+  const sensitiveFields = [
+    'password',
+    'otp',
+    'token',
+    'users_password',
+    'current_password',
+    'new_password',
+    'access_token',
+    'refresh_token'
+  ];
 
   function mask(obj) {
     if (!obj || typeof obj !== 'object') return obj;

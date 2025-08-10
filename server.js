@@ -1,11 +1,9 @@
 const xss = require('xss');
 const cors = require('cors');
 const fs = require('fs');
-const https = require('https');
 const path = require('path');
 const multer = require('multer');
 const express = require('express');
-const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 const moment = require('moment');
 const validator = require('validator');
@@ -19,28 +17,16 @@ const swaggerUi = require('swagger-ui-express');
 
 require('dotenv').config();
 
+const db = require('./Server_Services/databaseClient');
 const requestLogger = require('./Log_Services/requestLogger');
 const RateLimiter = require('./Rate_Limiter/LimitTime_Login');
 const GenerateTokens = require('./Jwt_Tokens/Tokens_Generator');
 const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
-const validateInput = require('./Security_Services/validateInput');
 const { sendOTP, verifyOTP, sendEmail } = require('./OTP_Services/otpService');
-const { verify } = require('jsonwebtoken');
-const { query } = require('winston');
+const { generateResetToken, verifyResetToken, deleteResetToken } = require('./Jwt_Tokens/ResetTokens_Manager');
 
 const app = express();
 const saltRounds = 14;
-
-//MySQL Connection
-const db = mysql.createPool({
-  host: process.env.DATABASE_HOST,
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASS,
-  database: process.env.DATABASE_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
 
 const uploadDir = path.join(__dirname, 'images');
 const uploadDir_Profile = path.join(__dirname, 'images/users-profile-images');
@@ -53,7 +39,7 @@ if (!fs.existsSync(uploadDir_Profile)) {
   fs.mkdirSync(uploadDir_Profile, { recursive: true });
 }
 
-// Multer configuration for file uploads
+// Multer configuration
 const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/pjpeg', 'application/octet-stream'];
 
 const upload = multer({
@@ -64,19 +50,6 @@ const upload = multer({
       return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง'), false);
     }
     cb(null, true);
-  }
-});
-
-//Global MySQL Error Handler
-db.getConnection((err) => {
-  if (err) {
-    console.error(' Database connection error:', err.code);
-    
-    if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET') {
-      return res.status(503).json({ message: 'เชื่อมต่อฐานข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง' });
-    }
-
-    return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล' });
   }
 });
 
@@ -107,7 +80,6 @@ app.use(express.json());
 app.use(sanitizeRequest);
 app.use(requestLogger);
 app.use(express.urlencoded({ extended: true }));
-app.use('/api/images/profile-images', express.static(uploadDir_Profile));
 
 //อนาคตต้องมาแก้ contentSecurityPolicy ของ helmet**
 app.use(helmet({
@@ -351,12 +323,9 @@ app.post('/api/system/resetpassword-request-otp', async (req, res) => {
 
 // API Reset Password with OTP Verification
 app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
-  const { Users_Email, Users_Password, otp } = req.body || {};
+  const { Users_Email, otp } = req.body || {};
 
-  if (!Users_Email || !Users_Password || !otp ||
-      typeof Users_Email !== 'string' ||
-      typeof Users_Password !== 'string' ||
-      typeof otp !== 'string') {
+  if (!Users_Email || !otp || typeof Users_Email !== 'string' ||typeof otp !== 'string') {
     return res.status(400).json({ message: 'Please provide all required fields.', status: false });
   }
 
@@ -368,6 +337,35 @@ app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
     const otpResult = await verifyOTP(Users_Email, otp);
     if (!otpResult.success) {
       return res.status(400).json({ message: otpResult.message, status: false });
+    }
+    
+    const resetToken = await generateResetToken(Users_Email);
+    if (!resetToken) {
+      return res.status(500).json({ message: 'Failed to generate reset token.', status: false });
+    }
+
+    return res.status(200).json({ token: resetToken, message: 'OTP verified successfully. Use the token to reset your password.', status: true });
+    
+  } catch (error) {
+    console.error('Catch error (verify otp password)', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Reset Password with ResetToken
+app.post('/api/system/resetpassword-resettoken', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
+  const { Users_Email, Users_Password, token } = req.body || {};
+  if (!Users_Email || !Users_Password || !token ||
+      typeof Users_Email !== 'string' || typeof Users_Password !== 'string' || typeof token !== 'string') {
+    return res.status(400).json({ message: 'Please fill in the correct parameters as required.', status: false });
+  }
+  if (!validator.isEmail(Users_Email)) {
+    return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
+  }
+  try {
+    const isValidToken = await verifyResetToken(Users_Email, token);
+    if (!isValidToken) {
+      return res.status(400).json({ message: 'Invalid or expired reset token.', status: false });
     }
     const sql = "SELECT Users_ID FROM users WHERE Users_Email = ? AND Users_IsActive = 1";
     db.query(sql, [Users_Email], async (err, result) => {
@@ -390,6 +388,7 @@ app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
         }
 
         if (updateResult.affectedRows > 0) {
+          await deleteResetToken(token);
           res.status(200).json({ message: 'Password reset successfully.', status: true });
           const notifyMsg = 'บัญชีของคุณได้รับการอัปเดตรหัสผ่านเรียบร้อยแล้ว หากคุณไม่ได้ทำรายการนี้ โปรดติดต่อฝ่ายสนับสนุนโดยด่วน';
           try {
@@ -556,14 +555,16 @@ app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) 
   }
 });
 
-//(:TODO แก้ API ไปเพิ่ม Timestamp_Name ทั้งใน API และฐานข้อมูล)
 ////////////////////////////////// Timestamp API ///////////////////////////////////////
 //API Timestamp Insert
-app.post('/api/timestamp/insert' , RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, async (req, res) => {
+app.post('/api/timestamp/insert', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const usersID = userData.Users_ID;
 
-  const { Timestamp_Name, TimestampType_ID } = req.body|| {};
+  const { Timestamp_Name, TimestampType_ID } = req.body || {};
+
+  const Timestamp_IP_Address = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || null;
+  const Timestamp_UserAgent = req.headers['user-agent'] || null;
 
   if (!Timestamp_Name || !usersID || !TimestampType_ID) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
@@ -571,14 +572,16 @@ app.post('/api/timestamp/insert' , RateLimiter(0.5 * 60 * 1000, 15), VerifyToken
   if (typeof usersID !== 'number' || typeof TimestampType_ID !== 'number') {
     return res.status(400).json({ message: "Users_ID and TimestampType_ID must be numbers.", status: false });
   }
-
   if (typeof Timestamp_Name !== 'string') {
     return res.status(400).json({ message: "Timestamp_Name must be a string.", status: false });
   }
 
   try {
-    const sql = "INSERT INTO timestamp (Timestamp_Name, Users_ID ,TimestampType_ID) VALUES (?, ?, ?)";
-    db.query(sql, [Timestamp_Name, usersID, TimestampType_ID], (err, result) => {
+    const sql = `
+      INSERT INTO timestamp (Timestamp_Name, Timestamp_IP_Address, Timestamp_UserAgent, Users_ID, TimestampType_ID)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    db.query(sql, [Timestamp_Name, Timestamp_IP_Address, Timestamp_UserAgent, usersID, TimestampType_ID], (err, result) => {
       if (err) {
         console.error('Database error (timestamp)', err);
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
@@ -594,6 +597,7 @@ app.post('/api/timestamp/insert' , RateLimiter(0.5 * 60 * 1000, 15), VerifyToken
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
 });
+
 
 //API Timestamp Get by Users_ID
 app.get('/api/timestamp/get/users/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
@@ -1243,6 +1247,37 @@ app.put('/api/profile/teacher/update', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
   });
 });
 
+//API Get Profile Image by Filename
+app.get('/api/images/profile-images/:filename', VerifyTokens, (req, res) => {
+  try {
+    const filename = path.basename(req.params.filename);
+
+    if (!filename.match(/^[a-zA-Z0-9._-]+$/)) {
+      return res.status(400).json({ message: 'Invalid filename', status: false });
+    }
+
+    const allowedExt = ['.jpg', '.jpeg', '.png'];
+    const ext = path.extname(filename).toLowerCase();
+
+    if (!allowedExt.includes(ext)) {
+      return res.status(400).json({ message: 'Invalid file type', status: false });
+    }
+
+    const filePath = path.join(uploadDir_Profile, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'Image not found' , status: false });
+    }
+
+    res.type(ext);
+    res.sendFile(filePath);
+  } catch (err) {
+    console.error('Error serving image:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 //API add Profile Image in Users of Application
 app.post('/api/profile/upload/image', upload.single('Users_ImageFile') ,RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
@@ -1640,12 +1675,12 @@ app.post('/api/profile/verifypassword', RateLimiter(0.5 * 60 * 1000, 12), Verify
   }
 });
 
-//API แก้**
 //API Reset Password By VerifyTokens
 app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Users_ID = userData.Users_ID;
   const Login_Type = userData?.Login_Type;
+  const Users_Email = userData?.Users_Email;
 
   let { Current_Password, New_Password } = req.body || {};
 
@@ -1672,7 +1707,7 @@ app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
   }
 
   try {
-    const sql = "SELECT Users_Password FROM users WHERE Users_ID = ? AND Users_IsActive = 1";
+    const sql = "SELECT Users_ID, Users_Password FROM users WHERE Users_ID = ? AND Users_IsActive = 1";
     db.query(sql, [Users_ID], async (err, result) => {
       if (err) {
         console.error('Database error (reset password)', err);
@@ -1691,14 +1726,22 @@ app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
       
       const hashedPassword = await bcrypt.hash(New_Password, saltRounds);
       const updateSql = "UPDATE users SET Users_Password = ? WHERE Users_ID = ?";
-      db.query(updateSql, [hashedPassword, user.Users_ID], (err, updateResult) => {
+      db.query(updateSql, [hashedPassword, user.Users_ID], async (err, updateResult) => {
         if (err) {
           console.error('Database error (update password)', err);
           return res.status(500).json({ message: 'An error occurred while updating the password.', status: false });
         }
 
         if (updateResult.affectedRows > 0) {
-          return res.status(200).json({ message: 'Password reset successfully.', status: true });
+          try {
+            const notifyMsg = 'บัญชีของคุณได้รับการอัปเดตรหัสผ่านเรียบร้อยแล้ว หากคุณไม่ได้ทำรายการนี้ โปรดติดต่อฝ่ายสนับสนุนโดยด่วน';
+            await sendEmail(Users_Email ,"แจ้งเตือน: คุณได้เปลี่ยนรหัสผ่าน" ,"หากไม่ใช่คุณ กรุณาติดต่อทีมงานด่วน" ,"เปลี่ยนรหัสผ่านสำเร็จ" ,notifyMsg );
+            return res.status(200).json({ message: 'Password reset successfully.', status: true });
+
+          } catch (emailError) {
+            console.error('Error sending notification email:', emailError);
+            return res.status(500).json({ message: 'Password reset successful, but failed to send notification email.', status: true });
+          }
         } else {
           return res.status(500).json({ message: 'Password reset failed.', status: false });
         }

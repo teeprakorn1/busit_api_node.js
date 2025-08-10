@@ -1,22 +1,8 @@
 const nodemailer = require('nodemailer');
-const redis = require('redis');
+const redisClient = require('./../Server_Services/redisClient');
 const crypto = require('crypto');
 const otpEmailTemplate = require('./otpTemplate');
 const notificationEmailTemplate = require('./notificationTemplate');
-
-const redisClient = redis.createClient({
-  username: process.env.REDIS_USER || 'default',
-  password: process.env.REDIS_PASS || undefined,
-  socket: {
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-    tls: process.env.REDIS_TLS === 'true' ? {} : false,
-  }
-});
-
-redisClient.connect()
-  .then(() => console.log('Redis connected'))
-  .catch(err => console.error('Redis error:', err));
 
 // --------- Utility ---------
 function generateOTP() {

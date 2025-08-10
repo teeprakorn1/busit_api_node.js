@@ -684,8 +684,102 @@ paths:
 
   /api/system/resetpassword-verify-otp:
     post:
-      summary: Reset password using OTP verification
-      description: Verifies OTP and resets the user password if valid. Sends a notification email after successful password change.
+      summary: Verify OTP and generate reset token
+      description: Accepts user's email and OTP, verifies the OTP, and if valid,
+        generates a reset token to be used for password reset.
+      tags:
+        - System
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - otp
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                  description: User's email address to reset the password
+                otp:
+                  type: string
+                  example: "123456"
+                  description: One-time password received via email or SMS
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - otp
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                  description: User's email address to reset the password
+                otp:
+                  type: string
+                  example: "123456"
+                  description: One-time password received via email or SMS
+      responses:
+        '200':
+          description: OTP verified successfully and reset token generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Token to be used for resetting the password
+                    example: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+                  message:
+                    type: string
+                    example: OTP verified successfully. Use the token to reset your password.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid input or OTP verification failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please provide all required fields.
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An unexpected error occurred.
+                  status:
+                    type: boolean
+                    example: false
+
+  /api/system/resetpassword-resettoken:
+    post:
+      summary: Reset password using reset token
+      description: |
+        This endpoint allows a user to reset their password by providing:
+        - Email address
+        - New password
+        - Valid reset token (previously obtained from OTP verification)
+        
+        The reset token must not be expired.  
+        A notification email will be sent after a successful password change.
       tags:
         - System
       requestBody:
@@ -697,38 +791,44 @@ paths:
               required:
                 - Users_Email
                 - Users_Password
-                - otp
+                - token
               properties:
                 Users_Email:
                   type: string
                   format: email
                   example: user@example.com
+                  description: Registered user email
                 Users_Password:
                   type: string
                   format: password
-                  example: newpassword123
-                otp:
+                  example: MyNewP@ssw0rd!
+                  description: New password to set for the user
+                token:
                   type: string
-                  example: 123456
+                  example: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+                  description: Reset token obtained after OTP verification
           application/x-www-form-urlencoded:
             schema:
               type: object
               required:
                 - Users_Email
                 - Users_Password
-                - otp
+                - token
               properties:
                 Users_Email:
                   type: string
                   format: email
                   example: user@example.com
+                  description: Registered user email
                 Users_Password:
                   type: string
                   format: password
-                  example: newpassword123
-                otp:
+                  example: MyNewP@ssw0rd!
+                  description: New password to set for the user
+                token:
                   type: string
-                  example: 123456
+                  example: "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+                  description: Reset token obtained after OTP verification
       responses:
         '200':
           description: Password reset successfully
@@ -744,7 +844,7 @@ paths:
                     type: boolean
                     example: true
         '400':
-          description: Invalid input or OTP verification failed
+          description: Invalid parameters or expired/invalid token
           content:
             application/json:
               schema:
@@ -752,7 +852,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: OTP is invalid or expired.
+                    example: Invalid or expired reset token.
                   status:
                     type: boolean
                     example: false
@@ -770,7 +870,7 @@ paths:
                     type: boolean
                     example: false
         '500':
-          description: Server or database error
+          description: Server error during password reset process
           content:
             application/json:
               schema:
@@ -2521,6 +2621,115 @@ paths:
                   status:
                     type: boolean
                     example: false
+
+  /api/profile/resetpassword:
+    post:
+      summary: Reset password for the current user
+      description: >
+        Reset the password for the authenticated user. Requires valid token from `VerifyTokens`.
+        Only allowed when `Login_Type` is `application`.
+      tags:
+        - Profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Current_Password
+                - New_Password
+              properties:
+                Current_Password:
+                  type: string
+                  example: OldPassword123!
+                New_Password:
+                  type: string
+                  example: NewPassword456!
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Current_Password
+                - New_Password
+              properties:
+                Current_Password:
+                  type: string
+                  example: OldPassword123!
+                New_Password:
+                  type: string
+                  example: NewPassword456!
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset successfully.
+                  status:
+                    type: boolean
+                    example: true
+        '400':
+          description: Bad request (missing parameters or invalid input)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+        '401':
+          description: Current password is incorrect
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+        '403':
+          description: Permission denied (wrong Login_Type)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: boolean
 
   /api/profile/data/get:
     get:
