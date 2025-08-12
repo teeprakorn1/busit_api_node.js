@@ -2110,10 +2110,9 @@ paths:
 
   /api/profile/otherphone/add:
     post:
+      summary: Add an additional phone number for the user
       tags:
         - Profile
-      summary: Add an additional phone number
-      description: Allows a user to add an additional phone number. Each user can have a maximum of 2 additional phone numbers.
       security:
         - bearerAuth: []
       requestBody:
@@ -2122,24 +2121,36 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - OtherPhone_Phone
+                - OtherPhone_Name
               properties:
                 OtherPhone_Phone:
                   type: string
-                  example: "0891234567"
-              required:
-                - OtherPhone_Phone
+                  description: Additional phone number (digits only, length between 8 and 20)
+                  example: "0812345678"
+                OtherPhone_Name:
+                  type: string
+                  description: Name or label for the additional phone number
+                  example: "Work Phone"
           application/x-www-form-urlencoded:
             schema:
               type: object
+              required:
+                - OtherPhone_Phone
+                - OtherPhone_Name
               properties:
                 OtherPhone_Phone:
                   type: string
-                  example: "0891234567"
-              required:
-                - OtherPhone_Phone
+                  description: Additional phone number (digits only, length between 8 and 20)
+                  example: "0812345678"
+                OtherPhone_Name:
+                  type: string
+                  description: Name or label for the additional phone number
+                  example: "Work Phone"
       responses:
         '200':
-          description: Phone number added successfully
+          description: Successfully added additional phone number
           content:
             application/json:
               schema:
@@ -2147,12 +2158,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Other phone number added successfully.
+                    example: "Other phone number added successfully."
                   status:
                     type: boolean
                     example: true
         '400':
-          description: Invalid input or maximum limit reached
+          description: Invalid input parameters
           content:
             application/json:
               schema:
@@ -2160,12 +2171,25 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: You can only have up to 2 other phone numbers.
+                    example: "Please fill in the correct parameters as required."
+                  status:
+                    type: boolean
+                    example: false
+        '403':
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. This action is only allowed in the application."
                   status:
                     type: boolean
                     example: false
         '500':
-          description: Server-side error
+          description: Server error
           content:
             application/json:
               schema:
@@ -2173,7 +2197,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: An error occurred on the server.
+                    example: "Server error while checking phone count."
                   status:
                     type: boolean
                     example: false
@@ -2250,20 +2274,20 @@ paths:
 
   /api/profile/otherphone/edit/{OtherPhone_ID}:
     put:
+      summary: Edit an additional phone number of the user
       tags:
         - Profile
-      summary: Edit an additional phone number
-      description: Update the name and number of a user's additional phone number.
+      description: Edit an additional phone number associated with the authenticated user.
       security:
         - bearerAuth: []
       parameters:
         - name: OtherPhone_ID
           in: path
+          description: ID of the other phone number to edit
           required: true
-          description: ID of the additional phone number to be edited
           schema:
             type: integer
-            example: 1
+            example: 123
       requestBody:
         required: true
         content:
@@ -2276,26 +2300,15 @@ paths:
               properties:
                 OtherPhone_Name:
                   type: string
-                  example: Work Phone
+                  description: Name or label for the additional phone number
+                  example: "Work Phone"
                 OtherPhone_Phone:
                   type: string
-                  example: "0912345678"
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required:
-                - OtherPhone_Name
-                - OtherPhone_Phone
-              properties:
-                OtherPhone_Name:
-                  type: string
-                  example: Work Phone
-                OtherPhone_Phone:
-                  type: string
-                  example: "0912345678"
+                  description: Additional phone number (digits only, length between 8 and 20)
+                  example: "0812345678"
       responses:
         '200':
-          description: Phone number updated successfully
+          description: Successfully updated additional phone number
           content:
             application/json:
               schema:
@@ -2303,12 +2316,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Other phone number updated successfully.
+                    example: "Other phone number updated successfully."
                   status:
                     type: boolean
                     example: true
         '400':
-          description: Bad request - missing or invalid data
+          description: Invalid input parameters
           content:
             application/json:
               schema:
@@ -2316,12 +2329,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Invalid data format.
+                    example: "Please provide valid Users_ID and OtherPhone_ID."
                   status:
                     type: boolean
                     example: false
         '403':
-          description: Forbidden - user does not own the phone record
+          description: Permission denied or not allowed
           content:
             application/json:
               schema:
@@ -2329,12 +2342,12 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: You do not have permission to edit this phone number.
+                    example: "Permission denied. This action is only allowed in the application."
                   status:
                     type: boolean
                     example: false
         '404':
-          description: Phone number not found
+          description: Other phone number not found
           content:
             application/json:
               schema:
@@ -2342,7 +2355,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Other phone number not found.
+                    example: "Other phone number not found."
                   status:
                     type: boolean
                     example: false
@@ -2355,7 +2368,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Error updating phone number.
+                    example: "Error updating phone number."
                   status:
                     type: boolean
                     example: false

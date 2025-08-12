@@ -255,4 +255,6 @@ VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_application_logout'),('timestamp_website_logout'),
 ('timestamp_application_resetpassword'),('timestamp_application_update_profile_data'),
 ('timestamp_application_update_profile_image'),('timestamp_add_otherphone_users'),
-('timestamp_update_otherphone_users'),('timestamp_delete_otherphone_users');
+('timestamp_update_otherphone_users'),('timestamp_delete_otherphone_users'),
+('timestamp_application_request_otp'),('timestamp_application_resetpassword_otp'),
+('timestamp_application_verify_otp');

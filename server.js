@@ -304,7 +304,7 @@ app.post('/api/system/resetpassword-request-otp', async (req, res) => {
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
       if (result.length === 0) {
-        return res.status(200).json({ message: 'If your email exists in our system, an OTP has been sent.', status: true });
+        return res.status(200).json({ message: 'Unable to send OTP, please try again later.', status: false });
       }
 
       try {
@@ -362,6 +362,11 @@ app.post('/api/system/resetpassword-resettoken', RateLimiter(0.5 * 60 * 1000, 12
   if (!validator.isEmail(Users_Email)) {
     return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
   }
+
+  if (Users_Password.length < 8 || Users_Password.length > 63) {
+    return res.status(400).json({ message: 'New password must be between 8 and 63 characters.', status: false });
+  }
+
   try {
     const isValidToken = await verifyResetToken(Users_Email, token);
     if (!isValidToken) {
@@ -1083,12 +1088,14 @@ app.put('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyTo
     return res.status(400).json({ message: "Invalid phone number format.", status: false });
   }
 
-  if (Student_Phone.length > 20 || Student_Phone.length < 8) {
-    return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
-  }
+  if (Student_Phone) {
+    if (Student_Phone.length > 20 || Student_Phone.length < 8) {
+      return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
+    }
 
-  if (!/^\d+$/.test(Student_Phone)) {
-    return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
+    if (!/^\d+$/.test(Student_Phone)) {
+      return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
+    }
   }
 
   if (Student_Birthdate) {
@@ -1177,12 +1184,14 @@ app.put('/api/profile/teacher/update', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
     return res.status(400).json({ message: "Invalid phone number format.", status: false });
   }
 
-  if (Teacher_Phone.length > 20 || Teacher_Phone.length < 8) {
-    return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
-  }
+  if (Teacher_Phone) {
+    if (Teacher_Phone.length > 20 || Teacher_Phone.length < 8) {
+      return res.status(400).json({ message: "Phone number length must be between 8 and 20 digits.", status: false });
+    }
 
-  if (!/^\d+$/.test(Teacher_Phone)) {
-    return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
+    if (!/^\d+$/.test(Teacher_Phone)) {
+      return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
+    }
   }
 
   if (Teacher_Birthdate) {
@@ -1370,13 +1379,16 @@ app.post('/api/profile/upload/image', upload.single('Users_ImageFile') ,RateLimi
 });
 
 //API add Other Phone Number
-app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, (req, res) => {
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
-  let { OtherPhone_Phone } = req.body || {};
+  let { OtherPhone_Phone, OtherPhone_Name } = req.body || {};
   const Login_Type = userData?.Login_Type;
 
-  if (!Users_ID || !OtherPhone_Phone) {
+  OtherPhone_Phone = OtherPhone_Phone?.trim();
+  OtherPhone_Name = OtherPhone_Name?.trim();
+
+  if (!Users_ID || !OtherPhone_Phone || !OtherPhone_Name) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
   }
 
@@ -1384,7 +1396,7 @@ app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), Verify
     return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
   }
 
-  if (typeof Users_ID !== 'number' || typeof OtherPhone_Phone !== 'string') {
+  if (typeof Users_ID !== 'number' || typeof OtherPhone_Phone !== 'string' || typeof OtherPhone_Name !== 'string') {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
   }
 
@@ -1400,37 +1412,32 @@ app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), Verify
     return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
   }
 
-  try {
-    const checkSql = "SELECT COUNT(*) AS phoneCount FROM otherphone WHERE Users_ID = ?";
-    db.query(checkSql, [Users_ID], (err, checkResult) => {
+  const checkSql = "SELECT COUNT(*) AS phoneCount FROM otherphone WHERE Users_ID = ?";
+  db.query(checkSql, [Users_ID], (err, checkResult) => {
+    if (err) {
+      console.error('Database error (check count)', err);
+      return res.status(500).json({ message: 'Server error while checking phone count.', status: false });
+    }
+
+    const phoneCount = checkResult[0]?.phoneCount || 0;
+    if (phoneCount >= 2) {
+      return res.status(400).json({ message: "You can only have up to 2 other phone numbers.", status: false });
+    }
+
+    const insertSql = "INSERT INTO otherphone (Users_ID, OtherPhone_Phone, OtherPhone_Name) VALUES (?, ?, ?)";
+    db.query(insertSql, [Users_ID, OtherPhone_Phone, OtherPhone_Name], (err, insertResult) => {
       if (err) {
-        console.error('Database error (check count)', err);
-        return res.status(500).json({ message: 'Server error while checking phone count.', status: false });
+        console.error('Database error (insert)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
 
-      const phoneCount = checkResult[0]?.phoneCount || 0;
-      if (phoneCount >= 2) {
-        return res.status(400).json({ message: "You can only have up to 2 other phone numbers.", status: false });
+      if (insertResult.affectedRows > 0) {
+        return res.status(200).json({ message: 'Other phone number added successfully.', status: true });
+      } else {
+        return res.status(500).json({ message: 'Other phone number not added.', status: false });
       }
-
-      const sql = "INSERT INTO otherphone (Users_ID, OtherPhone_Phone) VALUES (?, ?)";
-      db.query(sql, [Users_ID, OtherPhone_Phone], (err, result) => {
-        if (err) {
-          console.error('Database error (insert)', err);
-          return res.status(500).json({ message: 'An error occurred on the server.', status: false });
-        }
-
-        if (result.affectedRows > 0) {
-          return res.status(200).json({ message: 'Other phone number added successfully.', status: true });
-        } else {
-          return res.status(500).json({ message: 'Other phone number not added.', status: false });
-        }
-      });
     });
-  } catch (error) {
-    console.error('Catch error', error);
-    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
-  }
+  });
 });
 
 //API delete Other Phone Number
@@ -1481,18 +1488,21 @@ app.delete('/api/profile/otherphone/delete/:OtherPhone_ID', RateLimiter(0.5 * 60
 });
 
 //API edit Other Phone Number
-app.put('/api/profile/otherphone/edit/:OtherPhone_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.put('/api/profile/otherphone/edit/:OtherPhone_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, (req, res) => {
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
-  const { OtherPhone_ID } = req.params;
-  const { OtherPhone_Name, OtherPhone_Phone } = req.body || {};
+  let { OtherPhone_ID } = req.params;
+  let { OtherPhone_Name, OtherPhone_Phone } = req.body || {};
   const Login_Type = userData?.Login_Type;
+
+  OtherPhone_Name = OtherPhone_Name?.trim();
+  OtherPhone_Phone = OtherPhone_Phone?.trim();
 
   if (!Users_ID || !OtherPhone_ID) {
     return res.status(400).json({ message: 'Please provide valid Users_ID and OtherPhone_ID.', status: false });
   }
 
-  if (!OtherPhone_ID || isNaN(Number(OtherPhone_ID))) {
+  if (isNaN(Number(OtherPhone_ID))) {
     return res.status(400).json({ message: 'Invalid OtherPhone_ID.', status: false });
   }
 
@@ -1500,8 +1510,7 @@ app.put('/api/profile/otherphone/edit/:OtherPhone_ID', RateLimiter(0.5 * 60 * 10
     return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
   }
 
-
-  if (!OtherPhone_ID || !OtherPhone_Name || !OtherPhone_Phone) {
+  if (!OtherPhone_Name || !OtherPhone_Phone) {
     return res.status(400).json({ message: 'Missing required fields.', status: false });
   }
 
@@ -1521,37 +1530,33 @@ app.put('/api/profile/otherphone/edit/:OtherPhone_ID', RateLimiter(0.5 * 60 * 10
     return res.status(400).json({ message: "Phone number must contain only digits.", status: false });
   }
 
-  try {
-    const checkSql = "SELECT * FROM otherphone WHERE OtherPhone_ID = ? AND Users_ID = ?";
-    db.query(checkSql, [OtherPhone_ID, Users_ID], (err, checkResult) => {
+  const checkSql = "SELECT * FROM otherphone WHERE OtherPhone_ID = ? AND Users_ID = ?";
+  db.query(checkSql, [OtherPhone_ID, Users_ID], (err, checkResult) => {
+    if (err) {
+      console.error('Database error (check ownership)', err);
+      return res.status(500).json({ message: 'Error checking ownership.', status: false });
+    }
+
+    if (checkResult.length === 0) {
+      return res.status(403).json({ message: 'You do not have permission to edit this phone number.', status: false });
+    }
+
+    const updateSql = "UPDATE otherphone SET OtherPhone_Name = ?, OtherPhone_Phone = ? WHERE OtherPhone_ID = ? AND Users_ID = ?";
+    db.query(updateSql, [OtherPhone_Name, OtherPhone_Phone, OtherPhone_ID, Users_ID], (err, result) => {
       if (err) {
-        console.error('Database error (check ownership)', err);
-        return res.status(500).json({ message: 'Error checking ownership.', status: false });
+        console.error('Database error (update)', err);
+        return res.status(500).json({ message: 'Error updating phone number.', status: false });
       }
 
-      if (checkResult.length === 0) {
-        return res.status(403).json({ message: 'You do not have permission to edit this phone number.', status: false });
+      if (result.affectedRows > 0) {
+        return res.status(200).json({ message: 'Other phone number updated successfully.', status: true });
+      } else {
+        return res.status(404).json({ message: 'Other phone number not found.', status: false });
       }
-
-      const updateSql = "UPDATE otherphone SET OtherPhone_Name = ?, OtherPhone_Phone = ? WHERE OtherPhone_ID = ?";
-      db.query(updateSql, [OtherPhone_Name, OtherPhone_Phone, OtherPhone_ID], (err, result) => {
-        if (err) {
-          console.error('Database error (update)', err);
-          return res.status(500).json({ message: 'Error updating phone number.', status: false });
-        }
-
-        if (result.affectedRows > 0) {
-          return res.status(200).json({ message: 'Other phone number updated successfully.', status: true });
-        } else {
-          return res.status(404).json({ message: 'Other phone number not found.', status: false });
-        }
-      });
     });
-  } catch (error) {
-    console.error('Catch error (edit)', error);
-    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
-  }
+  });
 });
+
 
 //API get Other Phone Number by Token
 app.get('/api/profile/otherphone/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
@@ -1682,7 +1687,7 @@ app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
   const Login_Type = userData?.Login_Type;
   const Users_Email = userData?.Users_Email;
 
-  let { Current_Password, New_Password } = req.body || {};
+  const { Current_Password, New_Password } = req.body || {};
 
   if (!Users_ID || typeof Users_ID !== 'number') {
     return res.status(400).json({ message: "Missing or invalid Users_ID from token.", status: false });
@@ -1696,12 +1701,10 @@ app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
     return res.status(400).json({ message: 'Please fill in the correct parameters as required.', status: false });
   }
 
-  Current_Password = xss(Current_Password);
-  New_Password = xss(New_Password);
-
   if (New_Password.length < 8 || New_Password.length > 63) {
     return res.status(400).json({ message: 'New password must be between 8 and 63 characters.', status: false });
   }
+
   if (Current_Password === New_Password) {
     return res.status(400).json({ message: 'New password cannot be the same as the current password.', status: false });
   }
@@ -1754,7 +1757,7 @@ app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
 });
 
 // API Get Data Profile by VerifyTokens
-app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const usersTypeID = userData.UsersType_ID;
   const usersType = userData.Users_Type;
