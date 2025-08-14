@@ -1411,6 +1411,101 @@ paths:
                     type: boolean
                     example: false
 
+  /api/admin/data/get:
+    get:
+      summary: Get Admin Profile Data
+      description: |
+        Retrieves the admin user's profile data by verifying the token and user type.
+        Only users logged in via the website are allowed.
+      tags:
+        - Admin
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Profile data retrieved successfully."
+                  Users_Type_Table:
+                    type: string
+                    example: "teacher"
+                  Teacher_ID:
+                    type: integer
+                    example: 123
+                  Users_Email:
+                    type: string
+                    example: "teacher1@example.com"
+                  Users_ImageFile:
+                    type: string
+                    example: "profile.jpg"
+                  Department_Name:
+                    type: string
+                    example: "Computer Science"
+                  Faculty_Name:
+                    type: string
+                    example: "Engineering"
+        '400':
+          description: Invalid user type or missing data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Invalid user type."
+        '403':
+          description: Permission denied (not website login)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Permission denied. This action is only allowed in the website."
+        '404':
+          description: No profile data found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "No profile data found for this user."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "An unexpected error occurred."
+
   /api/admin/student/update/{Users_ID}:
     put:
       summary: Update student profile (Admin only)

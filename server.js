@@ -110,9 +110,9 @@ if (process.env.NODE_ENV === '1') { // (Production)
 
 ////////////////////////////////// TEST API ///////////////////////////////////////
 // Encrypt Test
-app.post('/api/test/encrypt', RateLimiter(0.5 * 60 * 1000, 15) ,async (req, res) => {
+app.post('/api/test/encrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res) => {
   if (process.env.NODE_ENV === '0') {
-    return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
+    return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
   try {
@@ -131,11 +131,11 @@ app.post('/api/test/encrypt', RateLimiter(0.5 * 60 * 1000, 15) ,async (req, res)
 // Decrypt Test
 app.post('/api/test/decrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res) => {
   if (process.env.NODE_ENV === '0') {
-    return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
+    return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
   try {
-    const { password, hash } = req.body|| {};
+    const { password, hash } = req.body || {};
     if (!password || !hash) {
       return res.status(400).json({ message: 'Password and hash are required.', status: false });
     }
@@ -154,10 +154,10 @@ app.post('/api/test/decrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res)
 //Send OTP Test
 app.post('/api/test/sendotp', async (req, res) => {
   if (process.env.NODE_ENV === '0') {
-    return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
+    return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
-  const { email } = req.body|| {};
+  const { email } = req.body || {};
 
   if (!email || typeof email !== 'string') {
     return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
@@ -177,10 +177,10 @@ app.post('/api/test/sendotp', async (req, res) => {
 //Verify OTP Test
 app.post('/api/test/verifyotp', async (req, res) => {
   if (process.env.NODE_ENV === '0') {
-    return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
+    return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
-  const { email, otp } = req.body|| {};
+  const { email, otp } = req.body || {};
   if (!email || !otp || typeof email !== 'string' || typeof otp !== 'string') {
     return res.status(400).json({ message: 'Please provide a valid email and OTP.', status: false });
   }
@@ -200,10 +200,10 @@ app.post('/api/test/verifyotp', async (req, res) => {
 //Send Email Test
 app.post('/api/test/sendemail', async (req, res) => {
   if (process.env.NODE_ENV === '0') {
-    return res.status(403).json({ message: 'This API is not allowed in production.', status: false }); 
+    return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
-  const { email } = req.body|| {};
+  const { email } = req.body || {};
 
   if (!email || typeof email !== 'string') {
     return res.status(400).json({ message: 'Please provide a valid email address.', status: false });
@@ -241,7 +241,7 @@ app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (re
 app.post('/api/system/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
   const { Users_Email, Current_Password, New_Password } = req.body || {};
   if (!Users_Email || !Current_Password || !New_Password ||
-      typeof Users_Email !== 'string' || typeof Current_Password !== 'string' || typeof New_Password !== 'string') {
+    typeof Users_Email !== 'string' || typeof Current_Password !== 'string' || typeof New_Password !== 'string') {
     return res.status(400).json({ message: 'Please fill in the correct parameters as required.', status: false });
   }
 
@@ -266,7 +266,7 @@ app.post('/api/system/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), async (r
       if (!passwordMatch) {
         return res.status(401).json({ message: 'Current password is incorrect.', status: false });
       }
-      
+
       const hashedPassword = await bcrypt.hash(New_Password, saltRounds);
       const updateSql = "UPDATE users SET Users_Password = ? WHERE Users_ID = ?";
       db.query(updateSql, [hashedPassword, user.Users_ID], (err, updateResult) => {
@@ -325,7 +325,7 @@ app.post('/api/system/resetpassword-request-otp', async (req, res) => {
 app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
   const { Users_Email, otp } = req.body || {};
 
-  if (!Users_Email || !otp || typeof Users_Email !== 'string' ||typeof otp !== 'string') {
+  if (!Users_Email || !otp || typeof Users_Email !== 'string' || typeof otp !== 'string') {
     return res.status(400).json({ message: 'Please provide all required fields.', status: false });
   }
 
@@ -338,14 +338,14 @@ app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
     if (!otpResult.success) {
       return res.status(400).json({ message: otpResult.message, status: false });
     }
-    
+
     const resetToken = await generateResetToken(Users_Email);
     if (!resetToken) {
       return res.status(500).json({ message: 'Failed to generate reset token.', status: false });
     }
 
     return res.status(200).json({ token: resetToken, message: 'OTP verified successfully. Use the token to reset your password.', status: true });
-    
+
   } catch (error) {
     console.error('Catch error (verify otp password)', error);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
@@ -356,7 +356,7 @@ app.post('/api/system/resetpassword-verify-otp', async (req, res) => {
 app.post('/api/system/resetpassword-resettoken', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
   const { Users_Email, Users_Password, token } = req.body || {};
   if (!Users_Email || !Users_Password || !token ||
-      typeof Users_Email !== 'string' || typeof Users_Password !== 'string' || typeof token !== 'string') {
+    typeof Users_Email !== 'string' || typeof Users_Password !== 'string' || typeof token !== 'string') {
     return res.status(400).json({ message: 'Please fill in the correct parameters as required.', status: false });
   }
   if (!validator.isEmail(Users_Email)) {
@@ -397,7 +397,7 @@ app.post('/api/system/resetpassword-resettoken', RateLimiter(0.5 * 60 * 1000, 12
           res.status(200).json({ message: 'Password reset successfully.', status: true });
           const notifyMsg = 'บัญชีของคุณได้รับการอัปเดตรหัสผ่านเรียบร้อยแล้ว หากคุณไม่ได้ทำรายการนี้ โปรดติดต่อฝ่ายสนับสนุนโดยด่วน';
           try {
-            await sendEmail(Users_Email,"แจ้งเตือน: คุณได้เปลี่ยนรหัสผ่าน","หากไม่ใช่คุณ กรุณาติดต่อทีมงานด่วน","เปลี่ยนรหัสผ่านสำเร็จ",notifyMsg);
+            await sendEmail(Users_Email, "แจ้งเตือน: คุณได้เปลี่ยนรหัสผ่าน", "หากไม่ใช่คุณ กรุณาติดต่อทีมงานด่วน", "เปลี่ยนรหัสผ่านสำเร็จ", notifyMsg);
 
           } catch (emailError) {
             console.error('Error sending notification email:', emailError);
@@ -415,8 +415,8 @@ app.post('/api/system/resetpassword-resettoken', RateLimiter(0.5 * 60 * 1000, 12
 
 ////////////////////////////////// Login API ///////////////////////////////////////
 //API Login Application
-app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, res) => {
-  let { Users_Email, Users_Password } = req.body|| {};
+app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5), async (req, res) => {
+  let { Users_Email, Users_Password } = req.body || {};
 
   if (!Users_Email || !Users_Password ||
     typeof Users_Email !== 'string' || typeof Users_Password !== 'string') {
@@ -427,12 +427,12 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
   Users_Password = xss(Users_Password)
 
   try {
-    const sql = "SELECT Users_ID, Users_Email, Users_Username, Users_Password, Users_Type "+
-    "FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND (Users_Type = 'teacher' OR Users_Type = 'student') AND Users_IsActive = 1";
+    const sql = "SELECT Users_ID, Users_Email, Users_Username, Users_Password, Users_Type " +
+      "FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND (Users_Type = 'teacher' OR Users_Type = 'student') AND Users_IsActive = 1";
     db.query(sql, [Users_Email, Users_Email], async (err, result) => {
-      if (err) { 
+      if (err) {
         console.error('Database error (users)', err);
-        return res.status(500).json({ message: 'An error occurred on the server.', status: false }); 
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
 
       if (result.length === 0) {
@@ -470,7 +470,7 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
         const userType = result_users_type[0];
         const UsersType_ID = userType[users_type_name_id];
 
-        const token = GenerateTokens(user.Users_ID, 
+        const token = GenerateTokens(user.Users_ID,
           user.Users_Email, user.Users_Username, UsersType_ID, user.Users_Type, 'application');
 
         const responseData = {
@@ -488,8 +488,8 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5) , async (req, r
 });
 
 //API Login Web Admin
-app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) => {
-  let { Users_Email, Users_Password } = req.body|| {};
+app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5), async (req, res) => {
+  let { Users_Email, Users_Password } = req.body || {};
 
   if (!Users_Email || !Users_Password ||
     typeof Users_Email !== 'string' || typeof Users_Password !== 'string') {
@@ -500,12 +500,12 @@ app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) 
   Users_Password = xss(Users_Password)
 
   try {
-    const sql = "SELECT Users_ID, Users_Email, Users_Username, Users_Password, Users_Type "+
-    "FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND (Users_Type = 'teacher' OR Users_Type = 'staff') AND Users_IsActive = 1";
+    const sql = "SELECT Users_ID, Users_Email, Users_Username, Users_Password, Users_Type " +
+      "FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND (Users_Type = 'teacher' OR Users_Type = 'staff') AND Users_IsActive = 1";
     db.query(sql, [Users_Email, Users_Email], async (err, result) => {
-      if (err) { 
+      if (err) {
         console.error('Database error (users)', err);
-        return res.status(500).json({ message: 'An error occurred on the server.', status: false }); 
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
 
       if (result.length === 0) {
@@ -543,7 +543,7 @@ app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5) , async (req, res) 
         const userType = result_users_type[0];
         const UsersType_ID = userType[users_type_name_id];
 
-        const token = GenerateTokens(user.Users_ID, 
+        const token = GenerateTokens(user.Users_ID,
           user.Users_Email, user.Users_Username, UsersType_ID, user.Users_Type, 'website');
 
         const responseData = {
@@ -613,8 +613,8 @@ app.get('/api/timestamp/get/users/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), 
   }
 
   try {
-    const sql = "SELECT ts.Timestamp_ID, ts.Timestamp_Name, ts.Users_ID, ts.Timestamp_RegisTime, ts.TimestampType_ID, tst.TimestampType_Name "+
-    "FROM (timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) WHERE Users_ID = ? ORDER BY ts.Timestamp_RegisTime DESC";
+    const sql = "SELECT ts.Timestamp_ID, ts.Timestamp_Name, ts.Users_ID, ts.Timestamp_RegisTime, ts.TimestampType_ID, tst.TimestampType_Name " +
+      "FROM (timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) WHERE Users_ID = ? ORDER BY ts.Timestamp_RegisTime DESC";
     db.query(sql, [Users_ID], (err, result) => {
       if (err) {
         console.error('Database error (timestamp)', err);
@@ -642,8 +642,8 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
   }
 
   try {
-    const sql = "SELECT ts.Timestamp_ID, ts.Users_ID, ts.Timestamp_RegisTime, ts.TimestampType_ID, tst.TimestampType_Name "+
-    "FROM (timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) WHERE tst.TimestampType_ID = ? ORDER BY ts.Timestamp_RegisTime DESC";
+    const sql = "SELECT ts.Timestamp_ID, ts.Users_ID, ts.Timestamp_RegisTime, ts.TimestampType_ID, tst.TimestampType_Name " +
+      "FROM (timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) WHERE tst.TimestampType_ID = ? ORDER BY ts.Timestamp_RegisTime DESC";
     db.query(sql, [TimestampType_ID], (err, result) => {
       if (err) {
         console.error('Database error (timestamp)', err);
@@ -663,6 +663,60 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
 });
 
 //////////////////////////////////Admin Website API///////////////////////////////////////
+// API Get Data Admin by VerifyTokens of Admin Website**
+app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const usersTypeID = userData.UsersType_ID;
+  const usersType = userData.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the website.", status: false });
+  }
+
+  if (!usersType || !usersTypeID) {
+    return res.status(400).json({ message: "Missing user type or ID.", status: false });
+  }
+
+  try {
+    const usersType_upper = usersType.charAt(0).toUpperCase() + usersType.slice(1);
+    const tableName = db.escapeId(usersType);
+    const columnName = db.escapeId(`${usersType_upper}_ID`);
+
+    let sql;
+
+    if (usersType === 'teacher') {
+      sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile, dp.Department_Name, f.Faculty_Name FROM (((${tableName} ty 
+            INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) 
+            INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1`;
+    } else if (usersType === 'staff') {
+      sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ? LIMIT 1`;
+    } else {
+      return res.status(400).json({ message: "Invalid user type.", status: false });
+    }
+
+    db.query(sql, [usersTypeID], (err, result) => {
+      if (err) {
+        console.error('Database error (profile data)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length > 0) {
+        const profileData = result[0];
+        profileData['Users_Type_Table'] = usersType;
+        profileData['message'] = 'Profile data retrieved successfully.';
+        profileData['status'] = true;
+        res.status(200).json(profileData);
+      } else {
+        return res.status(404).json({ message: 'No profile data found for this user.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
 //API Edit Student Admin Website
 app.put('/api/admin/student/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
@@ -758,8 +812,9 @@ app.put('/api/admin/student/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12),
       }
 
       if (updateResult.affectedRows > 0) {
-        return res.status(200).json({ Users_ID: Target_Users_ID,
-           updated_by: Requester_Users_ID, updated_fields: modifiedFields, message: "Student profile updated successfully.", status: true
+        return res.status(200).json({
+          Users_ID: Target_Users_ID,
+          updated_by: Requester_Users_ID, updated_fields: modifiedFields, message: "Student profile updated successfully.", status: true
         });
       } else {
         return res.status(404).json({ message: "No changes made or student not found.", status: false });
@@ -863,8 +918,9 @@ app.put('/api/admin/teacher/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12),
       }
 
       if (updateResult.affectedRows > 0) {
-        return res.status(200).json({ Users_ID: Target_Users_ID,
-           updated_by: Requester_Users_ID, updated_fields: modifiedFields, message: "Teacher profile updated successfully.", status: true
+        return res.status(200).json({
+          Users_ID: Target_Users_ID,
+          updated_by: Requester_Users_ID, updated_fields: modifiedFields, message: "Teacher profile updated successfully.", status: true
         });
       } else {
         return res.status(404).json({ message: "No changes made or teacher not found.", status: false });
@@ -966,7 +1022,7 @@ app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 6
   }
 });
 
-// API Get Users Data by Users_ID of Admin Website
+// API Get Users Data by Users_ID of Admin Website**
 app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
@@ -1028,7 +1084,7 @@ app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTok
           sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile ,t.Teacher_FirstName, t.Teacher_LastName, dp.Department_Name, f.Faculty_Name FROM
             ((((${tableName} ty INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID)
             INNER JOIN teacher t ON ty.Teacher_ID = t.Teacher_ID) INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1;`;
-        }else if (usersType === 'teacher') {
+        } else if (usersType === 'teacher') {
           sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile, dp.Department_Name, f.Faculty_Name FROM (((${tableName} ty 
             INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) 
             INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1`;
@@ -1064,7 +1120,7 @@ app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTok
 
 //////////////////////////////////Profile Application API///////////////////////////////////////
 //API Edit Student Profile Application
-app.put('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.put('/api/profile/student/update', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
@@ -1082,7 +1138,7 @@ app.put('/api/profile/student/update',RateLimiter(0.5 * 60 * 1000, 12), VerifyTo
     return res.status(403).json({ message: "Permission denied. Only students can perform this action.", status: false });
   }
 
-  let { Student_Phone, Student_Birthdate, Student_Religion,Student_MedicalProblem } = req.body || {};
+  let { Student_Phone, Student_Birthdate, Student_Religion, Student_MedicalProblem } = req.body || {};
 
   if (Student_Phone && !validator.isMobilePhone(Student_Phone, 'any', { strictMode: false })) {
     return res.status(400).json({ message: "Invalid phone number format.", status: false });
@@ -1275,7 +1331,7 @@ app.get('/api/images/profile-images/:filename', VerifyTokens, (req, res) => {
     const filePath = path.join(uploadDir_Profile, filename);
 
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: 'Image not found' , status: false });
+      return res.status(404).json({ message: 'Image not found', status: false });
     }
 
     res.type(ext);
@@ -1288,7 +1344,7 @@ app.get('/api/images/profile-images/:filename', VerifyTokens, (req, res) => {
 
 
 //API add Profile Image in Users of Application
-app.post('/api/profile/upload/image', upload.single('Users_ImageFile') ,RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.post('/api/profile/upload/image', upload.single('Users_ImageFile'), RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Users_ID = userData?.Users_ID;
   const Login_Type = userData?.Login_Type;
@@ -1726,7 +1782,7 @@ app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
       if (!passwordMatch) {
         return res.status(401).json({ message: 'Current password is incorrect.', status: false });
       }
-      
+
       const hashedPassword = await bcrypt.hash(New_Password, saltRounds);
       const updateSql = "UPDATE users SET Users_Password = ? WHERE Users_ID = ?";
       db.query(updateSql, [hashedPassword, user.Users_ID], async (err, updateResult) => {
@@ -1738,7 +1794,7 @@ app.post('/api/profile/resetpassword', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
         if (updateResult.affectedRows > 0) {
           try {
             const notifyMsg = 'บัญชีของคุณได้รับการอัปเดตรหัสผ่านเรียบร้อยแล้ว หากคุณไม่ได้ทำรายการนี้ โปรดติดต่อฝ่ายสนับสนุนโดยด่วน';
-            await sendEmail(Users_Email ,"แจ้งเตือน: คุณได้เปลี่ยนรหัสผ่าน" ,"หากไม่ใช่คุณ กรุณาติดต่อทีมงานด่วน" ,"เปลี่ยนรหัสผ่านสำเร็จ" ,notifyMsg );
+            await sendEmail(Users_Email, "แจ้งเตือน: คุณได้เปลี่ยนรหัสผ่าน", "หากไม่ใช่คุณ กรุณาติดต่อทีมงานด่วน", "เปลี่ยนรหัสผ่านสำเร็จ", notifyMsg);
             return res.status(200).json({ message: 'Password reset successfully.', status: true });
 
           } catch (emailError) {
@@ -1782,7 +1838,7 @@ app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens,
       sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile ,t.Teacher_FirstName, t.Teacher_LastName, dp.Department_Name, f.Faculty_Name FROM
         ((((${tableName} ty INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID)
         INNER JOIN teacher t ON ty.Teacher_ID = t.Teacher_ID) INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1;`;
-    }else if (usersType === 'teacher') {
+    } else if (usersType === 'teacher') {
       sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile, dp.Department_Name, f.Faculty_Name FROM (((${tableName} ty 
         INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) 
         INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1`;
