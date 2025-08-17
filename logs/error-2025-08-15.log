@@ -1,5 +1,0 @@
-[15-08-2025 00:00:07] ERROR: [User: anonymous] ← 500 GET /api/admin/data/get | 8.69 ms from ::1
-[15-08-2025 00:08:05] ERROR: [User: anonymous] ← 500 POST /api/login/website | 8.65 ms from ::1
-[15-08-2025 00:30:57] ERROR: [User: anonymous] ← 500 POST /api/login/website | 8.87 ms from ::1
-[15-08-2025 00:37:46] ERROR: [User: anonymous] ← 500 GET /api/admin/data/get | 9.12 ms from ::1
-[15-08-2025 01:12:18] ERROR: [User: anonymous] ← 500 POST /api/login/website | 8.96 ms from ::1

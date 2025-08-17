@@ -78,7 +78,6 @@ function sanitizeRequest(req, res, next) {
   next();
 }
 
-
 app.use(express.json());
 app.use(sanitizeRequest);
 app.use(requestLogger);
@@ -612,7 +611,7 @@ app.post('/api/logout-website', (req, res) => {
 });
 
 ////////////////////////////////// Timestamp API ///////////////////////////////////////
-//API Timestamp Insert
+//API Timestamp Insert for Application
 app.post('/api/timestamp/insert', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const usersID = userData.Users_ID;
@@ -654,10 +653,67 @@ app.post('/api/timestamp/insert', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens
   }
 });
 
+//API Timestamp Insert for Website
+app.post('/api/timestamp/website/insert', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const usersID = userData.Users_ID;
 
-//API Timestamp Get by Users_ID
-app.get('/api/timestamp/get/users/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
+  const { Timestamp_Name, TimestampType_ID } = req.body || {};
+
+  const Timestamp_IP_Address = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || null;
+  const Timestamp_UserAgent = req.headers['user-agent'] || null;
+
+  if (!Timestamp_Name || !usersID || !TimestampType_ID) {
+    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  }
+  if (typeof usersID !== 'number' || typeof TimestampType_ID !== 'number') {
+    return res.status(400).json({ message: "Users_ID and TimestampType_ID must be numbers.", status: false });
+  }
+  if (typeof Timestamp_Name !== 'string') {
+    return res.status(400).json({ message: "Timestamp_Name must be a string.", status: false });
+  }
+
+  try {
+    const sql = `
+      INSERT INTO timestamp (Timestamp_Name, Timestamp_IP_Address, Timestamp_UserAgent, Users_ID, TimestampType_ID)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    db.query(sql, [Timestamp_Name, Timestamp_IP_Address, Timestamp_UserAgent, usersID, TimestampType_ID], (err, result) => {
+      if (err) {
+        console.error('Database error (timestamp)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.affectedRows > 0) {
+        return res.status(200).json({ message: 'Timestamp inserted successfully.', status: true });
+      } else {
+        return res.status(501).json({ message: 'Timestamp not inserted.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API Timestamp Get by Users_ID of Website
+app.get('/api/timestamp/get/users/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website , async (req, res) => {
   const Users_ID = req.params.Users_ID;
+  const userData = req.user;
+  const AdminID = userData.Users_ID;
+  const Login_Type = userData?.Login_Type;
+  const Users_Type = userData?.Users_Type;
+
+  if (!AdminID || typeof AdminID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid Paramiter.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed for staff users.", status: false });
+  }
 
   if (!Users_ID) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });

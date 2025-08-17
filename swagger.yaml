@@ -1113,7 +1113,11 @@ paths:
                 Users_Email:
                   type: string
                   description: User email or username
-                  example:
+                  example: staff.admin@rmutto.ac.th
+                Users_Password:
+                  type: string
+                  description: User password
+                  example: Cs12345678
       responses:
         '200':
           description: Login successful
@@ -1225,7 +1229,7 @@ paths:
 
   /api/timestamp/insert:
     post:
-      summary: Insert new timestamp
+      summary: Insert Application Timestamp
       description: Create a new timestamp entry with a name and type for the current authenticated user.
       tags:
         - Timestamp
@@ -1300,6 +1304,90 @@ paths:
                   status:
                     type: boolean
                     example: false
+
+  /api/timestamp/website/insert:
+    post:
+      summary: Insert Website Timestamp
+      description: Record a timestamp for website user actions
+      tags:
+        - Timestamp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Timestamp_Name:
+                  type: string
+                  example: "Login success used by user@example.com at 18/08/2025 13:45:00 on Website."
+                  description: Timestamp message
+                TimestampType_ID:
+                  type: integer
+                  example: 2
+                  description: Type of timestamp (e.g., 1 = Login)
+              required:
+                - Timestamp_Name
+                - TimestampType_ID
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                Timestamp_Name:
+                  type: string
+                  example: "Login success used by user@example.com at 18/08/2025 13:45:00 on Website."
+                  description: Timestamp message
+                TimestampType_ID:
+                  type: integer
+                  example: 2
+                  description: Type of timestamp (e.g., 1 = Login)
+              required:
+                - Timestamp_Name
+                - TimestampType_ID
+      responses:
+        '200':
+          description: Timestamp inserted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+                example:
+                  message: "Timestamp inserted successfully."
+                  status: true
+        '400':
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+                example:
+                  message: "Please fill in the correct parameters as required."
+                  status: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  status:
+                    type: boolean
+                example:
+                  message: "An error occurred on the server."
+                  status: false
+      security: []
 
   /api/timestamp/get/users/{Users_ID}:
     get:
@@ -1385,6 +1473,7 @@ paths:
                   status:
                     type: boolean
                     example: false
+    security: []
 
   /api/timestamp/get/type/{TimestampType_ID}:
     get:
