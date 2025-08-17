@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const moment = require('moment');
 const validator = require('validator');
 const fileType = require('file-type');
+const cookieParser = require("cookie-parser");
 const helmet = require('helmet');
 const { v4: uuidv4 } = require('uuid');
 const sharp = require('sharp');
@@ -24,9 +25,11 @@ const GenerateTokens = require('./Jwt_Tokens/Tokens_Generator');
 const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
 const { sendOTP, verifyOTP, sendEmail } = require('./OTP_Services/otpService');
 const { generateResetToken, verifyResetToken, deleteResetToken } = require('./Jwt_Tokens/ResetTokens_Manager');
+const VerifyTokens_Website = require('./Jwt_Tokens/Tokens_Verification_Website');
 
 const app = express();
 const saltRounds = 14;
+const isProduction = process.env.ENV_MODE === "1";
 
 const uploadDir = path.join(__dirname, 'images');
 const uploadDir_Profile = path.join(__dirname, 'images/users-profile-images');
@@ -80,6 +83,7 @@ app.use(express.json());
 app.use(sanitizeRequest);
 app.use(requestLogger);
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 //อนาคตต้องมาแก้ contentSecurityPolicy ของ helmet**
 app.use(helmet({
@@ -87,7 +91,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-app.use(cors());
+app.use(cors({
+  origin: isProduction ? process.env.WEB_CLIENT_URL_PROD : process.env.WEB_CLIENT_URL_DEV,
+  credentials: true
+}));
 
 ////////////////////////////////// SWAGGER CONFIG ///////////////////////////////////////
 const swaggerDocument = YAML.load('./swagger.yaml');
@@ -234,6 +241,26 @@ app.post('/api/verifyToken', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens, (re
     });
   }
   return res.status(402).json({ message: 'Invalid Token.', status: false });
+});
+
+// Verify Token for Website
+app.post('/api/verifyToken-website', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens_Website, (req, res) => {
+  const userData = req.user;
+
+  if (!userData) {
+    return res.status(401).json({ message: 'Invalid token.', status: false });
+  }
+
+  return res.status(200).json({
+    Users_ID: userData.Users_ID,
+    Users_Email: userData.Users_Email,
+    Users_Username: userData.Users_Username,
+    UsersType_ID: userData.UsersType_ID,
+    Users_Type: userData.Users_Type,
+    Login_Type: userData.Login_Type,
+    message: 'Token is valid.',
+    status: true,
+  });
 });
 
 ////////////////////////////////// System API ///////////////////////////////////////
@@ -413,7 +440,7 @@ app.post('/api/system/resetpassword-resettoken', RateLimiter(0.5 * 60 * 1000, 12
   }
 });
 
-////////////////////////////////// Login API ///////////////////////////////////////
+////////////////////////////////// Authentication API ///////////////////////////////////////
 //API Login Application
 app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5), async (req, res) => {
   let { Users_Email, Users_Password } = req.body || {};
@@ -487,7 +514,7 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5), async (req, re
   }
 });
 
-//API Login Web Admin
+// API Login Web Admin**
 app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5), async (req, res) => {
   let { Users_Email, Users_Password } = req.body || {};
 
@@ -497,11 +524,12 @@ app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5), async (req, res) =
   }
 
   Users_Email = xss(validator.escape(Users_Email));
-  Users_Password = xss(Users_Password)
+  Users_Password = xss(Users_Password);
 
   try {
-    const sql = "SELECT Users_ID, Users_Email, Users_Username, Users_Password, Users_Type " +
-      "FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND (Users_Type = 'teacher' OR Users_Type = 'staff') AND Users_IsActive = 1";
+    const sql = `SELECT Users_ID, Users_Email, Users_Username, Users_Password, Users_Type
+      FROM users WHERE (Users_Username = ? OR Users_Email = ?) AND (Users_Type = 'teacher' OR Users_Type = 'staff') AND Users_IsActive = 1`;
+
     db.query(sql, [Users_Email, Users_Email], async (err, result) => {
       if (err) {
         console.error('Database error (users)', err);
@@ -543,21 +571,44 @@ app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5), async (req, res) =
         const userType = result_users_type[0];
         const UsersType_ID = userType[users_type_name_id];
 
-        const token = GenerateTokens(user.Users_ID,
-          user.Users_Email, user.Users_Username, UsersType_ID, user.Users_Type, 'website');
+        const token = GenerateTokens(
+          user.Users_ID,
+          user.Users_Email,
+          user.Users_Username,
+          UsersType_ID,
+          user.Users_Type,
+          'website'
+        );
 
-        const responseData = {
-          token: token,
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: isProduction ? "None" : "Lax",
+          domain: isProduction ? process.env.COOKIE_DOMAIN_PROD : undefined,
+          maxAge: 60 * 60 * 1000
+        });
+
+        res.status(200).json({
           message: "The login was successful.",
           status: true
-        };
-        res.status(200).json(responseData);
+        });
       });
     });
   } catch (error) {
     console.error('Catch error', error);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
+});
+
+// API Logout Web Admin
+app.post('/api/logout-website', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'None' : 'Lax',
+    domain: isProduction ? process.env.COOKIE_DOMAIN_PROD : undefined
+  });
+  res.status(200).json({ message: 'Logged out successfully.' , status: true });
 });
 
 ////////////////////////////////// Timestamp API ///////////////////////////////////////
@@ -664,7 +715,7 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
 
 //////////////////////////////////Admin Website API///////////////////////////////////////
 // API Get Data Admin by VerifyTokens of Admin Website**
-app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens, async (req, res) => {
+app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const usersTypeID = userData.UsersType_ID;
   const usersType = userData.Users_Type;

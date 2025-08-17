@@ -1,0 +1,394 @@
+[17-08-2025 21:55:16] HTTP: [User: anonymous] → OPTIONS /api/verifyToken from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 21:55:16] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken | 5.49 ms from ::1
+[17-08-2025 21:55:16] HTTP: [User: anonymous] → POST /api/verifyToken from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 21:55:16] WARN: [User: anonymous] ← 401 POST /api/verifyToken | 7.98 ms from ::1
+[17-08-2025 21:55:16] HTTP: [User: anonymous] → OPTIONS /api/verifyToken from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 21:55:16] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken | 0.91 ms from ::1
+[17-08-2025 21:55:16] HTTP: [User: anonymous] → POST /api/verifyToken from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 21:55:16] WARN: [User: anonymous] ← 401 POST /api/verifyToken | 3.62 ms from ::1
+[17-08-2025 22:51:19] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:19] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 5.67 ms from ::1
+[17-08-2025 22:51:19] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:19] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 1.31 ms from ::1
+[17-08-2025 22:51:19] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:19] WARN: [User: anonymous] ← 401 POST /api/verifyToken-website | 5.00 ms from ::1
+[17-08-2025 22:51:19] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:19] WARN: [User: anonymous] ← 401 POST /api/verifyToken-website | 4.51 ms from ::1
+[17-08-2025 22:51:26] HTTP: [User: anonymous] → OPTIONS /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:26] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 1.08 ms from ::1
+[17-08-2025 22:51:26] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:27] WARN: [SLOW] [User: anonymous] ← 200 POST /api/login/website | 1021.34 ms from ::1
+[17-08-2025 22:51:27] INFO: [User: anonymous] ← 200 POST /api/login/website | 1021.34 ms from ::1
+[17-08-2025 22:51:28] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:28] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.97 ms from ::1
+[17-08-2025 22:51:28] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:28] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 3.47 ms from ::1
+[17-08-2025 22:51:28] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:28] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 1.29 ms from ::1
+[17-08-2025 22:51:28] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:28] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.81 ms from ::1
+[17-08-2025 22:51:28] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:28] INFO: [User: anonymous] ← 200 GET /api/admin/data/get | 15.56 ms from ::1
+[17-08-2025 22:51:28] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:28] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.62 ms from ::1
+[17-08-2025 22:51:29] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:29] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.20 ms from ::1
+[17-08-2025 22:51:29] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:29] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.99 ms from ::1
+[17-08-2025 22:51:29] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:29] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.46 ms from ::1
+[17-08-2025 22:51:29] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:29] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.41 ms from ::1
+[17-08-2025 22:51:29] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:29] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 4.01 ms from ::1
+[17-08-2025 22:51:29] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:29] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.71 ms from ::1
+[17-08-2025 22:51:29] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:29] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.85 ms from ::1
+[17-08-2025 22:51:29] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:29] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.65 ms from ::1
+[17-08-2025 22:51:30] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:30] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.37 ms from ::1
+[17-08-2025 22:51:30] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:30] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.58 ms from ::1
+[17-08-2025 22:51:30] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:30] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.90 ms from ::1
+[17-08-2025 22:51:30] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:30] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.51 ms from ::1
+[17-08-2025 22:51:31] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:31] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.07 ms from ::1
+[17-08-2025 22:51:31] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:31] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.29 ms from ::1
+[17-08-2025 22:51:31] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:31] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.18 ms from ::1
+[17-08-2025 22:51:31] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:31] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.68 ms from ::1
+[17-08-2025 22:51:35] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:35] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.89 ms from ::1
+[17-08-2025 22:51:35] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:35] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.70 ms from ::1
+[17-08-2025 22:51:35] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:35] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.32 ms from ::1
+[17-08-2025 22:51:35] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:35] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 3.58 ms from ::1
+[17-08-2025 22:51:35] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:35] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.58 ms from ::1
+[17-08-2025 22:51:35] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:35] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.21 ms from ::1
+[17-08-2025 22:51:36] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:36] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.88 ms from ::1
+[17-08-2025 22:51:36] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:36] WARN: [User: anonymous] ← 429 POST /api/verifyToken-website | 1.35 ms from ::1
+[17-08-2025 22:51:36] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:36] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 14.09 ms from ::1
+[17-08-2025 22:51:47] HTTP: [User: anonymous] → OPTIONS /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:47] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 1.09 ms from ::1
+[17-08-2025 22:51:47] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:48] INFO: [User: anonymous] ← 200 POST /api/login/website | 964.26 ms from ::1
+[17-08-2025 22:51:48] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:48] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 1.25 ms from ::1
+[17-08-2025 22:51:48] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:48] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.91 ms from ::1
+[17-08-2025 22:51:48] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:48] WARN: [User: anonymous] ← 429 POST /api/verifyToken-website | 1.69 ms from ::1
+[17-08-2025 22:51:49] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:49] WARN: [User: anonymous] ← 429 POST /api/verifyToken-website | 1.72 ms from ::1
+[17-08-2025 22:51:57] HTTP: [User: anonymous] → OPTIONS /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:57] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 1.07 ms from ::1
+[17-08-2025 22:51:57] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:51:58] WARN: [User: anonymous] ← 401 POST /api/login/website | 960.52 ms from ::1
+[17-08-2025 22:52:05] HTTP: [User: anonymous] → OPTIONS /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:05] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 0.82 ms from ::1
+[17-08-2025 22:52:05] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:06] INFO: [User: anonymous] ← 200 POST /api/login/website | 950.64 ms from ::1
+[17-08-2025 22:52:06] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:06] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.81 ms from ::1
+[17-08-2025 22:52:06] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:06] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.00 ms from ::1
+[17-08-2025 22:52:06] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:06] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.92 ms from ::1
+[17-08-2025 22:52:06] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:06] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 3.16 ms from ::1
+[17-08-2025 22:52:06] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:06] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.61 ms from ::1
+[17-08-2025 22:52:06] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:06] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.08 ms from ::1
+[17-08-2025 22:52:07] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:07] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.87 ms from ::1
+[17-08-2025 22:52:07] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:07] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.93 ms from ::1
+[17-08-2025 22:52:07] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:07] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.01 ms from ::1
+[17-08-2025 22:52:07] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:07] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.26 ms from ::1
+[17-08-2025 22:52:07] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:07] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.73 ms from ::1
+[17-08-2025 22:52:07] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:07] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.60 ms from ::1
+[17-08-2025 22:52:08] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:08] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 3.50 ms from ::1
+[17-08-2025 22:52:08] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:08] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.11 ms from ::1
+[17-08-2025 22:52:08] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:08] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.86 ms from ::1
+[17-08-2025 22:52:08] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:08] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.82 ms from ::1
+[17-08-2025 22:52:08] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:08] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.96 ms from ::1
+[17-08-2025 22:52:08] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:08] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.31 ms from ::1
+[17-08-2025 22:52:08] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:08] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 13.36 ms from ::1
+[17-08-2025 22:52:08] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:08] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.74 ms from ::1
+[17-08-2025 22:52:09] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:09] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.87 ms from ::1
+[17-08-2025 22:52:09] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:09] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.98 ms from ::1
+[17-08-2025 22:52:09] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:09] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.78 ms from ::1
+[17-08-2025 22:52:09] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:09] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.28 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.78 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.97 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.78 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.75 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 13.08 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.87 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.86 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.75 ms from ::1
+[17-08-2025 22:52:47] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:47] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.26 ms from ::1
+[17-08-2025 22:52:48] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:48] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.22 ms from ::1
+[17-08-2025 22:52:48] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:48] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.54 ms from ::1
+[17-08-2025 22:52:48] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:48] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.75 ms from ::1
+[17-08-2025 22:52:48] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:48] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.36 ms from ::1
+[17-08-2025 22:52:49] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:49] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.08 ms from ::1
+[17-08-2025 22:52:49] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:49] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.92 ms from ::1
+[17-08-2025 22:52:49] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:49] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.46 ms from ::1
+[17-08-2025 22:52:49] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:49] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.34 ms from ::1
+[17-08-2025 22:52:49] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:49] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.29 ms from ::1
+[17-08-2025 22:52:49] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:49] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.59 ms from ::1
+[17-08-2025 22:52:49] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:49] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.68 ms from ::1
+[17-08-2025 22:52:49] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:49] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.76 ms from ::1
+[17-08-2025 22:52:50] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:50] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.42 ms from ::1
+[17-08-2025 22:52:50] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:50] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.07 ms from ::1
+[17-08-2025 22:52:50] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:50] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.84 ms from ::1
+[17-08-2025 22:52:50] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:50] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.31 ms from ::1
+[17-08-2025 22:52:51] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:51] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.20 ms from ::1
+[17-08-2025 22:52:51] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:51] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 3.07 ms from ::1
+[17-08-2025 22:52:51] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:51] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.15 ms from ::1
+[17-08-2025 22:52:51] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:51] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.08 ms from ::1
+[17-08-2025 22:52:52] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:52] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 3.32 ms from ::1
+[17-08-2025 22:52:52] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:52] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.00 ms from ::1
+[17-08-2025 22:52:52] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:52] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.84 ms from ::1
+[17-08-2025 22:52:52] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:52] WARN: [User: anonymous] ← 429 POST /api/verifyToken-website | 1.18 ms from ::1
+[17-08-2025 22:52:52] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:52:52] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.11 ms from ::1
+[17-08-2025 22:53:19] HTTP: [User: anonymous] → OPTIONS /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:19] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 0.87 ms from ::1
+[17-08-2025 22:53:19] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:20] INFO: [User: anonymous] ← 200 POST /api/login/website | 956.57 ms from ::1
+[17-08-2025 22:53:20] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:20] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 1.34 ms from ::1
+[17-08-2025 22:53:20] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:20] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.83 ms from ::1
+[17-08-2025 22:53:20] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:20] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 0.99 ms from ::1
+[17-08-2025 22:53:20] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:20] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.82 ms from ::1
+[17-08-2025 22:53:20] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:20] INFO: [User: anonymous] ← 200 GET /api/admin/data/get | 12.12 ms from ::1
+[17-08-2025 22:53:20] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:20] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.28 ms from ::1
+[17-08-2025 22:53:21] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:21] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.75 ms from ::1
+[17-08-2025 22:53:21] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:21] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 10.97 ms from ::1
+[17-08-2025 22:53:22] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:22] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.99 ms from ::1
+[17-08-2025 22:53:22] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:22] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.24 ms from ::1
+[17-08-2025 22:53:22] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:22] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 14.02 ms from ::1
+[17-08-2025 22:53:22] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:22] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.73 ms from ::1
+[17-08-2025 22:53:22] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:22] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.12 ms from ::1
+[17-08-2025 22:53:22] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:22] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.81 ms from ::1
+[17-08-2025 22:53:22] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:22] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.23 ms from ::1
+[17-08-2025 22:53:22] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:22] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 10.94 ms from ::1
+[17-08-2025 22:53:23] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:23] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 1.94 ms from ::1
+[17-08-2025 22:53:23] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:23] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.38 ms from ::1
+[17-08-2025 22:53:23] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:23] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 10.92 ms from ::1
+[17-08-2025 22:53:23] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:53:23] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.10 ms from ::1
+[17-08-2025 22:56:56] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:56:56] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 1.77 ms from ::1
+[17-08-2025 22:56:56] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:56:56] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 5.25 ms from ::1
+[17-08-2025 22:56:56] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 22:56:56] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 14.06 ms from ::1
+[17-08-2025 23:02:58] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:02:58] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 5.88 ms from ::1
+[17-08-2025 23:02:58] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:02:58] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 1.08 ms from ::1
+[17-08-2025 23:02:58] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:02:58] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 21.39 ms from ::1
+[17-08-2025 23:02:58] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:02:58] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 10.85 ms from ::1
+[17-08-2025 23:02:58] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:02:58] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 56.81 ms from ::1
+[17-08-2025 23:02:58] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:02:58] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.71 ms from ::1
+[17-08-2025 23:03:22] HTTP: [User: anonymous] → OPTIONS /api/logout-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:03:22] INFO: [User: anonymous] ← 204 OPTIONS /api/logout-website | 0.97 ms from ::1
+[17-08-2025 23:03:22] HTTP: [User: anonymous] → POST /api/logout-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:03:22] INFO: [User: anonymous] ← 200 POST /api/logout-website | 1.93 ms from ::1
+[17-08-2025 23:03:30] HTTP: [User: anonymous] → OPTIONS /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:03:30] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 1.30 ms from ::1
+[17-08-2025 23:03:30] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:03:31] INFO: [User: anonymous] ← 200 POST /api/login/website | 965.22 ms from ::1
+[17-08-2025 23:22:15] HTTP: [User: anonymous] → GET /api-docs/ from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:22:15] INFO: [User: anonymous] ← 200 GET /api-docs/ | 13.61 ms from ::1
+[17-08-2025 23:22:15] HTTP: [User: anonymous] → GET /api-docs/swagger-ui.css from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:22:15] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 3.23 ms from ::1
+[17-08-2025 23:22:15] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:22:15] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:22:15] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 4.57 ms from ::1
+[17-08-2025 23:22:15] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-init.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:22:15] INFO: [User: anonymous] ← 200 GET /api-docs/swagger-ui-init.js | 1.89 ms from ::1
+[17-08-2025 23:22:15] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 10.31 ms from ::1
+[17-08-2025 23:22:38] HTTP: [User: anonymous] → POST /api/logout-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:22:38] INFO: [User: anonymous] ← 200 POST /api/logout-website | 3.42 ms from ::1
+[17-08-2025 23:25:54] HTTP: [User: anonymous] → GET /api-docs/ from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:54] INFO: [User: anonymous] ← 304 GET /api-docs/ | 12.72 ms from ::1
+[17-08-2025 23:25:54] HTTP: [User: anonymous] → GET /api-docs/swagger-ui.css from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:54] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:54] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:54] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 5.28 ms from ::1
+[17-08-2025 23:25:54] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 5.47 ms from ::1
+[17-08-2025 23:25:54] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 4.75 ms from ::1
+[17-08-2025 23:25:54] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-init.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:54] INFO: [User: anonymous] ← 200 GET /api-docs/swagger-ui-init.js | 2.66 ms from ::1
+[17-08-2025 23:25:55] HTTP: [User: anonymous] → GET /api-docs from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:55] INFO: [User: anonymous] ← 301 GET /api-docs | 1.43 ms from ::1
+[17-08-2025 23:25:55] HTTP: [User: anonymous] → GET /api-docs/ from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:55] INFO: [User: anonymous] ← 304 GET /api-docs/ | 3.58 ms from ::1
+[17-08-2025 23:25:55] HTTP: [User: anonymous] → GET /api-docs/swagger-ui.css from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:55] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:55] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:55] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 6.22 ms from ::1
+[17-08-2025 23:25:55] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 4.94 ms from ::1
+[17-08-2025 23:25:55] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 5.07 ms from ::1
+[17-08-2025 23:25:55] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-init.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:25:55] INFO: [User: anonymous] ← 200 GET /api-docs/swagger-ui-init.js | 1.64 ms from ::1
+[17-08-2025 23:26:11] HTTP: [User: anonymous] → GET /api-docs/ from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:11] INFO: [User: anonymous] ← 304 GET /api-docs/ | 2.13 ms from ::1
+[17-08-2025 23:26:11] HTTP: [User: anonymous] → GET /api-docs/swagger-ui.css from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:11] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:11] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:11] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 3.32 ms from ::1
+[17-08-2025 23:26:11] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 3.14 ms from ::1
+[17-08-2025 23:26:11] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 4.31 ms from ::1
+[17-08-2025 23:26:11] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-init.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:11] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-init.js | 2.52 ms from ::1
+[17-08-2025 23:26:11] HTTP: [User: anonymous] → GET /api-docs/favicon-32x32.png from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:11] INFO: [User: anonymous] ← 304 GET /api-docs/favicon-32x32.png | 0.94 ms from ::1
+[17-08-2025 23:26:16] HTTP: [User: anonymous] → GET /api-docs/ from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:16] INFO: [User: anonymous] ← 304 GET /api-docs/ | 7.68 ms from ::1
+[17-08-2025 23:26:16] HTTP: [User: anonymous] → GET /api-docs/swagger-ui.css from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:16] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-init.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:16] INFO: [User: anonymous] ← 200 GET /api-docs/swagger-ui-init.js | 1.99 ms from ::1
+[17-08-2025 23:26:16] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:16] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:16] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 8.87 ms from ::1
+[17-08-2025 23:26:16] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 4.42 ms from ::1
+[17-08-2025 23:26:16] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 4.47 ms from ::1
+[17-08-2025 23:26:16] HTTP: [User: anonymous] → GET /api-docs/favicon-32x32.png from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:16] INFO: [User: anonymous] ← 304 GET /api-docs/favicon-32x32.png | 1.65 ms from ::1
+[17-08-2025 23:26:21] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:26:21] WARN: [User: anonymous] ← 401 POST /api/verifyToken-website | 5.61 ms from ::1
+[17-08-2025 23:27:37] HTTP: [User: anonymous] → GET /api-docs/ from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:37] INFO: [User: anonymous] ← 304 GET /api-docs/ | 9.84 ms from ::1
+[17-08-2025 23:27:37] HTTP: [User: anonymous] → GET /api-docs/swagger-ui.css from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:37] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:37] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:37] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 6.89 ms from ::1
+[17-08-2025 23:27:37] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 6.60 ms from ::1
+[17-08-2025 23:27:37] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 6.12 ms from ::1
+[17-08-2025 23:27:37] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-init.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:37] INFO: [User: anonymous] ← 200 GET /api-docs/swagger-ui-init.js | 2.27 ms from ::1
+[17-08-2025 23:27:38] HTTP: [User: anonymous] → GET /api-docs/ from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:38] INFO: [User: anonymous] ← 304 GET /api-docs/ | 1.34 ms from ::1
+[17-08-2025 23:27:38] HTTP: [User: anonymous] → GET /api-docs/swagger-ui.css from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:38] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:38] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 2.27 ms from ::1
+[17-08-2025 23:27:38] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:38] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-init.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:38] INFO: [User: anonymous] ← 200 GET /api-docs/swagger-ui-init.js | 1.90 ms from ::1
+[17-08-2025 23:27:38] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 7.72 ms from ::1
+[17-08-2025 23:27:38] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 6.70 ms from ::1
+[17-08-2025 23:27:44] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:27:45] WARN: [SLOW] [User: anonymous] ← 200 POST /api/login/website | 1019.70 ms from ::1
+[17-08-2025 23:27:45] INFO: [User: anonymous] ← 200 POST /api/login/website | 1019.70 ms from ::1
+[17-08-2025 23:28:03] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:28:03] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 4.79 ms from ::1
+[17-08-2025 23:32:38] HTTP: [User: anonymous] → GET /api-docs/ from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:38] INFO: [User: anonymous] ← 304 GET /api-docs/ | 7.90 ms from ::1
+[17-08-2025 23:32:38] HTTP: [User: anonymous] → GET /api-docs/swagger-ui.css from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:38] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-bundle.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:38] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-init.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:38] INFO: [User: anonymous] ← 200 GET /api-docs/swagger-ui-init.js | 2.17 ms from ::1
+[17-08-2025 23:32:38] HTTP: [User: anonymous] → GET /api-docs/swagger-ui-standalone-preset.js from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:38] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 8.21 ms from ::1
+[17-08-2025 23:32:38] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 8.30 ms from ::1
+[17-08-2025 23:32:38] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 5.68 ms from ::1
+[17-08-2025 23:32:38] HTTP: [User: anonymous] → GET /api-docs/favicon-32x32.png from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:38] INFO: [User: anonymous] ← 304 GET /api-docs/favicon-32x32.png | 1.39 ms from ::1
+[17-08-2025 23:32:44] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:44] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 80.12 ms from ::1
+[17-08-2025 23:32:50] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:50] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.72 ms from ::1
+[17-08-2025 23:32:58] HTTP: [User: anonymous] → POST /api/logout-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:32:58] INFO: [User: anonymous] ← 200 POST /api/logout-website | 2.95 ms from ::1
+[17-08-2025 23:33:04] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[17-08-2025 23:33:04] WARN: [User: anonymous] ← 401 GET /api/admin/data/get | 1.36 ms from ::1
