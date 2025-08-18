@@ -31,6 +31,12 @@ const app = express();
 const saltRounds = 14;
 const isProduction = process.env.ENV_MODE === "1";
 
+const allowedOrigins = [
+  process.env.WEB_CLIENT_URL_DEV,
+  process.env.WEB_CLIENT_URL_PROD,
+  null
+];
+
 const uploadDir = path.join(__dirname, 'images');
 const uploadDir_Profile = path.join(__dirname, 'images/users-profile-images');
 
@@ -91,8 +97,15 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: isProduction ? process.env.WEB_CLIENT_URL_PROD : process.env.WEB_CLIENT_URL_DEV,
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
 
 ////////////////////////////////// SWAGGER CONFIG ///////////////////////////////////////
