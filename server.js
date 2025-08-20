@@ -34,6 +34,7 @@ const isProduction = process.env.ENV_MODE === "1";
 const allowedOrigins = [
   process.env.WEB_CLIENT_URL_DEV,
   process.env.WEB_CLIENT_URL_PROD,
+  process.env.WEB_CLIENT_URL_PROD_2,
   null
 ];
 
@@ -96,13 +97,20 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// CORS Configuration
 app.use(cors({
   origin: (origin, callback) => {
+    console.log('CORS origin:', origin);
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
+    if (isProduction) {
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log('Blocked by CORS:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true);
     }
   },
   credentials: true,
@@ -620,7 +628,7 @@ app.post('/api/logout-website', (req, res) => {
     sameSite: isProduction ? 'None' : 'Lax',
     domain: isProduction ? process.env.COOKIE_DOMAIN_PROD : undefined
   });
-  res.status(200).json({ message: 'Logged out successfully.' , status: true });
+  res.status(200).json({ message: 'Logged out successfully.', status: true });
 });
 
 ////////////////////////////////// Timestamp API ///////////////////////////////////////
@@ -708,8 +716,49 @@ app.post('/api/timestamp/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Veri
   }
 });
 
+//API Timestamp Get All Data
+app.get('/api/timestamp/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  try {
+    const sql = `SELECT ts.Timestamp_ID, ts.Timestamp_RegisTime, ts.Timestamp_Name ,ts.Timestamp_UserAgent ,
+      ts.Timestamp_IP_Address ,ts.TimestampType_ID, ts.Users_ID, u.Users_Email, u.Users_Type ,tst.TimestampType_Name FROM
+      (((timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) INNER JOIN users u ON ts.Users_ID = u.Users_ID ))
+      ORDER BY ts.Timestamp_RegisTime DESC`;
+    db.query(sql, (err, result) => {
+      if (err) {
+        console.error('Database error (timestamp)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length > 0) {
+        return res.status(200).json({
+          message: "Get timestamps successfully.",
+          status: true,
+          data: result
+        });
+
+      } else {
+        return res.status(404).json({ message: 'No timestamps found for this type.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
 //API Timestamp Get by Users_ID of Website
-app.get('/api/timestamp/get/users/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website , async (req, res) => {
+app.get('/api/timestamp/get/users/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const Users_ID = req.params.Users_ID;
   const userData = req.user;
   const AdminID = userData.Users_ID;

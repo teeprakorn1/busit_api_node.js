@@ -1,0 +1,37 @@
+[21-08-2025 02:38:36] INFO: [User: anonymous] ← 200 GET /api/timestamp/get/type/1 | 58.49 ms from ::1
+[21-08-2025 03:00:08] INFO: [User: anonymous] ← 304 GET /api-docs/ | 11.27 ms from ::1
+[21-08-2025 03:00:08] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 4.59 ms from ::1
+[21-08-2025 03:00:08] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 2.97 ms from ::1
+[21-08-2025 03:00:08] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 3.01 ms from ::1
+[21-08-2025 03:00:08] INFO: [User: anonymous] ← 200 GET /api-docs/swagger-ui-init.js | 3.53 ms from ::1
+[21-08-2025 03:00:24] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 3.78 ms from ::1
+[21-08-2025 03:00:57] WARN: [SLOW] [User: anonymous] ← 200 POST /api/login/website | 1025.37 ms from ::1
+[21-08-2025 03:00:57] INFO: [User: anonymous] ← 200 POST /api/login/website | 1025.37 ms from ::1
+[21-08-2025 03:01:06] INFO: [User: anonymous] ← 200 POST /api/login/website | 979.07 ms from ::1
+[21-08-2025 03:01:17] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 103.34 ms from ::1
+[21-08-2025 03:53:42] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 1.92 ms from ::1
+[21-08-2025 03:53:42] ERROR: [User: anonymous] ← 500 POST /api/login/website | 10.18 ms from ::1
+[21-08-2025 03:53:45] WARN: [SLOW] [User: anonymous] ← 200 POST /api/login/website | 1010.35 ms from ::1
+[21-08-2025 03:53:45] INFO: [User: anonymous] ← 200 POST /api/login/website | 1010.35 ms from ::1
+[21-08-2025 03:53:46] INFO: [User: anonymous] ← 204 OPTIONS /api/timestamp/website/insert | 1.02 ms from ::1
+[21-08-2025 03:53:46] INFO: [User: anonymous] ← 200 POST /api/timestamp/website/insert | 84.32 ms from ::1
+[21-08-2025 03:53:46] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 1.15 ms from ::1
+[21-08-2025 03:53:46] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 5.75 ms from ::1
+[21-08-2025 03:53:46] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 2.14 ms from ::1
+[21-08-2025 03:53:46] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 3.54 ms from ::1
+[21-08-2025 03:53:46] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 12.20 ms from ::1
+[21-08-2025 03:53:46] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 11.10 ms from ::1
+[21-08-2025 05:35:58] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 1.34 ms from ::1
+[21-08-2025 05:35:58] ERROR: [User: anonymous] ← 500 POST /api/login/website | 7.61 ms from ::1
+[21-08-2025 05:36:09] WARN: [SLOW] [User: anonymous] ← 500 POST /api/login/website | 10017.67 ms from ::1
+[21-08-2025 05:36:09] ERROR: [User: anonymous] ← 500 POST /api/login/website | 10017.67 ms from ::1
+[21-08-2025 05:36:11] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 1.46 ms from ::1
+[21-08-2025 05:36:21] WARN: [SLOW] [User: anonymous] ← 500 POST /api/login/website | 10014.51 ms from ::1
+[21-08-2025 05:36:21] ERROR: [User: anonymous] ← 500 POST /api/login/website | 10014.51 ms from ::1
+[21-08-2025 05:36:36] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 6.39 ms from ::1
+[21-08-2025 05:36:57] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 5.53 ms from ::1
+[21-08-2025 05:38:03] INFO: [User: anonymous] ← 304 GET /api-docs/ | 11.32 ms from ::1
+[21-08-2025 05:38:03] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui.css | 3.77 ms from ::1
+[21-08-2025 05:38:03] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-bundle.js | 2.82 ms from ::1
+[21-08-2025 05:38:03] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-standalone-preset.js | 2.45 ms from ::1
+[21-08-2025 05:38:03] INFO: [User: anonymous] ← 304 GET /api-docs/swagger-ui-init.js | 2.25 ms from ::1

@@ -1389,6 +1389,107 @@ paths:
                   status: false
       security: []
 
+  /api/timestamp/get:
+    get:
+      summary: Get all timestamp records
+      description: |
+        Retrieve all timestamp records from the system.  
+        - Allowed only for **Users_Type = staff** and **Login_Type = website**  
+        - Requires **JWT authentication**  
+        - Rate limited to **12 requests / 30 seconds**
+      tags:
+        - Timestamp
+      responses:
+        "200":
+          description: Successfully retrieved timestamp records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Get timestamps successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Timestamp_ID:
+                          type: integer
+                          example: 1
+                        Timestamp_RegisTime:
+                          type: string
+                          format: date-time
+                          example: "2025-08-21T12:34:56Z"
+                        Timestamp_Name:
+                          type: string
+                          example: "User Login"
+                        Timestamp_UserAgent:
+                          type: string
+                          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                        Timestamp_IP_Address:
+                          type: string
+                          example: "192.168.1.10"
+                        TimestampType_ID:
+                          type: integer
+                          example: 2
+                        Users_ID:
+                          type: integer
+                          example: 15
+                        Users_Email:
+                          type: string
+                          example: "staff@example.com"
+                        Users_Type:
+                          type: string
+                          example: "staff"
+                        TimestampType_Name:
+                          type: string
+                          example: "Login"
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: No timestamps found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No timestamps found for this type.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred on the server.
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
   /api/timestamp/get/users/{Users_ID}:
     get:
       tags:
