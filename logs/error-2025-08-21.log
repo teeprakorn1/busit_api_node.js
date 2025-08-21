@@ -1,4 +1,0 @@
-[21-08-2025 03:53:42] ERROR: [User: anonymous] ← 500 POST /api/login/website | 10.18 ms from ::1
-[21-08-2025 05:35:58] ERROR: [User: anonymous] ← 500 POST /api/login/website | 7.61 ms from ::1
-[21-08-2025 05:36:09] ERROR: [User: anonymous] ← 500 POST /api/login/website | 10017.67 ms from ::1
-[21-08-2025 05:36:21] ERROR: [User: anonymous] ← 500 POST /api/login/website | 10014.51 ms from ::1

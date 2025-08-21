@@ -1,3 +1,0 @@
-[20-08-2025 20:34:27] ERROR: [User: anonymous] ← 500 POST /api/login/website | 8.93 ms from ::1
-[20-08-2025 20:43:13] ERROR: [User: anonymous] ← 500 POST /api/login/website | 9.37 ms from ::1
-[20-08-2025 20:43:41] ERROR: [User: anonymous] ← 500 POST /api/verifyToken-website | 2.06 ms from ::1
