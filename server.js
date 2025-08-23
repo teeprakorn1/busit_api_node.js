@@ -91,11 +91,28 @@ app.use(requestLogger);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-//อนาคตต้องมาแก้ contentSecurityPolicy ของ helmet**
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+        "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+        "img-src": ["'self'", "data:", "blob:"],
+        "font-src": ["'self'", "https://fonts.gstatic.com"],
+        "connect-src": [
+          "'self'",
+          process.env.WEB_CLIENT_URL_DEV,
+          process.env.WEB_CLIENT_URL_PROD,
+          process.env.WEB_CLIENT_URL_PROD_2
+        ],
+        "frame-src": ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 // CORS Configuration
 app.use(cors({
@@ -119,26 +136,23 @@ app.use(cors({
 ////////////////////////////////// SWAGGER CONFIG ///////////////////////////////////////
 const swaggerDocument = YAML.load('./swagger.yaml');
 
-// Swagger Authorization Middleware
-const protectSwagger = (req, res, next) => {
-  const token = req.headers['authorization'];
-  if (!token || token !== `Bearer ${process.env.SWAGGER_TOKEN}`) {
-    return res.status(403).json({ message: 'Unauthorized access to Swagger UI' });
-  }
-  next();
-};
-
-// Apply Swagger Middleware
-if (process.env.NODE_ENV === '1') { // (Production)
-  app.use('/api-docs', protectSwagger, swaggerUi.serve, swaggerUi.setup(swaggerDocument, { explorer: true }));
-} else { // (Development)
+if (isProduction) {
+  app.use('/api-docs', (req, res) => {
+    res.status(403).json({ message: 'Swagger UI is disabled in production' });
+  });
+} else {
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, { explorer: true }));
 }
 
 ////////////////////////////////// TEST API ///////////////////////////////////////
+// Server Test
+app.get('/api/health', (req, res) => {
+  res.json({ message: "Server is Running." ,status: true });
+});
+
 // Encrypt Test
 app.post('/api/test/encrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res) => {
-  if (process.env.NODE_ENV === '0') {
+  if (isProduction) {
     return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
@@ -157,7 +171,7 @@ app.post('/api/test/encrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res)
 
 // Decrypt Test
 app.post('/api/test/decrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res) => {
-  if (process.env.NODE_ENV === '0') {
+  if (isProduction) {
     return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
@@ -180,7 +194,7 @@ app.post('/api/test/decrypt', RateLimiter(0.5 * 60 * 1000, 15), async (req, res)
 
 //Send OTP Test
 app.post('/api/test/sendotp', async (req, res) => {
-  if (process.env.NODE_ENV === '0') {
+  if (isProduction) {
     return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
@@ -203,7 +217,7 @@ app.post('/api/test/sendotp', async (req, res) => {
 
 //Verify OTP Test
 app.post('/api/test/verifyotp', async (req, res) => {
-  if (process.env.NODE_ENV === '0') {
+  if (isProduction) {
     return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
@@ -226,7 +240,7 @@ app.post('/api/test/verifyotp', async (req, res) => {
 
 //Send Email Test
 app.post('/api/test/sendemail', async (req, res) => {
-  if (process.env.NODE_ENV === '0') {
+  if (isProduction) {
     return res.status(403).json({ message: 'This API is not allowed in production.', status: false });
   }
 
@@ -534,7 +548,7 @@ app.post('/api/login/application', RateLimiter(1 * 60 * 1000, 5), async (req, re
   }
 });
 
-// API Login Web Admin**
+// API Login Web Admin
 app.post('/api/login/website', RateLimiter(1 * 60 * 1000, 5), async (req, res) => {
   let { Users_Email, Users_Password } = req.body || {};
 
@@ -733,8 +747,8 @@ app.get('/api/timestamp/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Web
   try {
     const sql = `SELECT ts.Timestamp_ID, ts.Timestamp_RegisTime, ts.Timestamp_Name ,ts.Timestamp_UserAgent ,
       ts.Timestamp_IP_Address ,ts.TimestampType_ID, ts.Users_ID, u.Users_Email, u.Users_Type ,tst.TimestampType_Name FROM
-      (((timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) INNER JOIN users u ON ts.Users_ID = u.Users_ID ))
-      ORDER BY ts.Timestamp_RegisTime DESC`;
+      (((timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) INNER JOIN users u ON ts.Users_ID = u.Users_ID )) 
+      WHERE ts.Timestamp_RegisTime >= CURDATE() - INTERVAL 90 DAY ORDER BY ts.Timestamp_RegisTime DESC`;
     db.query(sql, (err, result) => {
       if (err) {
         console.error('Database error (timestamp)', err);
@@ -832,7 +846,7 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
 });
 
 //////////////////////////////////Admin Website API///////////////////////////////////////
-// API Get Data Admin by VerifyTokens of Admin Website**
+// API Get Data Admin by VerifyTokens of Admin Website
 app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const usersTypeID = userData.UsersType_ID;
@@ -1191,7 +1205,7 @@ app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 6
   }
 });
 
-// API Get Users Data by Users_ID of Admin Website**
+// API Get Users Data by Users_ID of Admin Website
 app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;

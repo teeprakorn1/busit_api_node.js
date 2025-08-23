@@ -10,6 +10,26 @@ servers:
     description: Local development server
 
 paths:
+  /api/health:
+    get:
+      summary: Check server status
+      description: Endpoint to check if the server is running properly
+      tags:
+        - Test
+      responses:
+        '200':
+          description: Server is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server is Running."
+                  status:
+                    type: boolean
+                    example: true
   /api/test/encrypt:
     post:
       summary: Encrypt Password
