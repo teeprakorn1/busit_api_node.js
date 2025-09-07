@@ -1,0 +1,45 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 60
+    },
+    "auditLog": "E:\\busit_project\\busit_nodejs\\logs\\.84257f1b9fc60934e44b1fb526b5d3f87d7ee481-audit.json",
+    "files": [
+        {
+            "date": 1755964496474,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\access-2025-08-23.log",
+            "hash": "409aea5e2c699bf51145cf31c01356d57198cad1be20de13d5cdc80b858a4bad"
+        },
+        {
+            "date": 1755968625537,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\access-2025-08-24.log",
+            "hash": "17d3217f9e917cd7301ebfd29ed741638022fc430689fed31ccfef94f6580a5c"
+        },
+        {
+            "date": 1756110746880,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\access-2025-08-25.log",
+            "hash": "e88111c60bf64c10e6bb663896609e8038a0d07a5d200c19987187beb577589c"
+        },
+        {
+            "date": 1756462352033,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\access-2025-08-29.log",
+            "hash": "7ea1c11608f94fb78df11c97f4936d5d9cc9bd13e6e3a5d4ea09a054852dae1e"
+        },
+        {
+            "date": 1756819062387,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\access-2025-09-02.log",
+            "hash": "1d1e966a5cacd2bd2e2ea41b4fb7df7cdd766280068dc9a57aa28b74a77122f7"
+        },
+        {
+            "date": 1756900839791,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\access-2025-09-03.log",
+            "hash": "4f2f99ef8aa09851ed0fc7a4a1793566e6dbd0382a8b01cfec1e4b166d8f01f6"
+        },
+        {
+            "date": 1757226705314,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\access-2025-09-07.log",
+            "hash": "0eb902e288e8560d8b0e5db9cef11f2ef5d9367b91c497a4bb2b912d7ea63ec7"
+        }
+    ],
+    "hashType": "sha256"
+}

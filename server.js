@@ -147,7 +147,7 @@ if (isProduction) {
 ////////////////////////////////// TEST API ///////////////////////////////////////
 // Server Test
 app.get('/api/health', (req, res) => {
-  res.json({ message: "Server is Running." ,status: true });
+  res.json({ message: "Server is Running.", status: true });
 });
 
 // Encrypt Test
@@ -901,7 +901,7 @@ app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_We
 });
 
 //API Edit Student Admin Website
-app.put('/api/admin/student/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.put('/api/admin/student/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
@@ -1007,7 +1007,7 @@ app.put('/api/admin/student/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12),
 });
 
 //API Edit Teacher Admin Website
-app.put('/api/admin/teacher/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.put('/api/admin/teacher/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
@@ -1113,7 +1113,7 @@ app.put('/api/admin/teacher/update/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12),
 });
 
 //API get Other Phone Number by Users_ID of Admin Website
-app.get('/api/admin/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.get('/api/admin/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
@@ -1157,7 +1157,7 @@ app.get('/api/admin/otherphone/get/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12),
 });
 
 //API get Other Phone Number by OtherPhone_ID of Admin Website
-app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Users_Type = userData?.Users_Type;
@@ -1206,7 +1206,7 @@ app.get('/api/admin/otherphone/getbyphoneid/:OtherPhone_ID', RateLimiter(0.5 * 6
 });
 
 // API Get Users Data by Users_ID of Admin Website
-app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
+app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Requester_Users_Type = userData?.Users_Type;
@@ -1297,6 +1297,894 @@ app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTok
     });
   } catch (error) {
     console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Register Student Admin Website**
+app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  let {
+    Users_Email,
+    Users_Password,
+    Student_Code,
+    Student_FirstName,
+    Student_LastName,
+    Student_Phone,
+    Student_AcademicYear,
+    Student_Birthdate,
+    Student_Religion,
+    Student_MedicalProblem,
+    Teacher_ID,
+    Department_ID
+  } = req.body || {};
+
+  if (!Users_Email || !Users_Password || !Student_Code ||
+    !Student_FirstName || !Student_LastName || !Student_AcademicYear ||
+    !Teacher_ID || !Department_ID) {
+    return res.status(400).json({
+      message: 'Please fill in all required fields: Users_Email, Users_Password, Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Teacher_ID, Department_ID',
+      status: false
+    });
+  }
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  Users_Email = xss(Users_Email.trim());
+  if (!validator.isEmail(Users_Email)) {
+    return res.status(400).json({ message: 'Invalid email format.', status: false });
+  }
+
+  let Users_Username = Users_Email.split('@')[0];
+  Users_Username = xss(Users_Username.trim());
+
+  const usernameRegex = /^[a-zA-Z0-9.]+$/;
+  if (!usernameRegex.test(Users_Username) || Users_Username.length < 3 || Users_Username.length > 20) {
+    return res.status(400).json({
+      message: 'Email username part (before @) must be 3-20 characters and can contain letters, numbers, and dot (.) only.',
+      status: false
+    });
+  }
+
+  Users_Password = xss(Users_Password);
+  if (!validator.isStrongPassword(Users_Password, { minLength: 8, minNumbers: 1, minSymbols: 0, minUppercase: 0, minLowercase: 0 })) {
+    return res.status(400).json({ message: 'Password is not strong enough.', status: false });
+  }
+
+  Student_Code = xss(Student_Code.trim());
+  if (!/^\d{12}-\d{1}$/.test(Student_Code)) {
+    return res.status(400).json({
+      message: 'Student code must be in format: 12 digits followed by - and 1 digit (e.g., 026530461001-6)',
+      status: false
+    });
+  }
+
+  Student_FirstName = xss(Student_FirstName.trim());
+  if (!/^[A-Za-zก-๙\s]+$/.test(Student_FirstName) || Student_FirstName.length < 2) {
+    return res.status(400).json({ message: 'First name must contain only Thai or English letters and be at least 2 characters.', status: false });
+  }
+
+  Student_LastName = xss(Student_LastName.trim());
+  if (!/^[A-Za-zก-๙\s]+$/.test(Student_LastName) || Student_LastName.length < 2) {
+    return res.status(400).json({ message: 'Last name must contain only Thai or English letters and be at least 2 characters.', status: false });
+  }
+
+  Student_Phone = Student_Phone ? xss(Student_Phone.trim()) : null;
+  if (Student_Phone && !validator.isMobilePhone(Student_Phone, 'th-TH')) {
+    return res.status(400).json({ message: 'Invalid Thai phone number format.', status: false });
+  }
+
+  let academicYear = parseInt(Student_AcademicYear);
+  if (isNaN(academicYear)) {
+    return res.status(400).json({ message: 'Academic year must be a valid number.', status: false });
+  }
+
+  if (academicYear > 2400) {
+    academicYear = academicYear - 543;
+  }
+  const currentChristianYear = new Date().getFullYear();
+  if (academicYear < 1950 || academicYear > currentChristianYear + 10) {
+    return res.status(400).json({ message: 'Invalid academic year. Must be between 1950 and ' + (currentChristianYear + 10) + ' (Christian Era) or ' + (1950 + 543) + ' and ' + (currentChristianYear + 10 + 543) + ' (Buddhist Era).', status: false });
+  }
+  Student_AcademicYear = academicYear;
+  if (Student_Birthdate) {
+    Student_Birthdate = xss(Student_Birthdate.trim());
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(Student_Birthdate) && !/^\d{1,2}-\d{1,2}-\d{4}$/.test(Student_Birthdate)) {
+      return res.status(400).json({ message: 'Invalid birthdate format. Use YYYY-MM-DD or DD-MM-YYYY.', status: false });
+    }
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(Student_Birthdate)) {
+      const parts = Student_Birthdate.split('-');
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const buddhistYear = parseInt(parts[2]);
+      const christianYear = buddhistYear - 543;
+      Student_Birthdate = `${christianYear}-${month}-${day}`;
+    }
+  } else {
+    Student_Birthdate = null;
+  }
+
+  Student_Religion = Student_Religion ? xss(Student_Religion.trim()) : null;
+  Student_MedicalProblem = Student_MedicalProblem ? xss(Student_MedicalProblem.trim()) : null;
+  Teacher_ID = parseInt(Teacher_ID);
+  Department_ID = parseInt(Department_ID);
+
+  if (isNaN(Teacher_ID) || isNaN(Department_ID)) {
+    return res.status(400).json({ message: 'Teacher_ID and Department_ID must be valid numbers.', status: false });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(Users_Password, saltRounds);
+
+    // Transaction
+    db.query('START TRANSACTION', async (err) => {
+      if (err) {
+        console.error('Transaction Start Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+      const checkTeacherSql = 'SELECT Teacher_ID FROM teacher WHERE Teacher_ID = ? AND Teacher_IsResign = FALSE';
+      db.query(checkTeacherSql, [Teacher_ID], (err, teacherResult) => {
+        if (err) {
+          db.query('ROLLBACK', () => { });
+          console.error('Check Teacher Error:', err);
+          return res.status(500).json({ message: 'Database error', status: false });
+        }
+
+        if (teacherResult.length === 0) {
+          db.query('ROLLBACK', () => { });
+          return res.status(400).json({ message: 'Invalid Teacher_ID or teacher is resigned.', status: false });
+        }
+
+        const checkDepartmentSql = 'SELECT Department_ID FROM department WHERE Department_ID = ?';
+        db.query(checkDepartmentSql, [Department_ID], (err, deptResult) => {
+          if (err) {
+            db.query('ROLLBACK', () => { });
+            console.error('Check Department Error:', err);
+            return res.status(500).json({ message: 'Database error', status: false });
+          }
+
+          if (deptResult.length === 0) {
+            db.query('ROLLBACK', () => { });
+            return res.status(400).json({ message: 'Invalid Department_ID.', status: false });
+          }
+          const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
+                           VALUES (?, ?, ?, 'student')`;
+          db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
+            if (err) {
+              db.query('ROLLBACK', () => { });
+              if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ message: 'Email or username already exists.', status: false });
+              }
+              console.error('Insert Users Error:', err);
+              return res.status(500).json({ message: 'Database error', status: false });
+            }
+
+            const Users_ID = userResult.insertId;
+            const sqlStudent = `INSERT INTO student 
+              (Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear, 
+               Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+            db.query(sqlStudent, [
+              Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear,
+              Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID
+            ], (err, studentResult) => {
+              if (err) {
+                db.query('ROLLBACK', () => { });
+                if (err.code === 'ER_DUP_ENTRY') {
+                  return res.status(409).json({ message: 'Student code already exists.', status: false });
+                }
+                console.error('Insert Student Error:', err);
+                return res.status(500).json({ message: 'Database error', status: false });
+              }
+
+              // Commit Transaction
+              db.query('COMMIT', (err) => {
+                if (err) {
+                  db.query('ROLLBACK', () => { });
+                  console.error('Commit Error:', err);
+                  return res.status(500).json({ message: 'Database error', status: false });
+                }
+
+                res.status(201).json({
+                  message: 'Student registered successfully.',
+                  status: true,
+                  data: {
+                    Users_ID: Users_ID,
+                    Student_ID: studentResult.insertId,
+                    Student_Code: Student_Code,
+                    Student_FirstName: Student_FirstName,
+                    Student_LastName: Student_LastName,
+                    Users_Email: Users_Email,
+                    Users_Username: Users_Username
+                  }
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Register Student Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Register Teacher Admin Website**
+app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  let {
+    Users_Email,
+    Users_Password,
+    Teacher_Code,
+    Teacher_FirstName,
+    Teacher_LastName,
+    Teacher_Phone,
+    Teacher_Birthdate,
+    Teacher_Religion,
+    Teacher_MedicalProblem,
+    Teacher_IsDean,
+    Department_ID
+  } = req.body || {};
+
+  if (!Users_Email || !Users_Password || !Teacher_Code ||
+    !Teacher_FirstName || !Teacher_LastName || !Department_ID) {
+    return res.status(400).json({
+      message: 'Please fill in all required fields: Users_Email, Users_Password, Teacher_Code, Teacher_FirstName, Teacher_LastName, Department_ID',
+      status: false
+    });
+  }
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  Users_Email = xss(Users_Email.trim());
+  if (!validator.isEmail(Users_Email)) {
+    return res.status(400).json({ message: 'Invalid email format.', status: false });
+  }
+  let Users_Username = Users_Email.split('@')[0];
+  Users_Username = xss(Users_Username.trim());
+  const usernameRegex = /^[a-zA-Z0-9.]+$/;
+  if (!usernameRegex.test(Users_Username) || Users_Username.length < 3 || Users_Username.length > 20) {
+    return res.status(400).json({
+      message: 'Email username part (before @) must be 3-20 characters and can contain letters, numbers, and dot (.) only.',
+      status: false
+    });
+  }
+
+  Users_Password = xss(Users_Password);
+  if (!validator.isStrongPassword(Users_Password, { minLength: 8, minNumbers: 1, minSymbols: 0, minUppercase: 0, minLowercase: 0 })) {
+    return res.status(400).json({ message: 'Password is not strong enough.', status: false });
+  }
+
+  Teacher_Code = xss(Teacher_Code.trim());
+  const TeacherCodeRegex = /^\d{12}-\d{1}$/;
+
+  if (!TeacherCodeRegex.test(Teacher_Code)) {
+    return res.status(400).json({
+      message: 'Teacher code must be in format: 12 digits followed by - and 1 digit (e.g., 026530461001-6)',
+      status: false
+    });
+  }
+
+  Teacher_FirstName = xss(Teacher_FirstName.trim());
+  if (!/^[A-Za-zก-๙\s]+$/.test(Teacher_FirstName) || Teacher_FirstName.length < 2) {
+    return res.status(400).json({ message: 'First name must contain only Thai or English letters and be at least 2 characters.', status: false });
+  }
+
+  Teacher_LastName = xss(Teacher_LastName.trim());
+  if (!/^[A-Za-zก-๙\s]+$/.test(Teacher_LastName) || Teacher_LastName.length < 2) {
+    return res.status(400).json({ message: 'Last name must contain only Thai or English letters and be at least 2 characters.', status: false });
+  }
+
+  Teacher_Phone = Teacher_Phone ? xss(Teacher_Phone.trim()) : null;
+  if (Teacher_Phone && !validator.isMobilePhone(Teacher_Phone, 'th-TH')) {
+    return res.status(400).json({ message: 'Invalid Thai phone number format.', status: false });
+  }
+
+  if (Teacher_Birthdate) {
+    Teacher_Birthdate = xss(Teacher_Birthdate.trim());
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(Teacher_Birthdate) && !/^\d{1,2}-\d{1,2}-\d{4}$/.test(Teacher_Birthdate)) {
+      return res.status(400).json({ message: 'Invalid birthdate format. Use YYYY-MM-DD or DD-MM-YYYY.', status: false });
+    }
+
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(Teacher_Birthdate)) {
+      const parts = Teacher_Birthdate.split('-');
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const buddhistYear = parseInt(parts[2]);
+
+      if (buddhistYear < 2400 || buddhistYear > 2600) {
+        return res.status(400).json({ message: 'Invalid Buddhist year. Must be between 2400-2600.', status: false });
+      }
+
+      const christianYear = buddhistYear - 543;
+      Teacher_Birthdate = `${christianYear}-${month}-${day}`;
+    }
+
+    const birthDate = new Date(Teacher_Birthdate);
+    const today = new Date();
+    if (birthDate > today) {
+      return res.status(400).json({ message: 'Birthdate cannot be in the future.', status: false });
+    }
+
+    const age = today.getFullYear() - birthDate.getFullYear();
+    if (age < 20) {
+      return res.status(400).json({ message: 'Teacher must be at least 20 years old.', status: false });
+    }
+  } else {
+    Teacher_Birthdate = null;
+  }
+
+  Teacher_Religion = Teacher_Religion ? xss(Teacher_Religion.trim()) : null;
+  Teacher_MedicalProblem = Teacher_MedicalProblem ? xss(Teacher_MedicalProblem.trim()) : null;
+  Teacher_IsDean = Teacher_IsDean ? Boolean(Teacher_IsDean) : false;
+  if (Teacher_IsDean && typeof Teacher_IsDean !== 'boolean') {
+    if (Teacher_IsDean === 'true' || Teacher_IsDean === '1') {
+      Teacher_IsDean = true;
+    } else if (Teacher_IsDean === 'false' || Teacher_IsDean === '0') {
+      Teacher_IsDean = false;
+    } else {
+      return res.status(400).json({ message: 'Teacher_IsDean must be true or false.', status: false });
+    }
+  }
+
+  Department_ID = parseInt(Department_ID);
+  if (isNaN(Department_ID)) {
+    return res.status(400).json({ message: 'Department_ID must be a valid number.', status: false });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(Users_Password, saltRounds);
+
+    // Transaction
+    db.query('START TRANSACTION', async (err) => {
+      if (err) {
+        console.error('Transaction Start Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      const checkDepartmentSql = 'SELECT Department_ID, Faculty_ID FROM department WHERE Department_ID = ?';
+      db.query(checkDepartmentSql, [Department_ID], (err, deptResult) => {
+        if (err) {
+          db.query('ROLLBACK', () => { });
+          console.error('Check Department Error:', err);
+          return res.status(500).json({ message: 'Database error', status: false });
+        }
+
+        if (deptResult.length === 0) {
+          db.query('ROLLBACK', () => { });
+          return res.status(400).json({ message: 'Invalid Department_ID.', status: false });
+        }
+
+        if (Teacher_IsDean) {
+          const Faculty_ID = deptResult[0].Faculty_ID;
+          const checkDeanSql = `
+            SELECT t.Teacher_ID 
+            FROM teacher t 
+            INNER JOIN department d ON t.Department_ID = d.Department_ID 
+            WHERE d.Faculty_ID = ? AND t.Teacher_IsDean = TRUE AND t.Teacher_IsResign = FALSE
+          `;
+
+          db.query(checkDeanSql, [Faculty_ID], (err, deanResult) => {
+            if (err) {
+              db.query('ROLLBACK', () => { });
+              console.error('Check Dean Error:', err);
+              return res.status(500).json({ message: 'Database error', status: false });
+            }
+
+            if (deanResult.length > 0) {
+              db.query('ROLLBACK', () => { });
+              return res.status(400).json({ message: 'This faculty already has a dean. Please remove the current dean first or set Teacher_IsDean to false.', status: false });
+            }
+            insertTeacher();
+          });
+        } else {
+          insertTeacher();
+        }
+
+        function insertTeacher() {
+          const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
+                           VALUES (?, ?, ?, 'teacher')`;
+          db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
+            if (err) {
+              db.query('ROLLBACK', () => { });
+              if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ message: 'Email or username already exists.', status: false });
+              }
+              console.error('Insert Users Error:', err);
+              return res.status(500).json({ message: 'Database error', status: false });
+            }
+
+            const Users_ID = userResult.insertId;
+            const sqlTeacher = `INSERT INTO teacher 
+              (Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate, 
+               Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+            db.query(sqlTeacher, [
+              Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate,
+              Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID
+            ], (err, teacherResult) => {
+              if (err) {
+                db.query('ROLLBACK', () => { });
+                if (err.code === 'ER_DUP_ENTRY') {
+                  return res.status(409).json({ message: 'Teacher code already exists.', status: false });
+                }
+                console.error('Insert Teacher Error:', err);
+                return res.status(500).json({ message: 'Database error', status: false });
+              }
+
+              // Commit Transaction
+              db.query('COMMIT', (err) => {
+                if (err) {
+                  db.query('ROLLBACK', () => { });
+                  console.error('Commit Error:', err);
+                  return res.status(500).json({ message: 'Database error', status: false });
+                }
+
+                res.status(201).json({
+                  message: 'Teacher registered successfully.',
+                  status: true,
+                  data: {
+                    Users_ID: Users_ID,
+                    Teacher_ID: teacherResult.insertId,
+                    Teacher_Code: Teacher_Code,
+                    Teacher_FirstName: Teacher_FirstName,
+                    Teacher_LastName: Teacher_LastName,
+                    Teacher_IsDean: Teacher_IsDean,
+                    Users_Email: Users_Email,
+                    Users_Username: Users_Username,
+                    Department_ID: Department_ID
+                  }
+                });
+              });
+            });
+          });
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Register Teacher Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get All Faculties website admin**
+app.get('/api/admin/faculties', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  try {
+    const sql = `SELECT Faculty_ID, Faculty_Name FROM faculty ORDER BY Faculty_Name ASC`;
+    
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Get Faculties Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      res.status(200).json({
+        message: 'Faculties retrieved successfully.',
+        status: true,
+        data: results,
+        count: results.length
+      });
+    });
+  } catch (err) {
+    console.error('Get Faculties Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get All Departments website admin**
+app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  try {
+    const sql = `
+      SELECT 
+        d.Department_ID, 
+        d.Department_Name, 
+        d.Faculty_ID,
+        f.Faculty_Name
+      FROM department d
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
+      ORDER BY f.Faculty_Name ASC, d.Department_Name ASC
+    `;
+    
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Get Departments Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      res.status(200).json({
+        message: 'Departments retrieved successfully.',
+        status: true,
+        data: results,
+        count: results.length
+      });
+    });
+  } catch (err) {
+    console.error('Get Departments Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get Departments by Faculty ID website admin**
+app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const facultyId = parseInt(req.params.facultyId);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (isNaN(facultyId) || facultyId <= 0) {
+    return res.status(400).json({ message: 'Invalid Faculty ID.', status: false });
+  }
+
+  try {
+    const checkFacultySql = `SELECT Faculty_ID, Faculty_Name FROM faculty WHERE Faculty_ID = ?`;
+    
+    db.query(checkFacultySql, [facultyId], (err, facultyResult) => {
+      if (err) {
+        console.error('Check Faculty Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      if (facultyResult.length === 0) {
+        return res.status(404).json({ message: 'Faculty not found.', status: false });
+      }
+
+      const sql = `
+        SELECT 
+          Department_ID, 
+          Department_Name, 
+          Faculty_ID
+        FROM department 
+        WHERE Faculty_ID = ?
+        ORDER BY Department_Name ASC
+      `;
+      
+      db.query(sql, [facultyId], (err, results) => {
+        if (err) {
+          console.error('Get Departments by Faculty Error:', err);
+          return res.status(500).json({ message: 'Database error', status: false });
+        }
+
+        res.status(200).json({
+          message: 'Departments retrieved successfully.',
+          status: true,
+          faculty: facultyResult[0],
+          data: results,
+          count: results.length
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Get Departments by Faculty Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get Teachers by Department ID website admin**
+app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const departmentId = parseInt(req.params.departmentId);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (isNaN(departmentId) || departmentId <= 0) {
+    return res.status(400).json({ message: 'Invalid Department ID.', status: false });
+  }
+
+  try {
+    const checkDepartmentSql = `
+      SELECT 
+        d.Department_ID, 
+        d.Department_Name, 
+        d.Faculty_ID,
+        f.Faculty_Name
+      FROM department d
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
+      WHERE d.Department_ID = ?
+    `;
+    
+    db.query(checkDepartmentSql, [departmentId], (err, departmentResult) => {
+      if (err) {
+        console.error('Check Department Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      if (departmentResult.length === 0) {
+        return res.status(404).json({ message: 'Department not found.', status: false });
+      }
+
+      const sql = `
+        SELECT 
+          t.Teacher_ID,
+          t.Teacher_Code,
+          t.Teacher_FirstName,
+          t.Teacher_LastName,
+          t.Teacher_Phone,
+          t.Teacher_Birthdate,
+          t.Teacher_Religion,
+          t.Teacher_MedicalProblem,
+          t.Teacher_RegisTime,
+          t.Teacher_IsResign,
+          t.Teacher_IsDean,
+          t.Users_ID,
+          t.Department_ID,
+          u.Users_Email,
+          u.Users_Username,
+          u.Users_RegisTime,
+          u.Users_ImageFile,
+          u.Users_IsActive
+        FROM teacher t
+        INNER JOIN users u ON t.Users_ID = u.Users_ID
+        WHERE t.Department_ID = ? AND t.Teacher_IsResign = FALSE
+        ORDER BY t.Teacher_IsDean DESC, t.Teacher_FirstName ASC, t.Teacher_LastName ASC
+      `;
+      
+      db.query(sql, [departmentId], (err, results) => {
+        if (err) {
+          console.error('Get Teachers by Department Error:', err);
+          return res.status(500).json({ message: 'Database error', status: false });
+        }
+
+        const teachers = results.map(teacher => ({
+          Teacher_ID: teacher.Teacher_ID,
+          Teacher_Code: teacher.Teacher_Code,
+          Teacher_FirstName: teacher.Teacher_FirstName,
+          Teacher_LastName: teacher.Teacher_LastName,
+          Teacher_FullName: `${teacher.Teacher_FirstName} ${teacher.Teacher_LastName}`,
+          Teacher_Phone: teacher.Teacher_Phone,
+          Teacher_Birthdate: teacher.Teacher_Birthdate,
+          Teacher_Religion: teacher.Teacher_Religion,
+          Teacher_MedicalProblem: teacher.Teacher_MedicalProblem,
+          Teacher_RegisTime: teacher.Teacher_RegisTime,
+          Teacher_IsDean: teacher.Teacher_IsDean,
+          Teacher_IsResign: teacher.Teacher_IsResign,
+          Department_ID: teacher.Department_ID,
+          Users: {
+            Users_ID: teacher.Users_ID,
+            Users_Email: teacher.Users_Email,
+            Users_Username: teacher.Users_Username,
+            Users_RegisTime: teacher.Users_RegisTime,
+            Users_ImageFile: teacher.Users_ImageFile,
+            Users_IsActive: teacher.Users_IsActive
+          }
+        }));
+
+        res.status(200).json({
+          message: 'Teachers retrieved successfully.',
+          status: true,
+          department: departmentResult[0],
+          data: teachers,
+          count: teachers.length
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Get Teachers by Department Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get All Teachers with Pagination, Filtering, and Search of Website Admin**
+app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const includeResigned = req.query.includeResigned === 'true';
+  const departmentId = req.query.departmentId ? parseInt(req.query.departmentId) : null;
+  const search = req.query.search ? req.query.search.trim() : '';
+
+  const offset = (page - 1) * limit;
+
+  try {
+    let whereConditions = [];
+    let queryParams = [];
+
+    if (!includeResigned) {
+      whereConditions.push('t.Teacher_IsResign = FALSE');
+    }
+
+    if (departmentId) {
+      whereConditions.push('t.Department_ID = ?');
+      queryParams.push(departmentId);
+    }
+
+    if (search) {
+      whereConditions.push(`(
+        t.Teacher_FirstName LIKE ? OR 
+        t.Teacher_LastName LIKE ? OR 
+        t.Teacher_Code LIKE ? OR 
+        u.Users_Email LIKE ?
+      )`);
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    const countSql = `
+      SELECT COUNT(*) as total
+      FROM teacher t
+      INNER JOIN users u ON t.Users_ID = u.Users_ID
+      INNER JOIN department d ON t.Department_ID = d.Department_ID
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
+      ${whereClause}
+    `;
+
+    db.query(countSql, queryParams, (err, countResult) => {
+      if (err) {
+        console.error('Count Teachers Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      const total = countResult[0].total;
+      const totalPages = Math.ceil(total / limit);
+      const sql = `
+        SELECT 
+          t.Teacher_ID,
+          t.Teacher_Code,
+          t.Teacher_FirstName,
+          t.Teacher_LastName,
+          t.Teacher_Phone,
+          t.Teacher_Birthdate,
+          t.Teacher_Religion,
+          t.Teacher_MedicalProblem,
+          t.Teacher_RegisTime,
+          t.Teacher_IsResign,
+          t.Teacher_IsDean,
+          t.Users_ID,
+          t.Department_ID,
+          d.Department_Name,
+          f.Faculty_ID,
+          f.Faculty_Name,
+          u.Users_Email,
+          u.Users_Username,
+          u.Users_RegisTime,
+          u.Users_ImageFile,
+          u.Users_IsActive
+        FROM teacher t
+        INNER JOIN users u ON t.Users_ID = u.Users_ID
+        INNER JOIN department d ON t.Department_ID = d.Department_ID
+        INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
+        ${whereClause}
+        ORDER BY t.Teacher_IsDean DESC, f.Faculty_Name ASC, d.Department_Name ASC, t.Teacher_FirstName ASC, t.Teacher_LastName ASC
+        LIMIT ? OFFSET ?
+      `;
+
+      const finalParams = [...queryParams, limit, offset];
+
+      db.query(sql, finalParams, (err, results) => {
+        if (err) {
+          console.error('Get Teachers Error:', err);
+          return res.status(500).json({ message: 'Database error', status: false });
+        }
+
+        const teachers = results.map(teacher => ({
+          Teacher_ID: teacher.Teacher_ID,
+          Teacher_Code: teacher.Teacher_Code,
+          Teacher_FirstName: teacher.Teacher_FirstName,
+          Teacher_LastName: teacher.Teacher_LastName,
+          Teacher_FullName: `${teacher.Teacher_FirstName} ${teacher.Teacher_LastName}`,
+          Teacher_Phone: teacher.Teacher_Phone,
+          Teacher_Birthdate: teacher.Teacher_Birthdate,
+          Teacher_Religion: teacher.Teacher_Religion,
+          Teacher_MedicalProblem: teacher.Teacher_MedicalProblem,
+          Teacher_RegisTime: teacher.Teacher_RegisTime,
+          Teacher_IsDean: teacher.Teacher_IsDean,
+          Teacher_IsResign: teacher.Teacher_IsResign,
+          Department: {
+            Department_ID: teacher.Department_ID,
+            Department_Name: teacher.Department_Name,
+            Faculty_ID: teacher.Faculty_ID,
+            Faculty_Name: teacher.Faculty_Name
+          },
+          Users: {
+            Users_ID: teacher.Users_ID,
+            Users_Email: teacher.Users_Email,
+            Users_Username: teacher.Users_Username,
+            Users_RegisTime: teacher.Users_RegisTime,
+            Users_ImageFile: teacher.Users_ImageFile,
+            Users_IsActive: teacher.Users_IsActive
+          }
+        }));
+
+        res.status(200).json({
+          message: 'Teachers retrieved successfully.',
+          status: true,
+          data: teachers,
+          pagination: {
+            current_page: page,
+            total_pages: totalPages,
+            per_page: limit,
+            total_items: total,
+            has_next: page < totalPages,
+            has_prev: page > 1
+          },
+          count: teachers.length
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Get Teachers Error:', err);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
 });

@@ -1,0 +1,244 @@
+[24-08-2025 00:03:45] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:03:45] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 15.45 ms from ::1
+[24-08-2025 00:03:45] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:03:45] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 280.78 ms from ::1
+[24-08-2025 00:56:11] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:11] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 12.80 ms from ::1
+[24-08-2025 00:56:11] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:11] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 2.55 ms from ::1
+[24-08-2025 00:56:18] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:18] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 1.33 ms from ::1
+[24-08-2025 00:56:18] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:18] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 1.42 ms from ::1
+[24-08-2025 00:56:21] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:21] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 2.74 ms from ::1
+[24-08-2025 00:56:21] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:21] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 2.14 ms from ::1
+[24-08-2025 00:56:23] HTTP: [User: anonymous] → OPTIONS /api/timestamp/website/insert from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:23] INFO: [User: anonymous] ← 204 OPTIONS /api/timestamp/website/insert | 1.24 ms from ::1
+[24-08-2025 00:56:23] HTTP: [User: anonymous] → POST /api/timestamp/website/insert from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:23] WARN: [User: anonymous] ← 401 POST /api/timestamp/website/insert | 3.01 ms from ::1
+[24-08-2025 00:56:29] HTTP: [User: anonymous] → OPTIONS /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:29] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 2.52 ms from ::1
+[24-08-2025 00:56:29] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] WARN: [SLOW] [User: anonymous] ← 200 POST /api/login/website | 1239.43 ms from ::1
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 200 POST /api/login/website | 1239.43 ms from ::1
+[24-08-2025 00:56:30] HTTP: [User: anonymous] → OPTIONS /api/timestamp/website/insert from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 204 OPTIONS /api/timestamp/website/insert | 1.91 ms from ::1
+[24-08-2025 00:56:30] HTTP: [User: anonymous] → POST /api/timestamp/website/insert from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 200 POST /api/timestamp/website/insert | 171.42 ms from ::1
+[24-08-2025 00:56:30] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 3.46 ms from ::1
+[24-08-2025 00:56:30] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 2.14 ms from ::1
+[24-08-2025 00:56:30] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 10.52 ms from ::1
+[24-08-2025 00:56:30] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 5.88 ms from ::1
+[24-08-2025 00:56:30] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 40.25 ms from ::1
+[24-08-2025 00:56:30] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:30] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 34.68 ms from ::1
+[24-08-2025 00:56:33] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:33] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 70.09 ms from ::1
+[24-08-2025 00:56:33] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:33] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 38.35 ms from ::1
+[24-08-2025 00:56:37] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:38] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.82 ms from ::1
+[24-08-2025 00:56:38] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:56:38] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.73 ms from ::1
+[24-08-2025 00:58:15] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:15] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 39.20 ms from ::1
+[24-08-2025 00:58:15] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:15] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.55 ms from ::1
+[24-08-2025 00:58:21] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:21] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.48 ms from ::1
+[24-08-2025 00:58:32] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:32] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.42 ms from ::1
+[24-08-2025 00:58:32] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:32] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.89 ms from ::1
+[24-08-2025 00:58:34] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:34] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.69 ms from ::1
+[24-08-2025 00:58:34] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:34] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.12 ms from ::1
+[24-08-2025 00:58:36] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:36] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.09 ms from ::1
+[24-08-2025 00:58:36] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 00:58:36] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.07 ms from ::1
+[24-08-2025 01:02:23] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:02:23] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 38.75 ms from ::1
+[24-08-2025 01:02:23] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:02:23] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 39.18 ms from ::1
+[24-08-2025 01:09:20] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:09:20] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 10.24 ms from ::1
+[24-08-2025 01:09:20] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:09:21] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 296.75 ms from ::1
+[24-08-2025 01:13:55] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:13:55] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 39.12 ms from ::1
+[24-08-2025 01:13:55] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:13:55] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.74 ms from ::1
+[24-08-2025 01:15:16] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:15:16] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 38.69 ms from ::1
+[24-08-2025 01:15:16] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:15:16] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.98 ms from ::1
+[24-08-2025 01:19:37] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:19:37] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 40.56 ms from ::1
+[24-08-2025 01:19:37] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:19:37] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.99 ms from ::1
+[24-08-2025 01:22:11] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:22:11] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 38.08 ms from ::1
+[24-08-2025 01:22:11] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:22:11] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.47 ms from ::1
+[24-08-2025 01:23:43] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:23:43] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 39.28 ms from ::1
+[24-08-2025 01:23:43] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:23:43] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.78 ms from ::1
+[24-08-2025 01:23:46] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:23:46] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.54 ms from ::1
+[24-08-2025 01:23:46] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:23:46] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.38 ms from ::1
+[24-08-2025 01:23:50] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:23:50] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 35.94 ms from ::1
+[24-08-2025 01:23:50] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:23:50] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 35.48 ms from ::1
+[24-08-2025 01:49:34] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:49:34] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 9.14 ms from ::1
+[24-08-2025 01:49:34] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:49:34] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 376.69 ms from ::1
+[24-08-2025 01:50:10] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:50:10] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.31 ms from ::1
+[24-08-2025 01:50:10] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:50:10] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.12 ms from ::1
+[24-08-2025 01:56:03] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:56:03] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 10.10 ms from ::1
+[24-08-2025 01:56:03] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 01:56:03] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 297.51 ms from ::1
+[24-08-2025 02:10:19] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:19] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 2.27 ms from ::1
+[24-08-2025 02:10:19] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:19] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 1.40 ms from ::1
+[24-08-2025 02:10:21] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:21] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 1.46 ms from ::1
+[24-08-2025 02:10:21] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:21] WARN: [User: anonymous] ← 401 GET /api/timestamp/get | 1.41 ms from ::1
+[24-08-2025 02:10:24] HTTP: [User: anonymous] → OPTIONS /api/timestamp/website/insert from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:24] INFO: [User: anonymous] ← 204 OPTIONS /api/timestamp/website/insert | 0.93 ms from ::1
+[24-08-2025 02:10:24] HTTP: [User: anonymous] → POST /api/timestamp/website/insert from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:24] WARN: [User: anonymous] ← 401 POST /api/timestamp/website/insert | 1.40 ms from ::1
+[24-08-2025 02:10:29] HTTP: [User: anonymous] → OPTIONS /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:29] INFO: [User: anonymous] ← 204 OPTIONS /api/login/website | 1.27 ms from ::1
+[24-08-2025 02:10:29] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:29] ERROR: [User: anonymous] ← 500 POST /api/login/website | 8.88 ms from ::1
+[24-08-2025 02:10:32] HTTP: [User: anonymous] → POST /api/login/website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] WARN: [SLOW] [User: anonymous] ← 200 POST /api/login/website | 1267.89 ms from ::1
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 200 POST /api/login/website | 1267.89 ms from ::1
+[24-08-2025 02:10:33] HTTP: [User: anonymous] → OPTIONS /api/timestamp/website/insert from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 204 OPTIONS /api/timestamp/website/insert | 0.87 ms from ::1
+[24-08-2025 02:10:33] HTTP: [User: anonymous] → POST /api/timestamp/website/insert from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 200 POST /api/timestamp/website/insert | 130.26 ms from ::1
+[24-08-2025 02:10:33] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 2.00 ms from ::1
+[24-08-2025 02:10:33] HTTP: [User: anonymous] → OPTIONS /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 204 OPTIONS /api/verifyToken-website | 3.34 ms from ::1
+[24-08-2025 02:10:33] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 5.13 ms from ::1
+[24-08-2025 02:10:33] HTTP: [User: anonymous] → POST /api/verifyToken-website from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 200 POST /api/verifyToken-website | 2.85 ms from ::1
+[24-08-2025 02:10:33] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 34.85 ms from ::1
+[24-08-2025 02:10:33] HTTP: [User: anonymous] → GET /api/admin/data/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:33] INFO: [User: anonymous] ← 304 GET /api/admin/data/get | 35.90 ms from ::1
+[24-08-2025 02:10:37] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:37] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 68.30 ms from ::1
+[24-08-2025 02:10:37] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:10:37] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.64 ms from ::1
+[24-08-2025 02:11:57] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:11:58] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 37.95 ms from ::1
+[24-08-2025 02:11:58] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:11:58] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 36.46 ms from ::1
+[24-08-2025 02:15:19] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:15:19] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 15.26 ms from ::1
+[24-08-2025 02:15:19] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:15:19] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.21 ms from ::1
+[24-08-2025 02:20:54] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:20:54] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 15.66 ms from ::1
+[24-08-2025 02:20:54] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:20:54] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.39 ms from ::1
+[24-08-2025 02:27:31] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:27:31] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 10.84 ms from ::1
+[24-08-2025 02:27:31] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:27:31] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 93.82 ms from ::1
+[24-08-2025 02:30:39] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:30:39] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 14.34 ms from ::1
+[24-08-2025 02:30:39] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:30:39] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 14.14 ms from ::1
+[24-08-2025 02:39:51] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:39:51] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 10.22 ms from ::1
+[24-08-2025 02:39:51] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:39:52] INFO: [User: anonymous] ← 200 GET /api/timestamp/get | 91.47 ms from ::1
+[24-08-2025 02:40:04] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:40:04] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.45 ms from ::1
+[24-08-2025 02:40:04] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:40:04] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.45 ms from ::1
+[24-08-2025 02:41:36] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:41:36] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 14.59 ms from ::1
+[24-08-2025 02:41:36] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:41:36] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.59 ms from ::1
+[24-08-2025 02:43:58] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:43:58] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 15.90 ms from ::1
+[24-08-2025 02:43:58] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:43:58] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.48 ms from ::1
+[24-08-2025 02:44:43] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:44:43] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.89 ms from ::1
+[24-08-2025 02:44:43] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:44:43] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.40 ms from ::1
+[24-08-2025 02:44:46] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:44:46] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.67 ms from ::1
+[24-08-2025 02:44:46] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:44:46] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.14 ms from ::1
+[24-08-2025 02:44:49] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:44:49] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.04 ms from ::1
+[24-08-2025 02:44:49] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:44:49] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.71 ms from ::1
+[24-08-2025 02:46:32] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:46:32] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 15.09 ms from ::1
+[24-08-2025 02:46:32] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:46:32] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.66 ms from ::1
+[24-08-2025 02:47:02] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:47:02] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.73 ms from ::1
+[24-08-2025 02:47:02] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:47:02] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.38 ms from ::1
+[24-08-2025 02:47:49] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:47:49] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 14.64 ms from ::1
+[24-08-2025 02:47:49] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:47:49] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.32 ms from ::1
+[24-08-2025 02:47:57] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:47:57] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.38 ms from ::1
+[24-08-2025 02:47:57] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:47:57] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.05 ms from ::1
+[24-08-2025 02:48:12] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:48:12] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.60 ms from ::1
+[24-08-2025 02:48:12] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:48:12] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.75 ms from ::1
+[24-08-2025 02:48:33] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:48:33] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 14.20 ms from ::1
+[24-08-2025 02:48:33] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:48:33] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.71 ms from ::1
+[24-08-2025 02:52:48] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:52:48] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 15.04 ms from ::1
+[24-08-2025 02:52:48] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:52:48] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.41 ms from ::1
+[24-08-2025 02:55:01] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:55:01] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 15.30 ms from ::1
+[24-08-2025 02:55:06] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:55:06] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 13.29 ms from ::1
+[24-08-2025 02:55:06] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:55:06] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 20.06 ms from ::1
+[24-08-2025 02:55:14] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:55:14] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.64 ms from ::1
+[24-08-2025 02:55:14] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:55:14] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.21 ms from ::1
+[24-08-2025 02:55:35] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:55:35] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.76 ms from ::1
+[24-08-2025 02:55:35] HTTP: [User: anonymous] → GET /api/timestamp/get from IP ::1 (Localhost) | UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36
+[24-08-2025 02:55:35] INFO: [User: anonymous] ← 304 GET /api/timestamp/get | 12.75 ms from ::1
