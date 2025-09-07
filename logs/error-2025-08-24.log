@@ -1,7 +1,0 @@
-[24-08-2025 00:03:45] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 15.45 ms from ::1
-[24-08-2025 01:09:20] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 10.24 ms from ::1
-[24-08-2025 01:49:34] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 9.14 ms from ::1
-[24-08-2025 01:56:03] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 10.10 ms from ::1
-[24-08-2025 02:10:29] ERROR: [User: anonymous] ← 500 POST /api/login/website | 8.88 ms from ::1
-[24-08-2025 02:27:31] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 10.84 ms from ::1
-[24-08-2025 02:39:51] ERROR: [User: anonymous] ← 500 GET /api/timestamp/get | 10.22 ms from ::1

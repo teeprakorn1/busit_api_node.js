@@ -2639,6 +2639,451 @@ paths:
                     example: false
     security: []
 
+  /api/admin/users/student/import:
+    post:
+      summary: Import student from CSV data
+      description: Import a single student record from CSV with faculty/department names instead of IDs. This endpoint is designed for bulk CSV imports where names are provided instead of database IDs.
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+                - Student_Code
+                - Student_FirstName
+                - Student_LastName
+                - Student_AcademicYear
+                - Faculty_Name
+                - Department_Name
+                - Teacher_Code
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  description: Student email address. Username will be auto-generated from part before @
+                  example: student.import@rmutto.ac.th
+                Users_Password:
+                  type: string
+                  format: password
+                  description: Must be at least 8 characters with numbers
+                  example: StrongPass123
+                Student_Code:
+                  type: string
+                  description: Must be in format 12 digits followed by - and 1 digit
+                  example: 026530461001-6
+                Student_FirstName:
+                  type: string
+                  description: Thai or English letters only, at least 2 characters
+                  example: สมชาย
+                Student_LastName:
+                  type: string
+                  description: Thai or English letters only, at least 2 characters
+                  example: ใจดี
+                Student_Phone:
+                  type: string
+                  description: Thai mobile phone format (optional)
+                  example: "0812345678"
+                Student_AcademicYear:
+                  type: string
+                  description: Academic year. Accepts both Buddhist Era and Christian Era
+                  example: "2567"
+                Student_Birthdate:
+                  type: string
+                  description: Format dd-mm-yyyy (Buddhist Era) or YYYY-MM-DD (Christian Era). Optional field.
+                  example: "21-12-2546"
+                Student_Religion:
+                  type: string
+                  description: Optional field
+                  example: พุทธ
+                Student_MedicalProblem:
+                  type: string
+                  description: Optional field
+                  example: ไม่มี
+                Faculty_Name:
+                  type: string
+                  description: Exact faculty name as stored in database (required)
+                  example: คณะบริหารธุรกิจและเทคโนโลยีสารสนเทศ
+                Department_Name:
+                  type: string
+                  description: Exact department name as stored in database (required)
+                  example: วิทยาการคอมพิวเตอร์
+                Teacher_Code:
+                  type: string
+                  description: Code of advisor teacher (must exist and not resigned)
+                  example: 111111111111-1
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+                - Student_Code
+                - Student_FirstName
+                - Student_LastName
+                - Student_AcademicYear
+                - Faculty_Name
+                - Department_Name
+                - Teacher_Code
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: student.import@rmutto.ac.th
+                Users_Password:
+                  type: string
+                  format: password
+                  example: StrongPass123
+                Student_Code:
+                  type: string
+                  example: 026530461001-6
+                Student_FirstName:
+                  type: string
+                  example: สมชาย
+                Student_LastName:
+                  type: string
+                  example: ใจดี
+                Student_Phone:
+                  type: string
+                  example: "0812345678"
+                Student_AcademicYear:
+                  type: string
+                  example: "2567"
+                Student_Birthdate:
+                  type: string
+                  example: "21-12-2546"
+                Student_Religion:
+                  type: string
+                  example: พุทธ
+                Student_MedicalProblem:
+                  type: string
+                  example: ไม่มี
+                Faculty_Name:
+                  type: string
+                  example: คณะบริหารธุรกิจและเทคโนโลยีสารสนเทศ
+                Department_Name:
+                  type: string
+                  example: วิทยาการคอมพิวเตอร์
+                Teacher_Code:
+                  type: string
+                  example: 111111111111-1
+      responses:
+        "201":
+          description: Student imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student imported successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Users_ID:
+                        type: integer
+                        example: 123
+                      Student_ID:
+                        type: integer
+                        example: 456
+                      Student_Code:
+                        type: string
+                        example: 026530461001-6
+                      Student_FirstName:
+                        type: string
+                        example: สมชาย
+                      Student_LastName:
+                        type: string
+                        example: ใจดี
+                      Users_Email:
+                        type: string
+                        example: student.import@rmutto.ac.th
+                      Users_Username:
+                        type: string
+                        description: Auto-generated from email
+                        example: student.import
+        "400":
+          description: Bad request - invalid or missing fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Faculty 'ชื่อคณะที่ไม่มี' not found.
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "409":
+          description: Conflict - duplicate entry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email or username already exists.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error
+                  status:
+                    type: boolean
+                    example: false
+    security: []
+
+  /api/admin/users/teacher/import:
+    post:
+      summary: Import teacher from CSV data
+      description: Import a single teacher record from CSV with faculty/department names instead of IDs. This endpoint is designed for bulk CSV imports where names are provided instead of database IDs.
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+                - Teacher_Code
+                - Teacher_FirstName
+                - Teacher_LastName
+                - Faculty_Name
+                - Department_Name
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  description: Teacher email address. Username will be auto-generated from part before @
+                  example: teacher.import@rmutto.ac.th
+                Users_Password:
+                  type: string
+                  format: password
+                  description: Must be at least 8 characters with numbers
+                  example: StrongPass123
+                Teacher_Code:
+                  type: string
+                  description: Must be in format 12 digits followed by - and 1 digit
+                  example: 026530461002-7
+                Teacher_FirstName:
+                  type: string
+                  description: Thai or English letters only, at least 2 characters
+                  example: สมศรี
+                Teacher_LastName:
+                  type: string
+                  description: Thai or English letters only, at least 2 characters
+                  example: ใจดี
+                Teacher_Phone:
+                  type: string
+                  description: Thai mobile phone format (optional)
+                  example: "0812345678"
+                Teacher_Birthdate:
+                  type: string
+                  description: Format dd-mm-yyyy (Buddhist Era) or YYYY-MM-DD (Christian Era). Teacher must be at least 20 years old. Optional field.
+                  example: "21-12-2525"
+                Teacher_Religion:
+                  type: string
+                  description: Optional field
+                  example: พุทธ
+                Teacher_MedicalProblem:
+                  type: string
+                  description: Optional field
+                  example: ไม่มี
+                Teacher_IsDean:
+                  type: boolean
+                  description: Whether this teacher is a dean. Only one dean per faculty allowed.
+                  example: false
+                Faculty_Name:
+                  type: string
+                  description: Exact faculty name as stored in database (required)
+                  example: คณะบริหารธุรกิจและเทคโนโลยีสารสนเทศ
+                Department_Name:
+                  type: string
+                  description: Exact department name as stored in database (required)
+                  example: ภาควิชาเทคโนโลยีสารสนเทศ
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - Users_Email
+                - Users_Password
+                - Teacher_Code
+                - Teacher_FirstName
+                - Teacher_LastName
+                - Faculty_Name
+                - Department_Name
+              properties:
+                Users_Email:
+                  type: string
+                  format: email
+                  example: teacher.import@rmutto.ac.th
+                Users_Password:
+                  type: string
+                  format: password
+                  example: StrongPass123
+                Teacher_Code:
+                  type: string
+                  example: 026530461002-7
+                Teacher_FirstName:
+                  type: string
+                  example: สมศรี
+                Teacher_LastName:
+                  type: string
+                  example: ใจดี
+                Teacher_Phone:
+                  type: string
+                  example: "0812345678"
+                Teacher_Birthdate:
+                  type: string
+                  example: "21-12-2525"
+                Teacher_Religion:
+                  type: string
+                  example: พุทธ
+                Teacher_MedicalProblem:
+                  type: string
+                  example: ไม่มี
+                Teacher_IsDean:
+                  type: boolean
+                  example: false
+                Faculty_Name:
+                  type: string
+                  example: คณะบริหารธุรกิจและเทคโนโลยีสารสนเทศ
+                Department_Name:
+                  type: string
+                  example: ภาควิชาเทคโนโลยีสารสนเทศ
+      responses:
+        "201":
+          description: Teacher imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Teacher imported successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Users_ID:
+                        type: integer
+                        example: 101
+                      Teacher_ID:
+                        type: integer
+                        example: 55
+                      Teacher_Code:
+                        type: string
+                        example: 026530461002-7
+                      Teacher_FirstName:
+                        type: string
+                        example: สมศรี
+                      Teacher_LastName:
+                        type: string
+                        example: ใจดี
+                      Teacher_IsDean:
+                        type: boolean
+                        example: false
+                      Users_Email:
+                        type: string
+                        example: teacher.import@rmutto.ac.th
+                      Users_Username:
+                        type: string
+                        description: Auto-generated from email
+                        example: teacher.import
+                      Department_ID:
+                        type: integer
+                        example: 3
+        "400":
+          description: Bad request - invalid or missing fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: This faculty already has a dean.
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "409":
+          description: Conflict - duplicate entry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email or username already exists.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error
+                  status:
+                    type: boolean
+                    example: false
+    security: []
+
   /api/admin/faculties:
     get:
       summary: Get all faculties

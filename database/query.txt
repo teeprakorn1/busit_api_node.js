@@ -226,10 +226,33 @@ CREATE TABLE Notification(
 );
 
 INSERT INTO faculty (Faculty_Name) 
-VALUES ('คณะบริหารธุรกิจและเทคโนโลยีสารสนเทศ');
+VALUES ('คณะบริหารธุรกิจและเทคโนโลยีสารสนเทศ'),('คณะศิลปศาสตร์');
 
-INSERT INTO department (Department_Name, Faculty_ID)
-VALUES ('วิทยาการคอมพิวเตอร์', '1');
+INSERT INTO department (Department_Name, Faculty_ID) VALUES
+('วิทยาการคอมพิวเตอร์', 1),
+('เทคโนโลยีสารสนเทศ', 1),
+('การตลาด', 1),
+('การตลาด (2 ปี ต่อเนื่อง)', 1),
+('การจัดการ', 1),
+('การจัดการ (2 ปี ต่อเนื่อง)', 1),
+('เทคโนโลยีโลจิสติกส์และการจัดการระบบขนส่ง', 1),
+('เศรษฐศาสตร์', 1),
+('การโฆษณาและประชาสัมพันธ์', 1),
+('ระบบสารสนเทศทางคอมพิวเตอร์-คอมพิวเตอร์ธุรกิจ', 1),
+('ระบบสารสนเทศทางคอมพิวเตอร์-คอมพิวเตอร์ธุรกิจ (2 ปี ต่อเนื่อง)', 1),
+('การบัญชี', 1),
+('การบัญชี (2 ปี ต่อเนื่อง)', 1),
+('เทคโนโลยีคอมพิวเตอร์', 1),
+('มัลติมีเดีย', 1);
+
+INSERT INTO department (Department_Name, Faculty_ID) VALUES
+('ภาษาอังกฤษเพื่อการสื่อสารสากล', 2),
+('การท่องเที่ยวและการโรงแรม (แขนงการท่องเที่ยว)', 2),
+('การท่องเที่ยวและการโรงแรม (แขนงการโรงแรม)', 2),
+('การจัดการธุรกิจและเทคโนโลยีการกีฬา', 2),
+('คณิตศาสตร์และวิทยาศาสตร์', 2),
+('ภาษาไทย', 2),
+('ภาษาจีน', 2);
 
 INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
 ('teacher.admin@rmutto.ac.th', 'teacher.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
@@ -257,4 +280,5 @@ VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_application_update_profile_image'),('timestamp_add_otherphone_users'),
 ('timestamp_update_otherphone_users'),('timestamp_delete_otherphone_users'),
 ('timestamp_application_request_otp'),('timestamp_application_resetpassword_otp'),
-('timestamp_application_verify_otp');
+('timestamp_application_verify_otp'),('timestamp_website_add_student'),('timestamp_website_add_teacher'),
+('timestamp_website_add_csv_student'),('timestamp_website_add_csv_teacher');

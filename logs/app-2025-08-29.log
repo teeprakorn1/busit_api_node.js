@@ -1,7 +1,0 @@
-[29-08-2025 17:18:13] WARN: [User: anonymous] ← 404 GET /main.29606ad2584b1c88253a.hot-update.json | 20.09 ms from ::1
-[29-08-2025 17:18:13] WARN: [User: anonymous] ← 404 GET /patient/search | 3.80 ms from ::1
-[29-08-2025 17:18:24] WARN: [User: anonymous] ← 404 GET /patient/search | 1.93 ms from ::1
-[29-08-2025 17:18:32] WARN: [User: anonymous] ← 404 GET /patient/search | 1.95 ms from ::1
-[29-08-2025 17:18:39] WARN: [User: anonymous] ← 404 GET /patient/ | 1.63 ms from ::1
-[29-08-2025 17:18:50] WARN: [User: anonymous] ← 404 GET / | 1.45 ms from ::1
-[29-08-2025 17:18:51] WARN: [User: anonymous] ← 404 GET / | 1.93 ms from ::1

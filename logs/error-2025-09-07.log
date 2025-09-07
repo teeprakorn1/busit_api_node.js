@@ -1,2 +1,0 @@
-[07-09-2025 23:21:01] ERROR: [User: anonymous] ← 500 POST /api/admin/users/student/add | 1144.46 ms from ::1
-[07-09-2025 23:21:13] ERROR: [User: anonymous] ← 500 POST /api/admin/users/student/add | 1024.57 ms from ::1
