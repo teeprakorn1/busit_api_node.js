@@ -1713,6 +1713,279 @@ paths:
                     type: boolean
                     example: false
 
+  /api/users/search:
+    get:
+      summary: Search user by email or IP address
+      description: >
+        This endpoint allows staff (via website login) to search users by email or IP address.  
+        Only staff accounts with `Login_Type = website` are permitted.
+      tags:
+        - Timestamp
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+            format: email
+          required: false
+          description: User's email to search for.
+        - in: query
+          name: ip
+          schema:
+            type: string
+          required: false
+          description: User's IP address to search for.
+      responses:
+        "200":
+          description: User found successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User found successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  user:
+                    type: object
+                    properties:
+                      Users_ID:
+                        type: integer
+                        example: 101
+                      Users_Email:
+                        type: string
+                        example: student01@example.com
+                      Users_Type:
+                        type: string
+                        enum: [student, teacher, staff]
+                        example: student
+                      Full_Name:
+                        type: string
+                        example: John Doe
+                  totalUsers:
+                    type: integer
+                    example: 1
+        "400":
+          description: Missing search parameter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please provide either email or ip parameter.
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (invalid role or login type).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: No user found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No user found for this email.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred on the server.
+                  status:
+                    type: boolean
+                    example: false
+    security: []
+
+  /api/timestamp/search:
+    get:
+      summary: Search timestamp logs
+      description: >
+        This endpoint allows staff (via website login) to search user timestamp logs  
+        by email, IP address, user type, event type, or date range (within the last 90 days).
+      tags:
+        - Timestamp
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+            format: email
+          required: false
+          description: User's email to filter logs.
+        - in: query
+          name: ip
+          schema:
+            type: string
+          required: false
+          description: IP address to filter logs.
+        - in: query
+          name: user_type
+          schema:
+            type: string
+            enum: [student, teacher, staff]
+          required: false
+          description: User type to filter logs.
+        - in: query
+          name: event_type
+          schema:
+            type: string
+          required: false
+          description: Timestamp event type (e.g., Login, Logout).
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date
+          required: false
+          description: Start date for filtering logs (YYYY-MM-DD).
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date
+          required: false
+          description: End date for filtering logs (YYYY-MM-DD).
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+          required: false
+          description: Maximum number of results to return (default 100).
+      responses:
+        "200":
+          description: Search completed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Search completed successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Timestamp_ID:
+                          type: integer
+                          example: 501
+                        Timestamp_RegisTime:
+                          type: string
+                          format: date-time
+                          example: 2025-09-08T14:25:36Z
+                        Timestamp_Name:
+                          type: string
+                          example: Login
+                        Timestamp_UserAgent:
+                          type: string
+                          example: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+                        Timestamp_IP_Address:
+                          type: string
+                          example: 192.168.1.10
+                        TimestampType_ID:
+                          type: integer
+                          example: 1
+                        Users_ID:
+                          type: integer
+                          example: 101
+                        Users_Email:
+                          type: string
+                          example: staff01@example.com
+                        Users_Type:
+                          type: string
+                          enum: [student, teacher, staff]
+                          example: staff
+                        TimestampType_Name:
+                          type: string
+                          example: Login
+                  total:
+                    type: integer
+                    example: 5
+                  searchCriteria:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: staff01@example.com
+                      ip:
+                        type: string
+                        example: 192.168.1.10
+                      user_type:
+                        type: string
+                        example: staff
+                      event_type:
+                        type: string
+                        example: Login
+                      date_from:
+                        type: string
+                        format: date
+                        example: 2025-09-01
+                      date_to:
+                        type: string
+                        format: date
+                        example: 2025-09-08
+                      limit:
+                        type: integer
+                        example: 100
+        "403":
+          description: Permission denied (invalid role or login type).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An error occurred on the server.
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
   /api/admin/data/get:
     get:
       summary: Get Admin Data by Verified Token of Website

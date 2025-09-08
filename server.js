@@ -730,7 +730,7 @@ app.post('/api/timestamp/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Veri
   }
 });
 
-//API Timestamp Get All Data
+//API Timestamp Get All Data website admin
 app.get('/api/timestamp/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
@@ -838,6 +838,221 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
       } else {
         return res.status(404).json({ message: 'No timestamps found for this type.', status: false });
       }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API Timestamp Get by TimestampType_ID
+app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000, 12), async (req, res) => {
+  // เพิ่ม cache control
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
+  const TimestampType_ID = req.params.TimestampType_ID;
+
+  if (!TimestampType_ID) {
+    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  }
+
+  try {
+    const sql = "SELECT ts.Timestamp_ID, ts.Users_ID, ts.Timestamp_RegisTime, ts.TimestampType_ID, tst.TimestampType_Name " +
+      "FROM (timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID ) WHERE tst.TimestampType_ID = ? ORDER BY ts.Timestamp_RegisTime DESC";
+    db.query(sql, [TimestampType_ID], (err, result) => {
+      if (err) {
+        console.error('Database error (timestamp)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length > 0) {
+        const ResultData = result;
+        return res.status(200).json(ResultData);
+      } else {
+        return res.status(404).json({ message: 'No timestamps found for this type.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API Timestamp users Get by Search of Website**
+app.get('/api/users/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const { email, ip } = req.query;
+
+  if (!email && !ip) {
+    return res.status(400).json({ message: "Please provide either email or ip parameter.", status: false });
+  }
+
+  try {
+    let sql;
+    let searchParam;
+
+    if (email) {
+      sql = `SELECT u.Users_ID, u.Users_Email, u.Users_Type,
+             CASE 
+               WHEN u.Users_Type = 'student' THEN CONCAT(s.Student_FirstName, ' ', s.Student_LastName)
+               WHEN u.Users_Type = 'teacher' THEN CONCAT(t.Teacher_FirstName, ' ', t.Teacher_LastName)
+               WHEN u.Users_Type = 'staff' THEN CONCAT(st.Staff_FirstName, ' ', st.Staff_LastName)
+             END as Full_Name
+             FROM users u
+             LEFT JOIN student s ON u.Users_ID = s.Users_ID
+             LEFT JOIN teacher t ON u.Users_ID = t.Users_ID  
+             LEFT JOIN staff st ON u.Users_ID = st.Users_ID
+             WHERE u.Users_Email = ?`;
+      searchParam = email;
+    } else if (ip) {
+      sql = `SELECT DISTINCT u.Users_ID, u.Users_Email, u.Users_Type,
+             CASE 
+               WHEN u.Users_Type = 'student' THEN CONCAT(s.Student_FirstName, ' ', s.Student_LastName)
+               WHEN u.Users_Type = 'teacher' THEN CONCAT(t.Teacher_FirstName, ' ', t.Teacher_LastName)
+               WHEN u.Users_Type = 'staff' THEN CONCAT(st.Staff_FirstName, ' ', st.Staff_LastName)
+             END as Full_Name
+             FROM users u
+             LEFT JOIN student s ON u.Users_ID = s.Users_ID
+             LEFT JOIN teacher t ON u.Users_ID = t.Users_ID  
+             LEFT JOIN staff st ON u.Users_ID = st.Users_ID
+             INNER JOIN timestamp ts ON u.Users_ID = ts.Users_ID
+             WHERE ts.Timestamp_IP_Address = ?`;
+      searchParam = ip;
+    }
+
+    db.query(sql, [searchParam], (err, result) => {
+      if (err) {
+        console.error('Database error (user search)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length > 0) {
+        return res.status(200).json({
+          message: "User found successfully.",
+          status: true,
+          user: result[0],
+          totalUsers: result.length
+        });
+      } else {
+        return res.status(404).json({
+          message: `No user found for this ${email ? 'email' : 'IP address'}.`,
+          status: false
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API Timestamp Get by Search of Website**
+app.get('/api/timestamp/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const { email, ip, user_type, event_type, date_from, date_to, limit = 100 } = req.query;
+  try {
+    let sql = `SELECT ts.Timestamp_ID, ts.Timestamp_RegisTime, ts.Timestamp_Name, 
+               ts.Timestamp_UserAgent, ts.Timestamp_IP_Address, ts.TimestampType_ID, 
+               ts.Users_ID, u.Users_Email, u.Users_Type, tst.TimestampType_Name 
+               FROM timestamp ts 
+               INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID 
+               INNER JOIN users u ON ts.Users_ID = u.Users_ID 
+               WHERE 1=1`;
+
+    const params = [];
+
+    if (email) {
+      sql += ' AND u.Users_Email = ?';
+      params.push(email);
+    }
+
+    if (ip) {
+      sql += ' AND ts.Timestamp_IP_Address = ?';
+      params.push(ip);
+    }
+
+    if (user_type) {
+      sql += ' AND u.Users_Type = ?';
+      params.push(user_type);
+    }
+
+    if (event_type) {
+      sql += ' AND tst.TimestampType_Name = ?';
+      params.push(event_type);
+    }
+
+    if (date_from) {
+      sql += ' AND DATE(ts.Timestamp_RegisTime) >= ?';
+      params.push(date_from);
+    }
+
+    if (date_to) {
+      sql += ' AND DATE(ts.Timestamp_RegisTime) <= ?';
+      params.push(date_to);
+    }
+
+    sql += ' AND ts.Timestamp_RegisTime >= CURDATE() - INTERVAL 90 DAY';
+    sql += ' ORDER BY ts.Timestamp_RegisTime DESC LIMIT ?';
+    params.push(parseInt(limit));
+
+    db.query(sql, params, (err, result) => {
+      if (err) {
+        console.error('Database error (timestamp search)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      return res.status(200).json({
+        message: "Search completed successfully.",
+        status: true,
+        data: result,
+        total: result.length,
+        searchCriteria: {
+          email,
+          ip,
+          user_type,
+          event_type,
+          date_from,
+          date_to,
+          limit
+        }
+      });
     });
   } catch (error) {
     console.error('Catch error', error);
@@ -1374,38 +1589,26 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   }
 
   Student_FirstName = xss(Student_FirstName.trim());
-  if (!/^[A-Za-zก-๙\s]+$/.test(Student_FirstName) || Student_FirstName.length < 2) {
-    return res.status(400).json({ message: 'First name must contain only Thai or English letters and be at least 2 characters.', status: false });
-  }
-
   Student_LastName = xss(Student_LastName.trim());
-  if (!/^[A-Za-zก-๙\s]+$/.test(Student_LastName) || Student_LastName.length < 2) {
-    return res.status(400).json({ message: 'Last name must contain only Thai or English letters and be at least 2 characters.', status: false });
-  }
-
   Student_Phone = Student_Phone ? xss(Student_Phone.trim()) : null;
-  if (Student_Phone && !validator.isMobilePhone(Student_Phone, 'th-TH')) {
-    return res.status(400).json({ message: 'Invalid Thai phone number format.', status: false });
-  }
+  Student_Religion = Student_Religion ? xss(Student_Religion.trim()) : null;
+  Student_MedicalProblem = Student_MedicalProblem ? xss(Student_MedicalProblem.trim()) : null;
 
   let academicYear = parseInt(Student_AcademicYear);
   if (isNaN(academicYear)) {
     return res.status(400).json({ message: 'Academic year must be a valid number.', status: false });
   }
-
   if (academicYear > 2400) {
     academicYear = academicYear - 543;
   }
   const currentChristianYear = new Date().getFullYear();
   if (academicYear < 1950 || academicYear > currentChristianYear + 10) {
-    return res.status(400).json({ message: 'Invalid academic year. Must be between 1950 and ' + (currentChristianYear + 10) + ' (Christian Era) or ' + (1950 + 543) + ' and ' + (currentChristianYear + 10 + 543) + ' (Buddhist Era).', status: false });
+    return res.status(400).json({ message: 'Invalid academic year.', status: false });
   }
   Student_AcademicYear = academicYear;
+
   if (Student_Birthdate) {
     Student_Birthdate = xss(Student_Birthdate.trim());
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(Student_Birthdate) && !/^\d{1,2}-\d{1,2}-\d{4}$/.test(Student_Birthdate)) {
-      return res.status(400).json({ message: 'Invalid birthdate format. Use YYYY-MM-DD or DD-MM-YYYY.', status: false });
-    }
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(Student_Birthdate)) {
       const parts = Student_Birthdate.split('-');
       const day = parts[0].padStart(2, '0');
@@ -1418,8 +1621,6 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
     Student_Birthdate = null;
   }
 
-  Student_Religion = Student_Religion ? xss(Student_Religion.trim()) : null;
-  Student_MedicalProblem = Student_MedicalProblem ? xss(Student_MedicalProblem.trim()) : null;
   Teacher_ID = parseInt(Teacher_ID);
   Department_ID = parseInt(Department_ID);
 
@@ -1430,88 +1631,111 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   try {
     const hashedPassword = await bcrypt.hash(Users_Password, saltRounds);
 
-    // Transaction
+    // Start Transaction
     db.query('START TRANSACTION', async (err) => {
       if (err) {
         console.error('Transaction Start Error:', err);
         return res.status(500).json({ message: 'Database error', status: false });
       }
-      const checkTeacherSql = 'SELECT Teacher_ID FROM teacher WHERE Teacher_ID = ? AND Teacher_IsResign = FALSE';
-      db.query(checkTeacherSql, [Teacher_ID], (err, teacherResult) => {
+
+      const checkDuplicateSql = `
+        SELECT 
+          CASE 
+            WHEN EXISTS(SELECT 1 FROM users WHERE Users_Email = ? OR Users_Username = ?) THEN 'email_username'
+            WHEN EXISTS(SELECT 1 FROM student WHERE Student_Code = ?) THEN 'student_code'
+            ELSE NULL
+          END as duplicate_type
+      `;
+
+      db.query(checkDuplicateSql, [Users_Email, Users_Username, Student_Code], (err, duplicateResult) => {
         if (err) {
           db.query('ROLLBACK', () => { });
-          console.error('Check Teacher Error:', err);
+          console.error('Check Duplicate Error:', err);
           return res.status(500).json({ message: 'Database error', status: false });
         }
 
-        if (teacherResult.length === 0) {
+        const duplicateType = duplicateResult[0]?.duplicate_type;
+        if (duplicateType) {
           db.query('ROLLBACK', () => { });
-          return res.status(400).json({ message: 'Invalid Teacher_ID or teacher is resigned.', status: false });
+          if (duplicateType === 'email_username') {
+            return res.status(409).json({ message: 'Email or username already exists.', status: false });
+          } else if (duplicateType === 'student_code') {
+            return res.status(409).json({ message: 'Student code already exists.', status: false });
+          }
         }
 
-        const checkDepartmentSql = 'SELECT Department_ID FROM department WHERE Department_ID = ?';
-        db.query(checkDepartmentSql, [Department_ID], (err, deptResult) => {
+        const checkTeacherSql = 'SELECT Teacher_ID FROM teacher WHERE Teacher_ID = ? AND Teacher_IsResign = FALSE';
+        db.query(checkTeacherSql, [Teacher_ID], (err, teacherResult) => {
           if (err) {
             db.query('ROLLBACK', () => { });
-            console.error('Check Department Error:', err);
+            console.error('Check Teacher Error:', err);
             return res.status(500).json({ message: 'Database error', status: false });
           }
 
-          if (deptResult.length === 0) {
+          if (teacherResult.length === 0) {
             db.query('ROLLBACK', () => { });
-            return res.status(400).json({ message: 'Invalid Department_ID.', status: false });
+            return res.status(400).json({ message: 'Invalid Teacher_ID or teacher is resigned.', status: false });
           }
-          const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
-                           VALUES (?, ?, ?, 'student')`;
-          db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
+
+          const checkDepartmentSql = 'SELECT Department_ID FROM department WHERE Department_ID = ?';
+          db.query(checkDepartmentSql, [Department_ID], (err, deptResult) => {
             if (err) {
               db.query('ROLLBACK', () => { });
-              if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(409).json({ message: 'Email or username already exists.', status: false });
-              }
-              console.error('Insert Users Error:', err);
+              console.error('Check Department Error:', err);
               return res.status(500).json({ message: 'Database error', status: false });
             }
 
-            const Users_ID = userResult.insertId;
-            const sqlStudent = `INSERT INTO student 
-              (Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear, 
-               Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            if (deptResult.length === 0) {
+              db.query('ROLLBACK', () => { });
+              return res.status(400).json({ message: 'Invalid Department_ID.', status: false });
+            }
 
-            db.query(sqlStudent, [
-              Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear,
-              Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID
-            ], (err, studentResult) => {
+            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
+                             VALUES (?, ?, ?, 'student')`;
+            db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
               if (err) {
                 db.query('ROLLBACK', () => { });
-                if (err.code === 'ER_DUP_ENTRY') {
-                  return res.status(409).json({ message: 'Student code already exists.', status: false });
-                }
-                console.error('Insert Student Error:', err);
+                console.error('Insert Users Error:', err);
                 return res.status(500).json({ message: 'Database error', status: false });
               }
 
-              // Commit Transaction
-              db.query('COMMIT', (err) => {
+              const Users_ID = userResult.insertId;
+              const sqlStudent = `INSERT INTO student 
+                (Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear, 
+                 Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+              db.query(sqlStudent, [
+                Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear,
+                Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID
+              ], (err, studentResult) => {
                 if (err) {
                   db.query('ROLLBACK', () => { });
-                  console.error('Commit Error:', err);
+                  console.error('Insert Student Error:', err);
                   return res.status(500).json({ message: 'Database error', status: false });
                 }
 
-                res.status(201).json({
-                  message: 'Student registered successfully.',
-                  status: true,
-                  data: {
-                    Users_ID: Users_ID,
-                    Student_ID: studentResult.insertId,
-                    Student_Code: Student_Code,
-                    Student_FirstName: Student_FirstName,
-                    Student_LastName: Student_LastName,
-                    Users_Email: Users_Email,
-                    Users_Username: Users_Username
+                // Commit Transaction
+                db.query('COMMIT', (err) => {
+                  if (err) {
+                    db.query('ROLLBACK', () => { });
+                    console.error('Commit Error:', err);
+                    return res.status(500).json({ message: 'Database error', status: false });
                   }
+
+                  res.status(201).json({
+                    message: 'Student registered successfully.',
+                    status: true,
+                    data: {
+                      Users_ID: Users_ID,
+                      Student_ID: studentResult.insertId,
+                      Student_Code: Student_Code,
+                      Student_FirstName: Student_FirstName,
+                      Student_LastName: Student_LastName,
+                      Users_Email: Users_Email,
+                      Users_Username: Users_Username
+                    }
+                  });
                 });
               });
             });
@@ -1570,8 +1794,10 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   if (!validator.isEmail(Users_Email)) {
     return res.status(400).json({ message: 'Invalid email format.', status: false });
   }
+
   let Users_Username = Users_Email.split('@')[0];
   Users_Username = xss(Users_Username.trim());
+
   const usernameRegex = /^[a-zA-Z0-9.]+$/;
   if (!usernameRegex.test(Users_Username) || Users_Username.length < 3 || Users_Username.length > 20) {
     return res.status(400).json({
@@ -1587,7 +1813,6 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
 
   Teacher_Code = xss(Teacher_Code.trim());
   const TeacherCodeRegex = /^\d{12}-\d{1}$/;
-
   if (!TeacherCodeRegex.test(Teacher_Code)) {
     return res.status(400).json({
       message: 'Teacher code must be in format: 12 digits followed by - and 1 digit (e.g., 026530461001-6)',
@@ -1596,68 +1821,39 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   }
 
   Teacher_FirstName = xss(Teacher_FirstName.trim());
-  if (!/^[A-Za-zก-๙\s]+$/.test(Teacher_FirstName) || Teacher_FirstName.length < 2) {
-    return res.status(400).json({ message: 'First name must contain only Thai or English letters and be at least 2 characters.', status: false });
-  }
-
   Teacher_LastName = xss(Teacher_LastName.trim());
-  if (!/^[A-Za-zก-๙\s]+$/.test(Teacher_LastName) || Teacher_LastName.length < 2) {
-    return res.status(400).json({ message: 'Last name must contain only Thai or English letters and be at least 2 characters.', status: false });
-  }
-
   Teacher_Phone = Teacher_Phone ? xss(Teacher_Phone.trim()) : null;
-  if (Teacher_Phone && !validator.isMobilePhone(Teacher_Phone, 'th-TH')) {
-    return res.status(400).json({ message: 'Invalid Thai phone number format.', status: false });
-  }
+  Teacher_Religion = Teacher_Religion ? xss(Teacher_Religion.trim()) : null;
+  Teacher_MedicalProblem = Teacher_MedicalProblem ? xss(Teacher_MedicalProblem.trim()) : null;
 
   if (Teacher_Birthdate) {
     Teacher_Birthdate = xss(Teacher_Birthdate.trim());
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(Teacher_Birthdate) && !/^\d{1,2}-\d{1,2}-\d{4}$/.test(Teacher_Birthdate)) {
-      return res.status(400).json({ message: 'Invalid birthdate format. Use YYYY-MM-DD or DD-MM-YYYY.', status: false });
-    }
-
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(Teacher_Birthdate)) {
       const parts = Teacher_Birthdate.split('-');
       const day = parts[0].padStart(2, '0');
       const month = parts[1].padStart(2, '0');
       const buddhistYear = parseInt(parts[2]);
-
-      if (buddhistYear < 2400 || buddhistYear > 2600) {
-        return res.status(400).json({ message: 'Invalid Buddhist year. Must be between 2400-2600.', status: false });
-      }
-
       const christianYear = buddhistYear - 543;
       Teacher_Birthdate = `${christianYear}-${month}-${day}`;
-    }
 
-    const birthDate = new Date(Teacher_Birthdate);
-    const today = new Date();
-    if (birthDate > today) {
-      return res.status(400).json({ message: 'Birthdate cannot be in the future.', status: false });
-    }
+      const birthDate = new Date(Teacher_Birthdate);
+      const today = new Date();
+      if (birthDate > today) {
+        return res.status(400).json({ message: 'Birthdate cannot be in the future.', status: false });
+      }
 
-    const age = today.getFullYear() - birthDate.getFullYear();
-    if (age < 20) {
-      return res.status(400).json({ message: 'Teacher must be at least 20 years old.', status: false });
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 20) {
+        return res.status(400).json({ message: 'Teacher must be at least 20 years old.', status: false });
+      }
     }
   } else {
     Teacher_Birthdate = null;
   }
 
-  Teacher_Religion = Teacher_Religion ? xss(Teacher_Religion.trim()) : null;
-  Teacher_MedicalProblem = Teacher_MedicalProblem ? xss(Teacher_MedicalProblem.trim()) : null;
   Teacher_IsDean = Teacher_IsDean ? Boolean(Teacher_IsDean) : false;
-  if (Teacher_IsDean && typeof Teacher_IsDean !== 'boolean') {
-    if (Teacher_IsDean === 'true' || Teacher_IsDean === '1') {
-      Teacher_IsDean = true;
-    } else if (Teacher_IsDean === 'false' || Teacher_IsDean === '0') {
-      Teacher_IsDean = false;
-    } else {
-      return res.status(400).json({ message: 'Teacher_IsDean must be true or false.', status: false });
-    }
-  }
-
   Department_ID = parseInt(Department_ID);
+
   if (isNaN(Department_ID)) {
     return res.status(400).json({ message: 'Department_ID must be a valid number.', status: false });
   }
@@ -1665,111 +1861,136 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   try {
     const hashedPassword = await bcrypt.hash(Users_Password, saltRounds);
 
-    // Transaction
+    // Start Transaction
     db.query('START TRANSACTION', async (err) => {
       if (err) {
         console.error('Transaction Start Error:', err);
         return res.status(500).json({ message: 'Database error', status: false });
       }
 
-      const checkDepartmentSql = 'SELECT Department_ID, Faculty_ID FROM department WHERE Department_ID = ?';
-      db.query(checkDepartmentSql, [Department_ID], (err, deptResult) => {
+      const checkDuplicateSql = `
+        SELECT 
+          CASE 
+            WHEN EXISTS(SELECT 1 FROM users WHERE Users_Email = ? OR Users_Username = ?) THEN 'email_username'
+            WHEN EXISTS(SELECT 1 FROM teacher WHERE Teacher_Code = ?) THEN 'teacher_code'
+            ELSE NULL
+          END as duplicate_type
+      `;
+
+      db.query(checkDuplicateSql, [Users_Email, Users_Username, Teacher_Code], (err, duplicateResult) => {
         if (err) {
           db.query('ROLLBACK', () => { });
-          console.error('Check Department Error:', err);
+          console.error('Check Duplicate Error:', err);
           return res.status(500).json({ message: 'Database error', status: false });
         }
 
-        if (deptResult.length === 0) {
+        const duplicateType = duplicateResult[0]?.duplicate_type;
+        if (duplicateType) {
           db.query('ROLLBACK', () => { });
-          return res.status(400).json({ message: 'Invalid Department_ID.', status: false });
+          if (duplicateType === 'email_username') {
+            return res.status(409).json({ message: 'Email or username already exists.', status: false });
+          } else if (duplicateType === 'teacher_code') {
+            return res.status(409).json({ message: 'Teacher code already exists.', status: false });
+          }
         }
 
-        if (Teacher_IsDean) {
+        const checkDepartmentSql = 'SELECT Department_ID, Faculty_ID FROM department WHERE Department_ID = ?';
+        db.query(checkDepartmentSql, [Department_ID], (err, deptResult) => {
+          if (err) {
+            db.query('ROLLBACK', () => { });
+            console.error('Check Department Error:', err);
+            return res.status(500).json({ message: 'Database error', status: false });
+          }
+
+          if (deptResult.length === 0) {
+            db.query('ROLLBACK', () => { });
+            return res.status(400).json({ message: 'Invalid Department_ID.', status: false });
+          }
+
           const Faculty_ID = deptResult[0].Faculty_ID;
-          const checkDeanSql = `
-            SELECT t.Teacher_ID 
-            FROM teacher t 
-            INNER JOIN department d ON t.Department_ID = d.Department_ID 
-            WHERE d.Faculty_ID = ? AND t.Teacher_IsDean = TRUE AND t.Teacher_IsResign = FALSE
-          `;
+          const checkDeanProcess = () => {
+            if (Teacher_IsDean) {
+              const checkDeanSql = `
+                SELECT t.Teacher_ID 
+                FROM teacher t 
+                INNER JOIN department d ON t.Department_ID = d.Department_ID 
+                WHERE d.Faculty_ID = ? AND t.Teacher_IsDean = TRUE AND t.Teacher_IsResign = FALSE
+              `;
 
-          db.query(checkDeanSql, [Faculty_ID], (err, deanResult) => {
-            if (err) {
-              db.query('ROLLBACK', () => { });
-              console.error('Check Dean Error:', err);
-              return res.status(500).json({ message: 'Database error', status: false });
-            }
-
-            if (deanResult.length > 0) {
-              db.query('ROLLBACK', () => { });
-              return res.status(400).json({ message: 'This faculty already has a dean. Please remove the current dean first or set Teacher_IsDean to false.', status: false });
-            }
-            insertTeacher();
-          });
-        } else {
-          insertTeacher();
-        }
-
-        function insertTeacher() {
-          const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
-                           VALUES (?, ?, ?, 'teacher')`;
-          db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
-            if (err) {
-              db.query('ROLLBACK', () => { });
-              if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(409).json({ message: 'Email or username already exists.', status: false });
-              }
-              console.error('Insert Users Error:', err);
-              return res.status(500).json({ message: 'Database error', status: false });
-            }
-
-            const Users_ID = userResult.insertId;
-            const sqlTeacher = `INSERT INTO teacher 
-              (Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate, 
-               Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-            db.query(sqlTeacher, [
-              Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate,
-              Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID
-            ], (err, teacherResult) => {
-              if (err) {
-                db.query('ROLLBACK', () => { });
-                if (err.code === 'ER_DUP_ENTRY') {
-                  return res.status(409).json({ message: 'Teacher code already exists.', status: false });
-                }
-                console.error('Insert Teacher Error:', err);
-                return res.status(500).json({ message: 'Database error', status: false });
-              }
-
-              // Commit Transaction
-              db.query('COMMIT', (err) => {
+              db.query(checkDeanSql, [Faculty_ID], (err, deanResult) => {
                 if (err) {
                   db.query('ROLLBACK', () => { });
-                  console.error('Commit Error:', err);
+                  console.error('Check Dean Error:', err);
                   return res.status(500).json({ message: 'Database error', status: false });
                 }
 
-                res.status(201).json({
-                  message: 'Teacher registered successfully.',
-                  status: true,
-                  data: {
-                    Users_ID: Users_ID,
-                    Teacher_ID: teacherResult.insertId,
-                    Teacher_Code: Teacher_Code,
-                    Teacher_FirstName: Teacher_FirstName,
-                    Teacher_LastName: Teacher_LastName,
-                    Teacher_IsDean: Teacher_IsDean,
-                    Users_Email: Users_Email,
-                    Users_Username: Users_Username,
-                    Department_ID: Department_ID
+                if (deanResult.length > 0) {
+                  db.query('ROLLBACK', () => { });
+                  return res.status(400).json({ message: 'This faculty already has a dean. Please remove the current dean first or set Teacher_IsDean to false.', status: false });
+                }
+                insertTeacher();
+              });
+            } else {
+              insertTeacher();
+            }
+          };
+
+          const insertTeacher = () => {
+            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
+                             VALUES (?, ?, ?, 'teacher')`;
+            db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
+              if (err) {
+                db.query('ROLLBACK', () => { });
+                console.error('Insert Users Error:', err);
+                return res.status(500).json({ message: 'Database error', status: false });
+              }
+
+              const Users_ID = userResult.insertId;
+              const sqlTeacher = `INSERT INTO teacher 
+                (Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate, 
+                 Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+              db.query(sqlTeacher, [
+                Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate,
+                Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID
+              ], (err, teacherResult) => {
+                if (err) {
+                  db.query('ROLLBACK', () => { });
+                  console.error('Insert Teacher Error:', err);
+                  return res.status(500).json({ message: 'Database error', status: false });
+                }
+
+                // Commit Transaction
+                db.query('COMMIT', (err) => {
+                  if (err) {
+                    db.query('ROLLBACK', () => { });
+                    console.error('Commit Error:', err);
+                    return res.status(500).json({ message: 'Database error', status: false });
                   }
+
+                  res.status(201).json({
+                    message: 'Teacher registered successfully.',
+                    status: true,
+                    data: {
+                      Users_ID: Users_ID,
+                      Teacher_ID: teacherResult.insertId,
+                      Teacher_Code: Teacher_Code,
+                      Teacher_FirstName: Teacher_FirstName,
+                      Teacher_LastName: Teacher_LastName,
+                      Teacher_IsDean: Teacher_IsDean,
+                      Users_Email: Users_Email,
+                      Users_Username: Users_Username,
+                      Department_ID: Department_ID
+                    }
+                  });
                 });
               });
             });
-          });
-        }
+          };
+
+          checkDeanProcess();
+        });
       });
     });
   } catch (err) {
@@ -1898,13 +2119,13 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
       const facultySql = 'SELECT Faculty_ID FROM faculty WHERE Faculty_Name = ?';
       db.query(facultySql, [Faculty_Name], (err, facultyResult) => {
         if (err) {
-          db.query('ROLLBACK', () => {});
+          db.query('ROLLBACK', () => { });
           console.error('Find Faculty Error:', err);
           return res.status(500).json({ message: 'Database error', status: false });
         }
 
         if (facultyResult.length === 0) {
-          db.query('ROLLBACK', () => {});
+          db.query('ROLLBACK', () => { });
           return res.status(400).json({ message: `Faculty '${Faculty_Name}' not found.`, status: false });
         }
 
@@ -1912,13 +2133,13 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
         const departmentSql = 'SELECT Department_ID FROM department WHERE Department_Name = ? AND Faculty_ID = ?';
         db.query(departmentSql, [Department_Name, Faculty_ID], (err, deptResult) => {
           if (err) {
-            db.query('ROLLBACK', () => {});
+            db.query('ROLLBACK', () => { });
             console.error('Find Department Error:', err);
             return res.status(500).json({ message: 'Database error', status: false });
           }
 
           if (deptResult.length === 0) {
-            db.query('ROLLBACK', () => {});
+            db.query('ROLLBACK', () => { });
             return res.status(400).json({ message: `Department '${Department_Name}' not found in faculty '${Faculty_Name}'.`, status: false });
           }
 
@@ -1926,13 +2147,13 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
           const teacherSql = 'SELECT Teacher_ID FROM teacher WHERE Teacher_Code = ? AND Teacher_IsResign = FALSE';
           db.query(teacherSql, [Teacher_Code], (err, teacherResult) => {
             if (err) {
-              db.query('ROLLBACK', () => {});
+              db.query('ROLLBACK', () => { });
               console.error('Find Teacher Error:', err);
               return res.status(500).json({ message: 'Database error', status: false });
             }
 
             if (teacherResult.length === 0) {
-              db.query('ROLLBACK', () => {});
+              db.query('ROLLBACK', () => { });
               return res.status(400).json({ message: `Teacher with code '${Teacher_Code}' not found or resigned.`, status: false });
             }
 
@@ -1941,7 +2162,7 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
                              VALUES (?, ?, ?, 'student')`;
             db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
               if (err) {
-                db.query('ROLLBACK', () => {});
+                db.query('ROLLBACK', () => { });
                 if (err.code === 'ER_DUP_ENTRY') {
                   return res.status(409).json({ message: 'Email or username already exists.', status: false });
                 }
@@ -1960,7 +2181,7 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
                 Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID
               ], (err, studentResult) => {
                 if (err) {
-                  db.query('ROLLBACK', () => {});
+                  db.query('ROLLBACK', () => { });
                   if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(409).json({ message: 'Student code already exists.', status: false });
                   }
@@ -1971,7 +2192,7 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
                 // Commit Transaction
                 db.query('COMMIT', (err) => {
                   if (err) {
-                    db.query('ROLLBACK', () => {});
+                    db.query('ROLLBACK', () => { });
                     console.error('Commit Error:', err);
                     return res.status(500).json({ message: 'Database error', status: false });
                   }
@@ -2120,13 +2341,13 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
       const facultySql = 'SELECT Faculty_ID FROM faculty WHERE Faculty_Name = ?';
       db.query(facultySql, [Faculty_Name], (err, facultyResult) => {
         if (err) {
-          db.query('ROLLBACK', () => {});
+          db.query('ROLLBACK', () => { });
           console.error('Find Faculty Error:', err);
           return res.status(500).json({ message: 'Database error', status: false });
         }
 
         if (facultyResult.length === 0) {
-          db.query('ROLLBACK', () => {});
+          db.query('ROLLBACK', () => { });
           return res.status(400).json({ message: `Faculty '${Faculty_Name}' not found.`, status: false });
         }
 
@@ -2134,13 +2355,13 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
         const departmentSql = 'SELECT Department_ID FROM department WHERE Department_Name = ? AND Faculty_ID = ?';
         db.query(departmentSql, [Department_Name, Faculty_ID], (err, deptResult) => {
           if (err) {
-            db.query('ROLLBACK', () => {});
+            db.query('ROLLBACK', () => { });
             console.error('Find Department Error:', err);
             return res.status(500).json({ message: 'Database error', status: false });
           }
 
           if (deptResult.length === 0) {
-            db.query('ROLLBACK', () => {});
+            db.query('ROLLBACK', () => { });
             return res.status(400).json({ message: `Department '${Department_Name}' not found in faculty '${Faculty_Name}'.`, status: false });
           }
 
@@ -2156,13 +2377,13 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
 
               db.query(checkDeanSql, [Faculty_ID], (err, deanResult) => {
                 if (err) {
-                  db.query('ROLLBACK', () => {});
+                  db.query('ROLLBACK', () => { });
                   console.error('Check Dean Error:', err);
                   return res.status(500).json({ message: 'Database error', status: false });
                 }
 
                 if (deanResult.length > 0) {
-                  db.query('ROLLBACK', () => {});
+                  db.query('ROLLBACK', () => { });
                   return res.status(400).json({ message: 'This faculty already has a dean.', status: false });
                 }
                 insertTeacher();
@@ -2177,7 +2398,7 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
                              VALUES (?, ?, ?, 'teacher')`;
             db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
               if (err) {
-                db.query('ROLLBACK', () => {});
+                db.query('ROLLBACK', () => { });
                 if (err.code === 'ER_DUP_ENTRY') {
                   return res.status(409).json({ message: 'Email or username already exists.', status: false });
                 }
@@ -2196,7 +2417,7 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
                 Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID
               ], (err, teacherResult) => {
                 if (err) {
-                  db.query('ROLLBACK', () => {});
+                  db.query('ROLLBACK', () => { });
                   if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(409).json({ message: 'Teacher code already exists.', status: false });
                   }
@@ -2207,7 +2428,7 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
                 // Commit Transaction
                 db.query('COMMIT', (err) => {
                   if (err) {
-                    db.query('ROLLBACK', () => {});
+                    db.query('ROLLBACK', () => { });
                     console.error('Commit Error:', err);
                     return res.status(500).json({ message: 'Database error', status: false });
                   }
@@ -2258,7 +2479,7 @@ app.get('/api/admin/faculties', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Web
 
   try {
     const sql = `SELECT Faculty_ID, Faculty_Name FROM faculty ORDER BY Faculty_Name ASC`;
-    
+
     db.query(sql, (err, results) => {
       if (err) {
         console.error('Get Faculties Error:', err);
@@ -2303,7 +2524,7 @@ app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_W
       INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
       ORDER BY f.Faculty_Name ASC, d.Department_Name ASC
     `;
-    
+
     db.query(sql, (err, results) => {
       if (err) {
         console.error('Get Departments Error:', err);
@@ -2344,7 +2565,7 @@ app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000
 
   try {
     const checkFacultySql = `SELECT Faculty_ID, Faculty_Name FROM faculty WHERE Faculty_ID = ?`;
-    
+
     db.query(checkFacultySql, [facultyId], (err, facultyResult) => {
       if (err) {
         console.error('Check Faculty Error:', err);
@@ -2364,7 +2585,7 @@ app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000
         WHERE Faculty_ID = ?
         ORDER BY Department_Name ASC
       `;
-      
+
       db.query(sql, [facultyId], (err, results) => {
         if (err) {
           console.error('Get Departments by Faculty Error:', err);
@@ -2416,7 +2637,7 @@ app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 10
       INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
       WHERE d.Department_ID = ?
     `;
-    
+
     db.query(checkDepartmentSql, [departmentId], (err, departmentResult) => {
       if (err) {
         console.error('Check Department Error:', err);
@@ -2452,7 +2673,7 @@ app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 10
         WHERE t.Department_ID = ? AND t.Teacher_IsResign = FALSE
         ORDER BY t.Teacher_IsDean DESC, t.Teacher_FirstName ASC, t.Teacher_LastName ASC
       `;
-      
+
       db.query(sql, [departmentId], (err, results) => {
         if (err) {
           console.error('Get Teachers by Department Error:', err);
