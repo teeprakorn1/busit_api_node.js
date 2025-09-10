@@ -881,7 +881,7 @@ app.get('/api/timestamp/get/type/:TimestampType_ID', RateLimiter(0.5 * 60 * 1000
   }
 });
 
-//API Timestamp users Get by Search of Website**
+//API Timestamp users Get by Search of Website
 app.get('/api/users/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
   res.set({
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -912,31 +912,17 @@ app.get('/api/users/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Webs
     let searchParam;
 
     if (email) {
-      sql = `SELECT u.Users_ID, u.Users_Email, u.Users_Type,
-             CASE 
-               WHEN u.Users_Type = 'student' THEN CONCAT(s.Student_FirstName, ' ', s.Student_LastName)
-               WHEN u.Users_Type = 'teacher' THEN CONCAT(t.Teacher_FirstName, ' ', t.Teacher_LastName)
-               WHEN u.Users_Type = 'staff' THEN CONCAT(st.Staff_FirstName, ' ', st.Staff_LastName)
-             END as Full_Name
-             FROM users u
-             LEFT JOIN student s ON u.Users_ID = s.Users_ID
-             LEFT JOIN teacher t ON u.Users_ID = t.Users_ID  
-             LEFT JOIN staff st ON u.Users_ID = st.Users_ID
-             WHERE u.Users_Email = ?`;
+      sql = `SELECT u.Users_ID, u.Users_Email, u.Users_Type, CASE WHEN u.Users_Type = 'student' THEN
+        CONCAT(s.Student_FirstName, ' ', s.Student_LastName) WHEN u.Users_Type = 'teacher' THEN CONCAT(t.Teacher_FirstName, ' ', t.Teacher_LastName)
+        WHEN u.Users_Type = 'staff' THEN CONCAT(st.Staff_FirstName, ' ', st.Staff_LastName) END as Full_Name FROM users u LEFT JOIN student s ON u.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID LEFT JOIN staff st ON u.Users_ID = st.Users_ID WHERE u.Users_Email = ?`;
       searchParam = email;
     } else if (ip) {
-      sql = `SELECT DISTINCT u.Users_ID, u.Users_Email, u.Users_Type,
-             CASE 
-               WHEN u.Users_Type = 'student' THEN CONCAT(s.Student_FirstName, ' ', s.Student_LastName)
-               WHEN u.Users_Type = 'teacher' THEN CONCAT(t.Teacher_FirstName, ' ', t.Teacher_LastName)
-               WHEN u.Users_Type = 'staff' THEN CONCAT(st.Staff_FirstName, ' ', st.Staff_LastName)
-             END as Full_Name
-             FROM users u
-             LEFT JOIN student s ON u.Users_ID = s.Users_ID
-             LEFT JOIN teacher t ON u.Users_ID = t.Users_ID  
-             LEFT JOIN staff st ON u.Users_ID = st.Users_ID
-             INNER JOIN timestamp ts ON u.Users_ID = ts.Users_ID
-             WHERE ts.Timestamp_IP_Address = ?`;
+      sql = `SELECT DISTINCT u.Users_ID, u.Users_Email, u.Users_Type, CASE WHEN u.Users_Type = 'student' THEN 
+        CONCAT(s.Student_FirstName, ' ', s.Student_LastName) WHEN u.Users_Type = 'teacher' THEN CONCAT(t.Teacher_FirstName, ' ', t.Teacher_LastName)
+        WHEN u.Users_Type = 'staff' THEN CONCAT(st.Staff_FirstName, ' ', st.Staff_LastName) END as Full_Name FROM users u LEFT JOIN student s ON u.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID LEFT JOIN staff st ON u.Users_ID = st.Users_ID INNER JOIN timestamp ts ON u.Users_ID = ts.Users_ID
+        WHERE ts.Timestamp_IP_Address = ?`;
       searchParam = ip;
     }
 
@@ -966,7 +952,7 @@ app.get('/api/users/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Webs
   }
 });
 
-//API Timestamp Get by Search of Website**
+//API Timestamp Get by Search of Website
 app.get('/api/timestamp/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
   res.set({
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -988,13 +974,9 @@ app.get('/api/timestamp/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_
 
   const { email, ip, user_type, event_type, date_from, date_to, limit = 100 } = req.query;
   try {
-    let sql = `SELECT ts.Timestamp_ID, ts.Timestamp_RegisTime, ts.Timestamp_Name, 
-               ts.Timestamp_UserAgent, ts.Timestamp_IP_Address, ts.TimestampType_ID, 
-               ts.Users_ID, u.Users_Email, u.Users_Type, tst.TimestampType_Name 
-               FROM timestamp ts 
-               INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID 
-               INNER JOIN users u ON ts.Users_ID = u.Users_ID 
-               WHERE 1=1`;
+    let sql = `SELECT ts.Timestamp_ID, ts.Timestamp_RegisTime, ts.Timestamp_Name, ts.Timestamp_UserAgent, 
+      ts.Timestamp_IP_Address, ts.TimestampType_ID, ts.Users_ID, u.Users_Email, u.Users_Type, tst.TimestampType_Name FROM 
+      timestamp ts INNER JOIN timestamptype tst ON ts.TimestampType_ID = tst.TimestampType_ID INNER JOIN users u ON ts.Users_ID = u.Users_ID WHERE 1=1`;
 
     const params = [];
 
@@ -1044,13 +1026,7 @@ app.get('/api/timestamp/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_
         data: result,
         total: result.length,
         searchCriteria: {
-          email,
-          ip,
-          user_type,
-          event_type,
-          date_from,
-          date_to,
-          limit
+          email, ip, user_type, event_type, date_from, date_to, limit
         }
       });
     });
@@ -1085,8 +1061,8 @@ app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_We
 
     if (usersType === 'teacher') {
       sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile, dp.Department_Name, f.Faculty_Name FROM (((${tableName} ty 
-            INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) 
-            INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1`;
+        INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) 
+        INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1`;
     } else if (usersType === 'staff') {
       sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ? LIMIT 1`;
     } else {
@@ -1516,33 +1492,21 @@ app.get('/api/admin/data/:Users_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTok
   }
 });
 
-// API Register Student Admin Website**
+// API Register Student Admin Website
 app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
 
-  let {
-    Users_Email,
-    Users_Password,
-    Student_Code,
-    Student_FirstName,
-    Student_LastName,
-    Student_Phone,
-    Student_AcademicYear,
-    Student_Birthdate,
-    Student_Religion,
-    Student_MedicalProblem,
-    Teacher_ID,
-    Department_ID
-  } = req.body || {};
+  let { Users_Email, Users_Password, Student_Code, Student_FirstName, Student_LastName, Student_Phone,
+    Student_AcademicYear, Student_Birthdate, Student_Religion, Student_MedicalProblem, Teacher_ID, Department_ID } = req.body || {};
 
   if (!Users_Email || !Users_Password || !Student_Code ||
-    !Student_FirstName || !Student_LastName || !Student_AcademicYear ||
-    !Teacher_ID || !Department_ID) {
+    !Student_FirstName || !Student_LastName || !Student_AcademicYear || !Teacher_ID || !Department_ID) {
     return res.status(400).json({
-      message: 'Please fill in all required fields: Users_Email, Users_Password, Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Teacher_ID, Department_ID',
+      message: `Please fill in all required fields: Users_Email, Users_Password, 
+        Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Teacher_ID, Department_ID`,
       status: false
     });
   }
@@ -1638,14 +1602,8 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
         return res.status(500).json({ message: 'Database error', status: false });
       }
 
-      const checkDuplicateSql = `
-        SELECT 
-          CASE 
-            WHEN EXISTS(SELECT 1 FROM users WHERE Users_Email = ? OR Users_Username = ?) THEN 'email_username'
-            WHEN EXISTS(SELECT 1 FROM student WHERE Student_Code = ?) THEN 'student_code'
-            ELSE NULL
-          END as duplicate_type
-      `;
+      const checkDuplicateSql = `SELECT CASE WHEN EXISTS(SELECT 1 FROM users WHERE Users_Email = ? OR Users_Username = ?) 
+        THEN 'email_username' WHEN EXISTS(SELECT 1 FROM student WHERE Student_Code = ?) THEN 'student_code' ELSE NULL END as duplicate_type`;
 
       db.query(checkDuplicateSql, [Users_Email, Users_Username, Student_Code], (err, duplicateResult) => {
         if (err) {
@@ -1690,8 +1648,7 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
               return res.status(400).json({ message: 'Invalid Department_ID.', status: false });
             }
 
-            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
-                             VALUES (?, ?, ?, 'student')`;
+            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES (?, ?, ?, 'student')`;
             db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
               if (err) {
                 db.query('ROLLBACK', () => { });
@@ -1700,10 +1657,9 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
               }
 
               const Users_ID = userResult.insertId;
-              const sqlStudent = `INSERT INTO student 
-                (Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear, 
-                 Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              const sqlStudent = `INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, 
+                Student_Phone, Student_AcademicYear, Student_Birthdate, Student_Religion, Student_MedicalProblem, 
+                Users_ID, Teacher_ID, Department_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
               db.query(sqlStudent, [
                 Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear,
@@ -1749,29 +1705,17 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   }
 });
 
-// API Register Teacher Admin Website**
+// API Register Teacher Admin Website
 app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
 
-  let {
-    Users_Email,
-    Users_Password,
-    Teacher_Code,
-    Teacher_FirstName,
-    Teacher_LastName,
-    Teacher_Phone,
-    Teacher_Birthdate,
-    Teacher_Religion,
-    Teacher_MedicalProblem,
-    Teacher_IsDean,
-    Department_ID
-  } = req.body || {};
+  let { Users_Email, Users_Password, Teacher_Code, Teacher_FirstName, Teacher_LastName,
+    Teacher_Phone, Teacher_Birthdate, Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Department_ID } = req.body || {};
 
-  if (!Users_Email || !Users_Password || !Teacher_Code ||
-    !Teacher_FirstName || !Teacher_LastName || !Department_ID) {
+  if (!Users_Email || !Users_Password || !Teacher_Code || !Teacher_FirstName || !Teacher_LastName || !Department_ID) {
     return res.status(400).json({
       message: 'Please fill in all required fields: Users_Email, Users_Password, Teacher_Code, Teacher_FirstName, Teacher_LastName, Department_ID',
       status: false
@@ -1868,14 +1812,9 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
         return res.status(500).json({ message: 'Database error', status: false });
       }
 
-      const checkDuplicateSql = `
-        SELECT 
-          CASE 
-            WHEN EXISTS(SELECT 1 FROM users WHERE Users_Email = ? OR Users_Username = ?) THEN 'email_username'
-            WHEN EXISTS(SELECT 1 FROM teacher WHERE Teacher_Code = ?) THEN 'teacher_code'
-            ELSE NULL
-          END as duplicate_type
-      `;
+      const checkDuplicateSql = `SELECT CASE WHEN EXISTS(SELECT 1 FROM users 
+        WHERE Users_Email = ? OR Users_Username = ?) THEN 'email_username' WHEN EXISTS 
+        (SELECT 1 FROM teacher WHERE Teacher_Code = ?) THEN 'teacher_code' ELSE NULL END as duplicate_type`;
 
       db.query(checkDuplicateSql, [Users_Email, Users_Username, Teacher_Code], (err, duplicateResult) => {
         if (err) {
@@ -1910,12 +1849,8 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
           const Faculty_ID = deptResult[0].Faculty_ID;
           const checkDeanProcess = () => {
             if (Teacher_IsDean) {
-              const checkDeanSql = `
-                SELECT t.Teacher_ID 
-                FROM teacher t 
-                INNER JOIN department d ON t.Department_ID = d.Department_ID 
-                WHERE d.Faculty_ID = ? AND t.Teacher_IsDean = TRUE AND t.Teacher_IsResign = FALSE
-              `;
+              const checkDeanSql = `SELECT t.Teacher_ID FROM teacher t INNER JOIN department d ON 
+              t.Department_ID = d.Department_ID WHERE d.Faculty_ID = ? AND t.Teacher_IsDean = TRUE AND t.Teacher_IsResign = FALSE`;
 
               db.query(checkDeanSql, [Faculty_ID], (err, deanResult) => {
                 if (err) {
@@ -1936,8 +1871,7 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
           };
 
           const insertTeacher = () => {
-            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
-                             VALUES (?, ?, ?, 'teacher')`;
+            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES (?, ?, ?, 'teacher')`;
             db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
               if (err) {
                 db.query('ROLLBACK', () => { });
@@ -1946,10 +1880,9 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
               }
 
               const Users_ID = userResult.insertId;
-              const sqlTeacher = `INSERT INTO teacher 
-                (Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate, 
-                 Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              const sqlTeacher = `INSERT INTO teacher (Teacher_Code, Teacher_FirstName, 
+                Teacher_LastName, Teacher_Phone, Teacher_Birthdate, Teacher_Religion, Teacher_MedicalProblem, 
+                Teacher_IsDean, Users_ID, Department_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
               db.query(sqlTeacher, [
                 Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate,
@@ -1988,7 +1921,6 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
               });
             });
           };
-
           checkDeanProcess();
         });
       });
@@ -1999,35 +1931,21 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   }
 });
 
-// API Register Student from CSV website admin**
+// API Register Student from CSV website admin
 app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
 
-  let {
-    Users_Email,
-    Users_Password,
-    Student_Code,
-    Student_FirstName,
-    Student_LastName,
-    Student_Phone,
-    Student_AcademicYear,
-    Student_Birthdate,
-    Student_Religion,
-    Student_MedicalProblem,
-    Faculty_Name,
-    Department_Name,
-    Teacher_Code
-  } = req.body || {};
+  let { Users_Email, Users_Password, Student_Code, Student_FirstName,
+    Student_LastName, Student_Phone, Student_AcademicYear, Student_Birthdate,
+    Student_Religion, Student_MedicalProblem, Faculty_Name, Department_Name, Teacher_Code } = req.body || {};
 
-  if (!Users_Email || !Users_Password || !Student_Code ||
-    !Student_FirstName || !Student_LastName || !Student_AcademicYear ||
-    !Faculty_Name || !Department_Name || !Teacher_Code) {
+  if (!Users_Email || !Users_Password || !Student_Code || !Student_FirstName ||
+    !Student_LastName || !Student_AcademicYear || !Faculty_Name || !Department_Name || !Teacher_Code) {
     return res.status(400).json({
-      message: 'Please fill in all required fields for CSV import',
-      status: false
+      message: 'Please fill in all required fields for CSV import', status: false
     });
   }
 
@@ -2158,8 +2076,7 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
             }
 
             const Teacher_ID = teacherResult[0].Teacher_ID;
-            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
-                             VALUES (?, ?, ?, 'student')`;
+            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES (?, ?, ?, 'student')`;
             db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
               if (err) {
                 db.query('ROLLBACK', () => { });
@@ -2171,10 +2088,9 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
               }
 
               const Users_ID = userResult.insertId;
-              const sqlStudent = `INSERT INTO student 
-                (Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear, 
-                 Student_Birthdate, Student_Religion, Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              const sqlStudent = `INSERT INTO student (Student_Code, Student_FirstName, 
+                Student_LastName, Student_Phone, Student_AcademicYear, Student_Birthdate, Student_Religion, 
+                Student_MedicalProblem, Users_ID, Teacher_ID, Department_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
               db.query(sqlStudent, [
                 Student_Code, Student_FirstName, Student_LastName, Student_Phone, Student_AcademicYear,
@@ -2223,33 +2139,19 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
   }
 });
 
-// API Register Teacher from CSV website admin**
+// API Register Teacher from CSV website admin
 app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
 
-  let {
-    Users_Email,
-    Users_Password,
-    Teacher_Code,
-    Teacher_FirstName,
-    Teacher_LastName,
-    Teacher_Phone,
-    Teacher_Birthdate,
-    Teacher_Religion,
-    Teacher_MedicalProblem,
-    Teacher_IsDean,
-    Faculty_Name,
-    Department_Name
-  } = req.body || {};
+  let { Users_Email, Users_Password, Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone,
+    Teacher_Birthdate, Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Faculty_Name, Department_Name } = req.body || {};
 
-  if (!Users_Email || !Users_Password || !Teacher_Code ||
-    !Teacher_FirstName || !Teacher_LastName || !Faculty_Name || !Department_Name) {
+  if (!Users_Email || !Users_Password || !Teacher_Code || !Teacher_FirstName || !Teacher_LastName || !Faculty_Name || !Department_Name) {
     return res.status(400).json({
-      message: 'Please fill in all required fields for CSV import',
-      status: false
+      message: 'Please fill in all required fields for CSV import', status: false
     });
   }
 
@@ -2368,12 +2270,8 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
           const Department_ID = deptResult[0].Department_ID;
           const checkDeanProcess = () => {
             if (Teacher_IsDean) {
-              const checkDeanSql = `
-                SELECT t.Teacher_ID 
-                FROM teacher t 
-                INNER JOIN department d ON t.Department_ID = d.Department_ID 
-                WHERE d.Faculty_ID = ? AND t.Teacher_IsDean = TRUE AND t.Teacher_IsResign = FALSE
-              `;
+              const checkDeanSql = `SELECT t.Teacher_ID FROM teacher t INNER JOIN department d ON 
+                t.Department_ID = d.Department_ID WHERE d.Faculty_ID = ? AND t.Teacher_IsDean = TRUE AND t.Teacher_IsResign = FALSE`;
 
               db.query(checkDeanSql, [Faculty_ID], (err, deanResult) => {
                 if (err) {
@@ -2394,8 +2292,7 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
           };
 
           const insertTeacher = () => {
-            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type)
-                             VALUES (?, ?, ?, 'teacher')`;
+            const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES (?, ?, ?, 'teacher')`;
             db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
               if (err) {
                 db.query('ROLLBACK', () => { });
@@ -2407,10 +2304,9 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
               }
 
               const Users_ID = userResult.insertId;
-              const sqlTeacher = `INSERT INTO teacher 
-                (Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate, 
-                 Teacher_Religion, Teacher_MedicalProblem, Teacher_IsDean, Users_ID, Department_ID)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              const sqlTeacher = `INSERT INTO teacher (Teacher_Code, Teacher_FirstName, 
+                Teacher_LastName, Teacher_Phone, Teacher_Birthdate, Teacher_Religion, Teacher_MedicalProblem, 
+                Teacher_IsDean, Users_ID, Department_ID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
               db.query(sqlTeacher, [
                 Teacher_Code, Teacher_FirstName, Teacher_LastName, Teacher_Phone, Teacher_Birthdate,
@@ -2463,7 +2359,7 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
   }
 });
 
-// API Get All Faculties website admin**
+// API Get All Faculties website admin
 app.get('/api/admin/faculties', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -2473,7 +2369,7 @@ app.get('/api/admin/faculties', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Web
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
-  if (Requester_Users_Type !== 'staff') {
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
@@ -2499,7 +2395,7 @@ app.get('/api/admin/faculties', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Web
   }
 });
 
-// API Get All Departments website admin**
+// API Get All Departments website admin
 app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -2509,21 +2405,13 @@ app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_W
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
-  if (Requester_Users_Type !== 'staff') {
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
   try {
-    const sql = `
-      SELECT 
-        d.Department_ID, 
-        d.Department_Name, 
-        d.Faculty_ID,
-        f.Faculty_Name
-      FROM department d
-      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
-      ORDER BY f.Faculty_Name ASC, d.Department_Name ASC
-    `;
+    const sql = `SELECT d.Department_ID, d.Department_Name, d.Faculty_ID, f.Faculty_Name 
+      FROM department d INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ORDER BY f.Faculty_Name ASC, d.Department_Name ASC`;
 
     db.query(sql, (err, results) => {
       if (err) {
@@ -2532,10 +2420,8 @@ app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_W
       }
 
       res.status(200).json({
-        message: 'Departments retrieved successfully.',
-        status: true,
-        data: results,
-        count: results.length
+        message: 'Departments retrieved successfully.', status: true,
+        data: results, count: results.length
       });
     });
   } catch (err) {
@@ -2544,7 +2430,7 @@ app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_W
   }
 });
 
-// API Get Departments by Faculty ID website admin**
+// API Get Departments by Faculty ID website admin
 app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -2555,7 +2441,7 @@ app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
-  if (Requester_Users_Type !== 'staff') {
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
@@ -2576,15 +2462,8 @@ app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000
         return res.status(404).json({ message: 'Faculty not found.', status: false });
       }
 
-      const sql = `
-        SELECT 
-          Department_ID, 
-          Department_Name, 
-          Faculty_ID
-        FROM department 
-        WHERE Faculty_ID = ?
-        ORDER BY Department_Name ASC
-      `;
+      const sql = `SELECT Department_ID, Department_Name, 
+        Faculty_ID FROM department WHERE Faculty_ID = ? ORDER BY Department_Name ASC`;
 
       db.query(sql, [facultyId], (err, results) => {
         if (err) {
@@ -2593,11 +2472,8 @@ app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000
         }
 
         res.status(200).json({
-          message: 'Departments retrieved successfully.',
-          status: true,
-          faculty: facultyResult[0],
-          data: results,
-          count: results.length
+          message: 'Departments retrieved successfully.', status: true,
+          faculty: facultyResult[0], data: results, count: results.length
         });
       });
     });
@@ -2607,7 +2483,7 @@ app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000
   }
 });
 
-// API Get Teachers by Department ID website admin**
+// API Get Teachers by Department ID website admin
 app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -2627,16 +2503,8 @@ app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 10
   }
 
   try {
-    const checkDepartmentSql = `
-      SELECT 
-        d.Department_ID, 
-        d.Department_Name, 
-        d.Faculty_ID,
-        f.Faculty_Name
-      FROM department d
-      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
-      WHERE d.Department_ID = ?
-    `;
+    const checkDepartmentSql = `SELECT d.Department_ID, d.Department_Name, d.Faculty_ID, 
+      f.Faculty_Name FROM department d INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID WHERE d.Department_ID = ?`;
 
     db.query(checkDepartmentSql, [departmentId], (err, departmentResult) => {
       if (err) {
@@ -2648,31 +2516,11 @@ app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 10
         return res.status(404).json({ message: 'Department not found.', status: false });
       }
 
-      const sql = `
-        SELECT 
-          t.Teacher_ID,
-          t.Teacher_Code,
-          t.Teacher_FirstName,
-          t.Teacher_LastName,
-          t.Teacher_Phone,
-          t.Teacher_Birthdate,
-          t.Teacher_Religion,
-          t.Teacher_MedicalProblem,
-          t.Teacher_RegisTime,
-          t.Teacher_IsResign,
-          t.Teacher_IsDean,
-          t.Users_ID,
-          t.Department_ID,
-          u.Users_Email,
-          u.Users_Username,
-          u.Users_RegisTime,
-          u.Users_ImageFile,
-          u.Users_IsActive
-        FROM teacher t
-        INNER JOIN users u ON t.Users_ID = u.Users_ID
-        WHERE t.Department_ID = ? AND t.Teacher_IsResign = FALSE
-        ORDER BY t.Teacher_IsDean DESC, t.Teacher_FirstName ASC, t.Teacher_LastName ASC
-      `;
+      const sql = `SELECT t.Teacher_ID, t.Teacher_Code, t.Teacher_FirstName, t.Teacher_LastName,
+       t.Teacher_Phone, t.Teacher_Birthdate, t.Teacher_Religion, t.Teacher_MedicalProblem, t.Teacher_RegisTime, 
+       t.Teacher_IsResign, t.Teacher_IsDean, t.Users_ID, t.Department_ID, u.Users_Email, u.Users_Username, u.Users_RegisTime, 
+       u.Users_ImageFile, u.Users_IsActive FROM teacher t INNER JOIN users u ON t.Users_ID = u.Users_ID WHERE t.Department_ID = ? 
+       AND t.Teacher_IsResign = FALSE ORDER BY t.Teacher_IsDean DESC, t.Teacher_FirstName ASC, t.Teacher_LastName ASC`;
 
       db.query(sql, [departmentId], (err, results) => {
         if (err) {
@@ -2719,7 +2567,7 @@ app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 10
   }
 });
 
-// API Get All Teachers with Pagination, Filtering, and Search of Website Admin**
+// API Get All Teachers with Pagination, Filtering, and Search of Website Admin
 app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -2729,7 +2577,7 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
-  if (Requester_Users_Type !== 'staff') {
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
@@ -2738,7 +2586,6 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
   const includeResigned = req.query.includeResigned === 'true';
   const departmentId = req.query.departmentId ? parseInt(req.query.departmentId) : null;
   const search = req.query.search ? req.query.search.trim() : '';
-
   const offset = (page - 1) * limit;
 
   try {
@@ -2755,25 +2602,14 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
     }
 
     if (search) {
-      whereConditions.push(`(
-        t.Teacher_FirstName LIKE ? OR 
-        t.Teacher_LastName LIKE ? OR 
-        t.Teacher_Code LIKE ? OR 
-        u.Users_Email LIKE ?
-      )`);
+      whereConditions.push(`(t.Teacher_FirstName LIKE ? OR t.Teacher_LastName LIKE ? OR t.Teacher_Code LIKE ? OR u.Users_Email LIKE ?)`);
       const searchTerm = `%${search}%`;
       queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-    const countSql = `
-      SELECT COUNT(*) as total
-      FROM teacher t
-      INNER JOIN users u ON t.Users_ID = u.Users_ID
-      INNER JOIN department d ON t.Department_ID = d.Department_ID
-      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
-      ${whereClause}
-    `;
+    const countSql = `SELECT COUNT(*) as total FROM teacher t INNER JOIN users u ON t.Users_ID = u.Users_ID 
+      INNER JOIN department d ON t.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause}`;
 
     db.query(countSql, queryParams, (err, countResult) => {
       if (err) {
@@ -2783,37 +2619,12 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
 
       const total = countResult[0].total;
       const totalPages = Math.ceil(total / limit);
-      const sql = `
-        SELECT 
-          t.Teacher_ID,
-          t.Teacher_Code,
-          t.Teacher_FirstName,
-          t.Teacher_LastName,
-          t.Teacher_Phone,
-          t.Teacher_Birthdate,
-          t.Teacher_Religion,
-          t.Teacher_MedicalProblem,
-          t.Teacher_RegisTime,
-          t.Teacher_IsResign,
-          t.Teacher_IsDean,
-          t.Users_ID,
-          t.Department_ID,
-          d.Department_Name,
-          f.Faculty_ID,
-          f.Faculty_Name,
-          u.Users_Email,
-          u.Users_Username,
-          u.Users_RegisTime,
-          u.Users_ImageFile,
-          u.Users_IsActive
-        FROM teacher t
-        INNER JOIN users u ON t.Users_ID = u.Users_ID
-        INNER JOIN department d ON t.Department_ID = d.Department_ID
-        INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
-        ${whereClause}
-        ORDER BY t.Teacher_IsDean DESC, f.Faculty_Name ASC, d.Department_Name ASC, t.Teacher_FirstName ASC, t.Teacher_LastName ASC
-        LIMIT ? OFFSET ?
-      `;
+      const sql = `SELECT t.Teacher_ID, t.Teacher_Code, t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Phone, 
+        t.Teacher_Birthdate, t.Teacher_Religion, t.Teacher_MedicalProblem, t.Teacher_RegisTime, t.Teacher_IsResign, t.Teacher_IsDean, 
+        t.Users_ID, t.Department_ID, d.Department_Name, f.Faculty_ID, f.Faculty_Name, u.Users_Email, u.Users_Username, u.Users_RegisTime, 
+        u.Users_ImageFile, u.Users_IsActive FROM teacher t INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d ON t.Department_ID = 
+        d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause} ORDER BY t.Teacher_IsDean DESC, f.Faculty_Name ASC, d.Department_Name ASC, 
+        t.Teacher_FirstName ASC, t.Teacher_LastName ASC LIMIT ? OFFSET ?`;
 
       const finalParams = [...queryParams, limit, offset];
 
@@ -2870,6 +2681,137 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
     });
   } catch (err) {
     console.error('Get Teachers Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get All Students with Pagination, Filtering, and Search of Website Admin
+app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const includeGraduated = req.query.includeGraduated === 'true';
+  const departmentId = req.query.departmentId ? parseInt(req.query.departmentId) : null;
+  const facultyId = req.query.facultyId ? parseInt(req.query.facultyId) : null;
+  const academicYear = req.query.academicYear ? parseInt(req.query.academicYear) : null;
+  const search = req.query.search ? req.query.search.trim() : '';
+  const offset = (page - 1) * limit;
+
+  try {
+    let whereConditions = [];
+    let queryParams = [];
+
+    if (!includeGraduated) {
+      whereConditions.push('s.Student_IsGraduated = FALSE');
+    }
+
+    if (facultyId) {
+      whereConditions.push('f.Faculty_ID = ?');
+      queryParams.push(facultyId);
+    }
+
+    if (departmentId) {
+      whereConditions.push('s.Department_ID = ?');
+      queryParams.push(departmentId);
+    }
+
+    if (academicYear) {
+      whereConditions.push('s.Student_AcademicYear = ?');
+      queryParams.push(academicYear);
+    }
+
+    if (search) {
+      whereConditions.push(`(s.Student_FirstName LIKE ? OR s.Student_LastName LIKE ? OR s.Student_Code LIKE ? OR u.Users_Email LIKE ?)`);
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    const countSql = `SELECT COUNT(*) as total FROM student s 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID INNER JOIN department d 
+      ON s.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause}`;
+
+    db.query(countSql, queryParams, (err, countResult) => {
+      if (err) {
+        console.error('Count Students Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      const total = countResult[0].total;
+      const totalPages = Math.ceil(total / limit);
+
+      const sql = `SELECT s.Student_ID, s.Student_Code, s.Student_FirstName, s.Student_LastName, 
+        s.Student_Phone, s.Student_AcademicYear, s.Student_Birthdate, s.Student_Religion, s.Student_MedicalProblem, 
+        s.Student_RegisTime, s.Student_IsGraduated, s.Users_ID, s.Teacher_ID, s.Department_ID, d.Department_Name, f.Faculty_ID, 
+        f.Faculty_Name, u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive FROM student s INNER JOIN 
+        users u ON s.Users_ID = u.Users_ID INNER JOIN department d ON s.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
+        ${whereClause} ORDER BY f.Faculty_Name ASC, d.Department_Name ASC, s.Student_AcademicYear DESC, s.Student_FirstName ASC, s.Student_LastName ASC LIMIT ? OFFSET ?`;
+
+      const finalParams = [...queryParams, limit, offset];
+      db.query(sql, finalParams, (err, results) => {
+        if (err) {
+          console.error('Get Students Error:', err);
+          return res.status(500).json({ message: 'Database error', status: false });
+        }
+
+        const students = results.map(student => ({
+          Student_ID: student.Student_ID,
+          Student_Code: student.Student_Code,
+          Student_FirstName: student.Student_FirstName,
+          Student_LastName: student.Student_LastName,
+          Student_FullName: `${student.Student_FirstName} ${student.Student_LastName}`,
+          Student_Phone: student.Student_Phone,
+          Student_AcademicYear: student.Student_AcademicYear,
+          Student_Birthdate: student.Student_Birthdate,
+          Student_Religion: student.Student_Religion,
+          Student_MedicalProblem: student.Student_MedicalProblem,
+          Student_RegisTime: student.Student_RegisTime,
+          Student_IsGraduated: student.Student_IsGraduated,
+          Department: {
+            Department_ID: student.Department_ID,
+            Department_Name: student.Department_Name,
+            Faculty_ID: student.Faculty_ID,
+            Faculty_Name: student.Faculty_Name
+          },
+          Users: {
+            Users_ID: student.Users_ID,
+            Users_Email: student.Users_Email,
+            Users_Username: student.Users_Username,
+            Users_RegisTime: student.Users_RegisTime,
+            Users_ImageFile: student.Users_ImageFile,
+            Users_IsActive: student.Users_IsActive
+          }
+        }));
+
+        res.status(200).json({
+          message: 'Students retrieved successfully.',
+          status: true,
+          data: students,
+          pagination: {
+            current_page: page,
+            total_pages: totalPages,
+            per_page: limit,
+            total_items: total,
+            has_next: page < totalPages,
+            has_prev: page > 1
+          },
+          count: students.length
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Get Students Error:', err);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
 });
