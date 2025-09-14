@@ -4165,6 +4165,375 @@ paths:
                     example: false
       security: []
 
+  /api/admin/students/{id}:
+    get:
+      summary: Get student details by ID
+      description: Retrieve detailed information about a student (only staff or teacher on website login).
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Student ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Student details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student details retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: john.doe@student.rmutto.ac.th
+                      username:
+                        type: string
+                        example: john.doe
+                      userType:
+                        type: string
+                        example: student
+                      isActive:
+                        type: boolean
+                        example: true
+                      regisTime:
+                        type: string
+                        format: date-time
+                        example: "2024-01-01T10:00:00.000Z"
+                      imageFile:
+                        type: string
+                        example: null
+                      student:
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                            example: 66011223344
+                          firstName:
+                            type: string
+                            example: John
+                          lastName:
+                            type: string
+                            example: Doe
+                          phone:
+                            type: string
+                            example: "0812345678"
+                          otherPhones:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                  example: Emergency
+                                phone:
+                                  type: string
+                                  example: "0998765432"
+                          academicYear:
+                            type: integer
+                            example: 2024
+                          birthdate:
+                            type: string
+                            format: date
+                            example: "2002-05-15"
+                          religion:
+                            type: string
+                            example: Buddhism
+                          medicalProblem:
+                            type: string
+                            example: Asthma
+                          department:
+                            type: string
+                            example: Computer Science
+                          faculty:
+                            type: string
+                            example: Business and IT
+                          advisor:
+                            type: string
+                            example: Dr. Smith Johnson
+                          isGraduated:
+                            type: boolean
+                            example: false
+                          regisTime:
+                            type: string
+                            format: date-time
+                            example: "2024-01-01T10:00:00.000Z"
+                      department:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 2
+                          name:
+                            type: string
+                            example: Computer Science
+                          faculty:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                example: 1
+                              name:
+                                type: string
+                                example: Business and IT
+        "400":
+          description: Invalid student ID
+        "403":
+          description: Permission denied
+        "404":
+          description: Student not found
+        "500":
+          description: Internal server error
+      security: []
+
+    put:
+      summary: Update student details by ID
+      description: Update detailed information of a student (only staff or teacher on website login).
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Student ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                      example: 66011223344
+                    firstName:
+                      type: string
+                      example: John
+                    lastName:
+                      type: string
+                      example: Doe
+                    phone:
+                      type: string
+                      example: "0812345678"
+                    otherPhones:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: Emergency
+                          phone:
+                            type: string
+                            example: "0998765432"
+                    academicYear:
+                      type: integer
+                      example: 2024
+                    birthdate:
+                      type: string
+                      format: date
+                      example: "2002-05-15"
+                    religion:
+                      type: string
+                      example: Buddhism
+                    medicalProblem:
+                      type: string
+                      example: Asthma
+                    isGraduated:
+                      type: boolean
+                      example: false
+      responses:
+        "200":
+          description: Student details updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student details updated successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      studentId:
+                        type: integer
+                        example: 1
+                      updated:
+                        type: boolean
+                        example: true
+        "400":
+          description: Bad request
+        "403":
+          description: Permission denied
+        "404":
+          description: Student not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/admin/students/{id}/status:
+    patch:
+      summary: Update student status (active/inactive)
+      description: Change student account status (only staff on website login).
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Student ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isActive:
+                  type: boolean
+                  example: true
+      responses:
+        "200":
+          description: Student status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student status updated successfully to active.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      studentId:
+                        type: integer
+                        example: 1
+                      isActive:
+                        type: boolean
+                        example: true
+                      updatedBy:
+                        type: string
+                        example: admin.staff
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-09-01T12:00:00.000Z"
+        "400":
+          description: Invalid input or already in desired state
+        "403":
+          description: Permission denied
+        "404":
+          description: Student not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/admin/students/{id}/basic:
+    get:
+      summary: Get basic student information by ID
+      description: Retrieve basic student information (only staff or teacher on website login).
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Student ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Student basic information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student basic information retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      code:
+                        type: string
+                        example: 66011223344
+                      firstName:
+                        type: string
+                        example: John
+                      lastName:
+                        type: string
+                        example: Doe
+                      fullName:
+                        type: string
+                        example: John Doe
+                      email:
+                        type: string
+                        example: john.doe@student.rmutto.ac.th
+                      department:
+                        type: string
+                        example: Computer Science
+                      faculty:
+                        type: string
+                        example: Business and IT
+                      isActive:
+                        type: boolean
+                        example: true
+                      isGraduated:
+                        type: boolean
+                        example: false
+                      userType:
+                        type: string
+                        example: student
+        "400":
+          description: Invalid student ID
+        "403":
+          description: Permission denied
+        "404":
+          description: Student not found
+        "500":
+          description: Internal server error
+      security: []
+
   /api/profile/student/update:
     put:
       tags:

@@ -268,11 +268,6 @@ VALUES ('222222222222-2', 'Student', 'Admin', '2025', '2', '1', '1');
 INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Users_ID)
 VALUES ('333333333333-3', 'Staff', 'Admin', '3');
 
-INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
-('teepakorn.kum@rmutto.ac.th', 'teepakorn.kum', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student');
-INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
-VALUES ('000000000000-0', 'ทีปกร', 'คุ้มวงศ์', '2022', '4', '1', '1');
-
 INSERT INTO timestamptype (TimestampType_Name)
 VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_application_logout'),('timestamp_website_logout'),
@@ -282,3 +277,8 @@ VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_application_request_otp'),('timestamp_application_resetpassword_otp'),
 ('timestamp_application_verify_otp'),('timestamp_website_add_student'),('timestamp_website_add_teacher'),
 ('timestamp_website_add_csv_student'),('timestamp_website_add_csv_teacher');
+
+INSERT INTO dataedittype (DataEditType_Name) VALUES 
+('dataedit_users_status_change'),('dataedit_student_data_update'),
+('dataedit_teacher_data_update'),('dataedit_staff_data_update'),
+('dataedit_profile_update'),('dataedit_system_action');
