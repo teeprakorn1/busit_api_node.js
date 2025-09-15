@@ -2578,13 +2578,14 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
   }
 
   if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
-    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+    return res.status(403).json({ message: "Permission denied. Only staff and teachers can perform this action.", status: false });
   }
 
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   const includeResigned = req.query.includeResigned === 'true';
   const departmentId = req.query.departmentId ? parseInt(req.query.departmentId) : null;
+  const facultyId = req.query.facultyId ? parseInt(req.query.facultyId) : null;
   const search = req.query.search ? req.query.search.trim() : '';
   const offset = (page - 1) * limit;
 
@@ -2594,6 +2595,11 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
 
     if (!includeResigned) {
       whereConditions.push('t.Teacher_IsResign = FALSE');
+    }
+
+    if (facultyId) {
+      whereConditions.push('f.Faculty_ID = ?');
+      queryParams.push(facultyId);
     }
 
     if (departmentId) {
@@ -2608,8 +2614,9 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-    const countSql = `SELECT COUNT(*) as total FROM teacher t INNER JOIN users u ON t.Users_ID = u.Users_ID 
-      INNER JOIN department d ON t.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause}`;
+    const countSql = `SELECT COUNT(*) as total FROM teacher t 
+      INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d 
+      ON t.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause}`;
 
     db.query(countSql, queryParams, (err, countResult) => {
       if (err) {
@@ -2619,15 +2626,18 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
 
       const total = countResult[0].total;
       const totalPages = Math.ceil(total / limit);
-      const sql = `SELECT t.Teacher_ID, t.Teacher_Code, t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Phone, 
-        t.Teacher_Birthdate, t.Teacher_Religion, t.Teacher_MedicalProblem, t.Teacher_RegisTime, t.Teacher_IsResign, t.Teacher_IsDean, 
-        t.Users_ID, t.Department_ID, d.Department_Name, f.Faculty_ID, f.Faculty_Name, u.Users_Email, u.Users_Username, u.Users_RegisTime, 
-        u.Users_ImageFile, u.Users_IsActive FROM teacher t INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d ON t.Department_ID = 
-        d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause} ORDER BY t.Teacher_IsDean DESC, f.Faculty_Name ASC, d.Department_Name ASC, 
+
+      const sql = `SELECT t.Teacher_ID, t.Teacher_Code, t.Teacher_FirstName, t.Teacher_LastName, 
+        t.Teacher_Phone, t.Teacher_Birthdate, t.Teacher_Religion, t.Teacher_MedicalProblem, 
+        t.Teacher_RegisTime, t.Teacher_IsResign, t.Teacher_IsDean, t.Users_ID, t.Department_ID, 
+        d.Department_Name, f.Faculty_ID, f.Faculty_Name, u.Users_Email, u.Users_Username, 
+        u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive FROM teacher t 
+        INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d ON t.Department_ID = d.Department_ID 
+        INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause} 
+        ORDER BY t.Teacher_IsDean DESC, f.Faculty_Name ASC, d.Department_Name ASC, 
         t.Teacher_FirstName ASC, t.Teacher_LastName ASC LIMIT ? OFFSET ?`;
 
       const finalParams = [...queryParams, limit, offset];
-
       db.query(sql, finalParams, (err, results) => {
         if (err) {
           console.error('Get Teachers Error:', err);
@@ -2682,6 +2692,463 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
   } catch (err) {
     console.error('Get Teachers Error:', err);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get Teacher Detail by ID for Website Admin
+app.get('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const teacherId = parseInt(req.params.id);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
+    return res.status(403).json({ message: "Permission denied. Only staff and teachers can perform this action.", status: false });
+  }
+
+  if (!teacherId || isNaN(teacherId)) {
+    return res.status(400).json({ message: "Invalid teacher ID provided.", status: false });
+  }
+
+  try {
+    const teacherSql = `SELECT t.Teacher_ID, t.Teacher_Code, t.Teacher_FirstName, t.Teacher_LastName, 
+      t.Teacher_Phone, t.Teacher_Birthdate, t.Teacher_Religion, t.Teacher_MedicalProblem, 
+      t.Teacher_RegisTime, t.Teacher_IsResign, t.Teacher_IsDean, t.Users_ID, t.Department_ID, 
+      d.Department_Name, f.Faculty_ID, f.Faculty_Name, u.Users_Email, u.Users_Username, 
+      u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive FROM teacher t 
+      INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d ON t.Department_ID = d.Department_ID 
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID WHERE t.Teacher_ID = ?`;
+
+    db.query(teacherSql, [teacherId], (err, teacherResults) => {
+      if (err) {
+        console.error('Get Teacher Detail Error:', err);
+        return res.status(500).json({ message: 'Database error while fetching teacher details.', status: false });
+      }
+
+      if (teacherResults.length === 0) {
+        return res.status(404).json({ message: 'Teacher not found.', status: false });
+      }
+
+      const teacher = teacherResults[0];
+      const otherPhonesSql = `SELECT OtherPhone_ID, OtherPhone_Name, OtherPhone_Phone FROM otherphone WHERE Users_ID = ? ORDER BY OtherPhone_ID ASC`;
+      
+      db.query(otherPhonesSql, [teacher.Users_ID], (err, phoneResults) => {
+        if (err) {
+          console.error('Get Other Phones Error:', err);
+          phoneResults = [];
+        }
+
+        const otherPhones = phoneResults.map(phone => ({
+          id: phone.OtherPhone_ID,
+          name: phone.OtherPhone_Name,
+          phone: phone.OtherPhone_Phone
+        }));
+
+        if (otherPhones.length === 0) {
+          otherPhones.push({ name: '', phone: '' });
+        }
+
+        const teacherDetail = {
+          id: teacher.Teacher_ID,
+          email: teacher.Users_Email,
+          username: teacher.Users_Username,
+          userType: 'teacher',
+          isActive: teacher.Users_IsActive,
+          regisTime: teacher.Users_RegisTime,
+          imageFile: teacher.Users_ImageFile,
+          teacher: {
+            code: teacher.Teacher_Code,
+            firstName: teacher.Teacher_FirstName,
+            lastName: teacher.Teacher_LastName,
+            phone: teacher.Teacher_Phone,
+            otherPhones: otherPhones,
+            birthdate: teacher.Teacher_Birthdate,
+            religion: teacher.Teacher_Religion,
+            medicalProblem: teacher.Teacher_MedicalProblem,
+            department: teacher.Department_Name,
+            faculty: teacher.Faculty_Name,
+            isDean: teacher.Teacher_IsDean,
+            isResigned: teacher.Teacher_IsResign,
+            regisTime: teacher.Teacher_RegisTime
+          },
+          department: {
+            id: teacher.Department_ID,
+            name: teacher.Department_Name,
+            faculty: {
+              id: teacher.Faculty_ID,
+              name: teacher.Faculty_Name
+            }
+          }
+        };
+
+        res.status(200).json({
+          message: 'Teacher details retrieved successfully.',
+          status: true,
+          data: teacherDetail
+        });
+      });
+    });
+
+  } catch (err) {
+    console.error('Get Teacher Detail Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching teacher details.',
+      status: false
+    });
+  }
+});
+
+// API Update Teacher Detail by ID for Website Admin
+app.put('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const teacherId = parseInt(req.params.id);
+  const updateData = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (!teacherId || isNaN(teacherId)) {
+    return res.status(400).json({ message: "Invalid teacher ID provided.", status: false });
+  }
+
+  if (!updateData.teacher) {
+    return res.status(400).json({ message: "Teacher data is required.", status: false });
+  }
+
+  const { code, firstName, lastName, phone, otherPhones, birthdate, religion, medicalProblem, isDean, isResigned } = updateData.teacher;
+
+  if (!firstName || !lastName) {
+    return res.status(400).json({ message: "First name and last name are required.", status: false });
+  }
+
+  try {
+    // Start transaction
+    db.beginTransaction((err) => {
+      if (err) {
+        console.error('Transaction Error:', err);
+        return res.status(500).json({ message: 'Database transaction error.', status: false });
+      }
+
+      const checkSql = `SELECT Users_ID FROM teacher WHERE Teacher_ID = ?`;
+      db.query(checkSql, [teacherId], (err, checkResults) => {
+        if (err) {
+          return db.rollback(() => {
+            console.error('Check Teacher Error:', err);
+            res.status(500).json({
+              message: 'Database error while checking teacher.',
+              status: false
+            });
+          });
+        }
+
+        if (checkResults.length === 0) {
+          return db.rollback(() => {
+            res.status(404).json({
+              message: 'Teacher not found.',
+              status: false
+            });
+          });
+        }
+
+        const usersId = checkResults[0].Users_ID;
+        const updateTeacherSql = `UPDATE teacher SET Teacher_Code = ?, Teacher_FirstName = ?, 
+          Teacher_LastName = ?, Teacher_Phone = ?, Teacher_Birthdate = ?, Teacher_Religion = ?, 
+          Teacher_MedicalProblem = ?, Teacher_IsDean = ?, Teacher_IsResign = ? WHERE Teacher_ID = ?`;
+
+        const teacherParams = [code || null, firstName, lastName, phone || null, birthdate || null,
+        religion || null, medicalProblem || null, isDean || false, isResigned || false, teacherId];
+
+        db.query(updateTeacherSql, teacherParams, (err, updateResult) => {
+          if (err) {
+            return db.rollback(() => {
+              console.error('Update Teacher Error:', err);
+              res.status(500).json({ message: 'Database error while updating teacher.', status: false });
+            });
+          }
+
+          if (otherPhones && Array.isArray(otherPhones)) {
+            const deletePhonesSql = `DELETE FROM otherphone WHERE Users_ID = ?`;
+            db.query(deletePhonesSql, [usersId], (err) => {
+              if (err) {
+                return db.rollback(() => {
+                  console.error('Delete Other Phones Error:', err);
+                  res.status(500).json({ message: 'Database error while deleting other phones.', status: false });
+                });
+              }
+
+              const validPhones = otherPhones.filter(phone =>
+                phone.name?.trim() || phone.phone?.trim()
+              );
+
+              if (validPhones.length > 0) {
+                const insertPhonesSql = `INSERT INTO otherphone (OtherPhone_Name, OtherPhone_Phone, Users_ID) VALUES ?`;
+                const phoneValues = validPhones.map(phone => [
+                  phone.name?.trim() || '',
+                  phone.phone?.trim() || '',
+                  usersId
+                ]);
+
+                db.query(insertPhonesSql, [phoneValues], (err) => {
+                  if (err) {
+                    return db.rollback(() => {
+                      console.error('Insert Other Phones Error:', err);
+                      res.status(500).json({ message: 'Database error while inserting other phones.', status: false });
+                    });
+                  }
+
+                  // Commit transaction
+                  db.commit((err) => {
+                    if (err) {
+                      return db.rollback(() => {
+                        console.error('Commit Error:', err);
+                        res.status(500).json({ message: 'Database commit error.', status: false });
+                      });
+                    }
+
+                    res.status(200).json({
+                      message: 'Teacher details updated successfully.',
+                      status: true,
+                      data: {
+                        teacherId: teacherId,
+                        updated: true
+                      }
+                    });
+                  });
+                });
+              } else {
+                db.commit((err) => {
+                  if (err) {
+                    return db.rollback(() => {
+                      console.error('Commit Error:', err);
+                      res.status(500).json({ message: 'Database commit error.', status: false });
+                    });
+                  }
+
+                  res.status(200).json({
+                    message: 'Teacher details updated successfully.',
+                    status: true,
+                    data: {
+                      teacherId: teacherId,
+                      updated: true
+                    }
+                  });
+                });
+              }
+            });
+          } else {
+            db.commit((err) => {
+              if (err) {
+                return db.rollback(() => {
+                  console.error('Commit Error:', err);
+                  res.status(500).json({
+                    message: 'Database commit error.',
+                    status: false
+                  });
+                });
+              }
+              res.status(200).json({
+                message: 'Teacher details updated successfully.',
+                status: true,
+                data: {
+                  teacherId: teacherId,
+                  updated: true
+                }
+              });
+            });
+          }
+        });
+      });
+    });
+
+  } catch (err) {
+    console.error('Update Teacher Detail Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating teacher details.',
+      status: false
+    });
+  }
+});
+
+// API Update Teacher Status for Website Admin (Active/Inactive)
+app.patch('/api/admin/teachers/:id/status', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const teacherId = parseInt(req.params.id);
+  const { isActive } = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can change user status.", status: false });
+  }
+
+  if (!teacherId || isNaN(teacherId) || teacherId <= 0 || teacherId > 2147483647) {
+    return res.status(400).json({ message: "Invalid teacher ID provided.", status: false });
+  }
+
+  if (typeof isActive !== 'boolean') {
+    return res.status(400).json({ message: "Invalid status value. Must be true or false.", status: false });
+  }
+
+  try {
+    const checkSql = `SELECT t.Teacher_ID, t.Users_ID, u.Users_IsActive, t.Teacher_FirstName, t.Teacher_LastName FROM 
+      teacher t INNER JOIN users u ON t.Users_ID = u.Users_ID WHERE t.Teacher_ID = ?`;
+
+    db.query(checkSql, [teacherId], (err, checkResults) => {
+      if (err) {
+        console.error('Check Teacher Error:', err);
+        return res.status(500).json({ message: 'Database error while checking teacher.', status: false });
+      }
+
+      if (checkResults.length === 0) {
+        return res.status(404).json({ message: 'Teacher not found.', status: false });
+      }
+
+      const teacher = checkResults[0];
+      if (teacher.Users_IsActive === isActive) {
+        return res.status(400).json({ message: `Teacher is already ${isActive ? 'active' : 'inactive'}.`, status: false });
+      }
+
+      const updateSql = `UPDATE users SET Users_IsActive = ? WHERE Users_ID = ?`;
+      db.query(updateSql, [isActive, teacher.Users_ID], (err, updateResult) => {
+        if (err) {
+          console.error('Update Status Error:', err);
+          return res.status(500).json({ message: 'Database error while updating status.', status: false });
+        }
+
+        if (updateResult.affectedRows === 0) {
+          return res.status(500).json({ message: 'Failed to update user status.', status: false });
+        }
+
+        const logAction = () => {
+          const getEditTypeSql = `SELECT DataEditType_ID FROM dataedittype WHERE DataEditType_Name = 'dataedit_users_status_change' LIMIT 1`;
+          db.query(getEditTypeSql, [], (err, editTypeResults) => {
+            if (err || editTypeResults.length === 0) {
+              console.warn('Could not find DataEditType_ID for dataedit_users_status_change:', err);
+              return;
+            }
+
+            const dataEditTypeId = editTypeResults[0].DataEditType_ID;
+            const getStaffSql = `SELECT Staff_ID FROM staff WHERE Users_ID = ?`;
+            db.query(getStaffSql, [userData.Users_ID], (err, staffResults) => {
+              if (err || staffResults.length === 0) {
+                console.warn('Could not log action - staff not found:', err);
+                return;
+              }
+
+              const staffId = staffResults[0].Staff_ID;
+              const actionName = `${isActive ? 'Activated' : 'Deactivated'} teacher: ${teacher.Teacher_FirstName} ${teacher.Teacher_LastName}`;
+              const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
+                DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID) VALUES (?, ?, ?, ?, ?, ?)`;
+
+              db.query(logSql, [teacherId, actionName, req.ip || 'unknown', req.get('User-Agent') || 'unknown',
+                staffId, dataEditTypeId], (logErr) => {
+                  if (logErr) {
+                    console.warn('Action logging failed:', logErr);
+                  } else {
+                    console.log('Action logged successfully:', actionName);
+                  }
+                });
+            });
+          });
+        };
+
+        logAction();
+        res.status(200).json({
+          message: `Teacher status updated successfully to ${isActive ? 'active' : 'inactive'}.`,
+          status: true,
+          data: {
+            teacherId: teacherId,
+            isActive: isActive,
+            updatedBy: userData.Users_Username || userData.Users_Email,
+            updatedAt: new Date().toISOString()
+          }
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Update Teacher Status Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating teacher status.',
+      status: false
+    });
+  }
+});
+
+// API Get Teacher Basic Info for Website Admin
+app.get('/api/admin/teachers/:id/basic', RateLimiter(1 * 60 * 1000, 60), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const teacherId = parseInt(req.params.id);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
+    return res.status(403).json({ message: "Permission denied. Only staff and teachers can access this information.", status: false });
+  }
+
+  if (!teacherId || isNaN(teacherId) || teacherId <= 0 || teacherId > 2147483647) {
+    return res.status(400).json({ message: "Invalid teacher ID provided.", status: false });
+  }
+
+  try {
+    const sql = `SELECT t.Teacher_ID, t.Teacher_Code, t.Teacher_FirstName, t.Teacher_LastName, 
+      t.Teacher_IsDean, t.Teacher_IsResign, u.Users_IsActive, u.Users_Email, d.Department_Name, f.Faculty_Name 
+      FROM teacher t INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d ON t.Department_ID = d.Department_ID 
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID WHERE t.Teacher_ID = ?`;
+
+    db.query(sql, [teacherId], (err, results) => {
+      if (err) {
+        console.error('Get Teacher Basic Info Error:', err);
+        return res.status(500).json({ message: 'Database error while fetching teacher basic information.', status: false });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ message: 'Teacher not found.', status: false });
+      }
+
+      const teacher = results[0];
+      const basicInfo = {
+        id: teacher.Teacher_ID,
+        code: teacher.Teacher_Code,
+        firstName: teacher.Teacher_FirstName,
+        lastName: teacher.Teacher_LastName,
+        fullName: `${teacher.Teacher_FirstName} ${teacher.Teacher_LastName}`,
+        email: teacher.Users_Email,
+        department: teacher.Department_Name,
+        faculty: teacher.Faculty_Name,
+        isActive: teacher.Users_IsActive,
+        isDean: teacher.Teacher_IsDean,
+        isResigned: teacher.Teacher_IsResign,
+        userType: 'teacher'
+      };
+
+      res.status(200).json({ message: 'Teacher basic information retrieved successfully.', status: true, data: basicInfo });
+    });
+
+  } catch (err) {
+    console.error('Get Teacher Basic Info Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching teacher basic information.',
+      status: false
+    });
   }
 });
 
@@ -3493,6 +3960,46 @@ app.get('/api/images/profile-images/:filename', VerifyTokens, (req, res) => {
   }
 });
 
+//API Get Profile Image by Filename (Staff Only)
+app.get('/api/images/profile-images-admin/:filename', VerifyTokens_Website, (req, res) => {
+  try {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({ message: "Permission denied. Only staff can access profile images.", status: false });
+    }
+
+    const filename = path.basename(req.params.filename);
+    if (!filename.match(/^[a-zA-Z0-9._-]+$/)) {
+      return res.status(400).json({ message: 'Invalid filename', status: false });
+    }
+    const allowedExt = ['.jpg', '.jpeg', '.png'];
+    const ext = path.extname(filename).toLowerCase();
+    if (!allowedExt.includes(ext)) {
+      return res.status(400).json({ message: 'Invalid file type', status: false });
+    }
+
+    const filePath = path.join(uploadDir_Profile, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ 
+        message: 'Image not found', 
+        status: false 
+      });
+    }
+    res.type(ext);
+    res.sendFile(filePath);
+    
+  } catch (err) {
+    console.error('Error serving profile image:', err);
+    res.status(500).json({ message: 'Internal server error', status: false });
+  }
+});
 
 //API add Profile Image in Users of Application
 app.post('/api/profile/upload/image', upload.single('Users_ImageFile'), RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {

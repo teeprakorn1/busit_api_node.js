@@ -993,6 +993,88 @@ paths:
                     type: string
                     example: Image not found.
 
+  /api/images/profile-images-admin/{filename}:
+    get:
+      summary: Get profile image by filename (Staff only)
+      description: >
+        This endpoint allows staff users (via website login) to retrieve profile images by filename.  
+        Only `.jpg`, `.jpeg`, and `.png` files are allowed.
+      tags:
+        - Images
+      parameters:
+        - in: path
+          name: filename
+          required: true
+          description: The name of the profile image file (with extension).
+          schema:
+            type: string
+            example: user123.png
+      responses:
+        '200':
+          description: Profile image retrieved successfully
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid filename or file type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid filename
+                  status:
+                    type: boolean
+                    example: false
+        '403':
+          description: Permission denied (not staff or not website login)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can access profile images.
+                  status:
+                    type: boolean
+                    example: false
+        '404':
+          description: Image not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Image not found
+                  status:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Internal server error
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+      
   /api/login/application:
     post:
       summary: Application login 
@@ -3956,6 +4038,378 @@ paths:
                     type: boolean
                     example: false
     security: []
+
+  /api/admin/teachers/{id}:
+    get:
+      summary: Get teacher detail by ID (Admin/Staff/Teacher - Website only)
+      description: Retrieve detailed information of a teacher by teacher ID, including user and department data.
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Teacher ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Teacher details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Teacher details retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: teacher.admin@rmutto.ac.th
+                      username:
+                        type: string
+                        example: teacher.admin
+                      userType:
+                        type: string
+                        example: teacher
+                      isActive:
+                        type: boolean
+                        example: true
+                      regisTime:
+                        type: string
+                        format: date-time
+                        example: "2024-01-01T10:00:00.000Z"
+                      imageFile:
+                        type: string
+                        example: profile1.png
+                      teacher:
+                        type: object
+                        properties:
+                          code:
+                            type: string
+                            example: TCH001
+                          firstName:
+                            type: string
+                            example: John
+                          lastName:
+                            type: string
+                            example: Doe
+                          phone:
+                            type: string
+                            example: "0812345678"
+                          otherPhones:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                  example: Emergency Contact
+                                phone:
+                                  type: string
+                                  example: "0899999999"
+                          birthdate:
+                            type: string
+                            format: date
+                            example: "1980-01-15"
+                          religion:
+                            type: string
+                            example: Buddhism
+                          medicalProblem:
+                            type: string
+                            example: None
+                          department:
+                            type: string
+                            example: Computer Science
+                          faculty:
+                            type: string
+                            example: Business and IT
+                          isDean:
+                            type: boolean
+                            example: false
+                          isResigned:
+                            type: boolean
+                            example: false
+                          regisTime:
+                            type: string
+                            format: date-time
+                            example: "2024-01-01T10:00:00.000Z"
+                      department:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 1
+                          name:
+                            type: string
+                            example: Computer Science
+                          faculty:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                example: 2
+                              name:
+                                type: string
+                                example: Business and IT
+        "400":
+          description: Invalid teacher ID provided
+        "403":
+          description: Permission denied
+        "404":
+          description: Teacher not found
+        "500":
+          description: Internal server error
+      security: []
+
+    put:
+      summary: Update teacher details by ID (Admin only)
+      description: Update teacher information such as name, phone, birthdate, religion, medical issues, and additional phone numbers.
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Teacher ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teacher:
+                  type: object
+                  required:
+                    - firstName
+                    - lastName
+                  properties:
+                    code:
+                      type: string
+                      example: TCH001
+                    firstName:
+                      type: string
+                      example: John
+                    lastName:
+                      type: string
+                      example: Doe
+                    phone:
+                      type: string
+                      example: "0812345678"
+                    otherPhones:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: Emergency Contact
+                          phone:
+                            type: string
+                            example: "0899999999"
+                    birthdate:
+                      type: string
+                      format: date
+                      example: "1980-01-15"
+                    religion:
+                      type: string
+                      example: Buddhism
+                    medicalProblem:
+                      type: string
+                      example: Asthma
+                    isDean:
+                      type: boolean
+                      example: false
+                    isResigned:
+                      type: boolean
+                      example: false
+      responses:
+        "200":
+          description: Teacher details updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Teacher details updated successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      teacherId:
+                        type: integer
+                        example: 1
+                      updated:
+                        type: boolean
+                        example: true
+        "400":
+          description: Invalid request or missing required fields
+        "403":
+          description: Permission denied
+        "404":
+          description: Teacher not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/admin/teachers/{id}/status:
+    patch:
+      summary: Update teacher account status (Active/Inactive) (Admin only)
+      description: Change teacher account status between active and inactive.
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Teacher ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isActive:
+                  type: boolean
+                  example: true
+      responses:
+        "200":
+          description: Teacher status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Teacher status updated successfully to active.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      teacherId:
+                        type: integer
+                        example: 1
+                      isActive:
+                        type: boolean
+                        example: true
+                      updatedBy:
+                        type: string
+                        example: staff.admin
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: "2024-01-02T14:00:00.000Z"
+        "400":
+          description: Invalid teacher ID or status value
+        "403":
+          description: Permission denied
+        "404":
+          description: Teacher not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/admin/teachers/{id}/basic:
+    get:
+      summary: Get teacher basic info by ID (Admin/Teacher - Website only)
+      description: Retrieve basic information of a teacher by ID, including department and faculty.
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Teacher ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Teacher basic information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Teacher basic information retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      code:
+                        type: string
+                        example: TCH001
+                      firstName:
+                        type: string
+                        example: John
+                      lastName:
+                        type: string
+                        example: Doe
+                      fullName:
+                        type: string
+                        example: John Doe
+                      email:
+                        type: string
+                        example: teacher.admin@rmutto.ac.th
+                      department:
+                        type: string
+                        example: Computer Science
+                      faculty:
+                        type: string
+                        example: Business and IT
+                      isActive:
+                        type: boolean
+                        example: true
+                      isDean:
+                        type: boolean
+                        example: false
+                      isResigned:
+                        type: boolean
+                        example: false
+                      userType:
+                        type: string
+                        example: teacher
+        "400":
+          description: Invalid teacher ID
+        "403":
+          description: Permission denied
+        "404":
+          description: Teacher not found
+        "500":
+          description: Internal server error
+      security: []
 
   /api/admin/students:
     get:
