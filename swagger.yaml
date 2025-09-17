@@ -3845,6 +3845,231 @@ paths:
                     example: false
     security: []
 
+  /api/admin/departments/{departmentId}/stats:
+    get:
+      summary: Get department statistics by ID
+      description: Retrieve statistics (teachers and students count) for a specific department
+      tags:
+        - Admin
+      parameters:
+        - name: departmentId
+          in: path
+          required: true
+          description: ID of the department
+          schema:
+            type: integer
+            example: 2
+      responses:
+        "200":
+          description: Department statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Department statistics retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  department:
+                    type: object
+                    properties:
+                      Department_ID:
+                        type: integer
+                        example: 2
+                      Department_Name:
+                        type: string
+                        example: Department of Computer Science
+                      Faculty_ID:
+                        type: integer
+                        example: 1
+                      Faculty_Name:
+                        type: string
+                        example: Faculty of Information Technology
+                  data:
+                    type: object
+                    properties:
+                      teacher_count:
+                        type: integer
+                        example: 15
+                      student_count:
+                        type: integer
+                        example: 200
+                      total_personnel:
+                        type: integer
+                        example: 215
+                      teacher_ratio:
+                        type: string
+                        example: "6.5"
+                      student_ratio:
+                        type: string
+                        example: "93.5"
+        "400":
+          description: Invalid Department ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid Department ID.
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff and teachers can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Department not found.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/admin/departments/stats/all:
+    get:
+      summary: Get statistics of all departments
+      description: Retrieve statistics (teachers, students, and summary) for all departments
+      tags:
+        - Admin
+      responses:
+        "200":
+          description: All departments statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: All departments statistics retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Department_ID:
+                          type: integer
+                          example: 2
+                        Department_Name:
+                          type: string
+                          example: Department of Computer Science
+                        Faculty_ID:
+                          type: integer
+                          example: 1
+                        Faculty_Name:
+                          type: string
+                          example: Faculty of Information Technology
+                        teacher_count:
+                          type: integer
+                          example: 15
+                        student_count:
+                          type: integer
+                          example: 200
+                        total_personnel:
+                          type: integer
+                          example: 215
+                        teacher_ratio:
+                          type: string
+                          example: "6.5"
+                        student_ratio:
+                          type: string
+                          example: "93.5"
+                  summary:
+                    type: object
+                    properties:
+                      total_departments:
+                        type: integer
+                        example: 10
+                      total_teachers:
+                        type: integer
+                        example: 120
+                      total_students:
+                        type: integer
+                        example: 2500
+                      total_personnel:
+                        type: integer
+                        example: 2620
+                      faculties_count:
+                        type: integer
+                        example: 5
+                      avg_teachers_per_dept:
+                        type: string
+                        example: "12.0"
+                      avg_students_per_dept:
+                        type: string
+                        example: "250.0"
+                      teacher_student_ratio:
+                        type: string
+                        example: "1:21"
+                  count:
+                    type: integer
+                    example: 10
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff and teachers can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
   /api/admin/teachers:
     get:
       summary: Get all teachers with pagination and filtering

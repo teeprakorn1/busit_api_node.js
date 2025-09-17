@@ -2567,6 +2567,158 @@ app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 10
   }
 });
 
+// API Get Department Statistics (Teachers and Students count) for Website Admin
+app.get('/api/admin/departments/:departmentId/stats', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const departmentId = parseInt(req.params.departmentId);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
+    return res.status(403).json({ message: "Permission denied. Only staff and teachers can perform this action.", status: false });
+  }
+
+  if (isNaN(departmentId) || departmentId <= 0) {
+    return res.status(400).json({ message: 'Invalid Department ID.', status: false });
+  }
+
+  try {
+    const checkDepartmentSql = `SELECT d.Department_ID, d.Department_Name, d.Faculty_ID, 
+      f.Faculty_Name FROM department d INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID WHERE d.Department_ID = ?`;
+
+    db.query(checkDepartmentSql, [departmentId], (err, departmentResult) => {
+      if (err) {
+        console.error('Check Department Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      if (departmentResult.length === 0) {
+        return res.status(404).json({ message: 'Department not found.', status: false });
+      }
+
+      const teacherCountSql = `SELECT COUNT(*) as teacher_count FROM teacher WHERE Department_ID = ? AND Teacher_IsResign = FALSE`;
+      const studentCountSql = `SELECT COUNT(*) as student_count FROM student WHERE Department_ID = ? AND Student_IsGraduated = FALSE`;
+
+      db.query(teacherCountSql, [departmentId], (teacherErr, teacherResults) => {
+        if (teacherErr) {
+          console.error('Get Teachers Count Error:', teacherErr);
+          return res.status(500).json({ message: 'Database error while counting teachers', status: false });
+        }
+
+        db.query(studentCountSql, [departmentId], (studentErr, studentResults) => {
+          if (studentErr) {
+            console.error('Get Students Count Error:', studentErr);
+            return res.status(500).json({ message: 'Database error while counting students', status: false });
+          }
+
+          const teacherCount = teacherResults[0]?.teacher_count || 0;
+          const studentCount = studentResults[0]?.student_count || 0;
+          const totalPersonnel = teacherCount + studentCount;
+
+          res.status(200).json({
+            message: 'Department statistics retrieved successfully.',
+            status: true,
+            department: departmentResult[0],
+            data: {
+              teacher_count: teacherCount,
+              student_count: studentCount,
+              total_personnel: totalPersonnel,
+              teacher_ratio: totalPersonnel > 0 ? ((teacherCount / totalPersonnel) * 100).toFixed(1) : 0,
+              student_ratio: totalPersonnel > 0 ? ((studentCount / totalPersonnel) * 100).toFixed(1) : 0
+            }
+          });
+        });
+      });
+    });
+
+  } catch (err) {
+    console.error('Get Department Statistics Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get All Departments Statistics for Website Admin
+app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 15), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
+    return res.status(403).json({ message: "Permission denied. Only staff and teachers can perform this action.", status: false });
+  }
+
+  try {
+    const sql = `SELECT 
+      d.Department_ID, d.Department_Name, d.Faculty_ID,f.Faculty_Name,COALESCE(t.teacher_count, 0) as teacher_count, 
+        COALESCE(s.student_count, 0) as student_count FROM department d INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
+        LEFT JOIN ( SELECT Department_ID, COUNT(*) as teacher_count FROM teacher WHERE Teacher_IsResign = FALSE GROUP BY Department_ID) 
+        t ON d.Department_ID = t.Department_ID LEFT JOIN ( SELECT Department_ID, COUNT(*) as student_count FROM student WHERE 
+        Student_IsGraduated = FALSE GROUP BY Department_ID) s ON d.Department_ID = s.Department_ID ORDER BY f.Faculty_Name ASC, d.Department_Name ASC`;
+
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Get All Departments Statistics Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      const departmentsWithStats = results.map(dept => ({
+        Department_ID: dept.Department_ID,
+        Department_Name: dept.Department_Name,
+        Faculty_ID: dept.Faculty_ID,
+        Faculty_Name: dept.Faculty_Name,
+        teacher_count: dept.teacher_count,
+        student_count: dept.student_count,
+        total_personnel: dept.teacher_count + dept.student_count,
+        teacher_ratio: (dept.teacher_count + dept.student_count) > 0 ? 
+          ((dept.teacher_count / (dept.teacher_count + dept.student_count)) * 100).toFixed(1) : 0,
+        student_ratio: (dept.teacher_count + dept.student_count) > 0 ? 
+          ((dept.student_count / (dept.teacher_count + dept.student_count)) * 100).toFixed(1) : 0
+      }));
+
+      const totalStats = departmentsWithStats.reduce((acc, dept) => ({
+        total_departments: acc.total_departments + 1,
+        total_teachers: acc.total_teachers + dept.teacher_count,
+        total_students: acc.total_students + dept.student_count,
+        total_personnel: acc.total_personnel + dept.total_personnel
+      }), {
+        total_departments: 0,
+        total_teachers: 0,
+        total_students: 0,
+        total_personnel: 0
+      });
+
+      res.status(200).json({
+        message: 'All departments statistics retrieved successfully.',
+        status: true,
+        data: departmentsWithStats,
+        summary: {
+          ...totalStats,
+          faculties_count: [...new Set(departmentsWithStats.map(d => d.Faculty_ID))].length,
+          avg_teachers_per_dept: totalStats.total_departments > 0 ? 
+            (totalStats.total_teachers / totalStats.total_departments).toFixed(1) : 0,
+          avg_students_per_dept: totalStats.total_departments > 0 ? 
+            (totalStats.total_students / totalStats.total_departments).toFixed(1) : 0,
+          teacher_student_ratio: totalStats.total_students > 0 ? 
+            `1:${Math.round(totalStats.total_students / totalStats.total_teachers)}` : 'N/A'
+        },
+        count: departmentsWithStats.length
+      });
+    });
+
+  } catch (err) {
+    console.error('Get All Departments Statistics Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
 // API Get All Teachers with Pagination, Filtering, and Search of Website Admin
 app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
@@ -3283,7 +3435,7 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
   }
 });
 
-// API Get Student Detail by ID for Website Admin**
+// API Get Student Detail by ID for Website Admin
 app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -3390,7 +3542,7 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_
   }
 });
 
-// API Update Student Detail by ID for Website Admin**
+// API Update Student Detail by ID for Website Admin
 app.put('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -3566,7 +3718,7 @@ app.put('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_
   }
 });
 
-// API Update Student Status for Website Admin (Active/Inactive)**
+// API Update Student Status for Website Admin (Active/Inactive)
 app.patch('/api/admin/students/:id/status', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -3674,7 +3826,7 @@ app.patch('/api/admin/students/:id/status', RateLimiter(1 * 60 * 1000, 5), Verif
   }
 });
 
-// API Get Student Basic Info for Website Admin**
+// API Get Student Basic Info for Website Admin
 app.get('/api/admin/students/:id/basic', RateLimiter(1 * 60 * 1000, 60), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
