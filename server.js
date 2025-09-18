@@ -2494,7 +2494,7 @@ app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 10
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
-  if (Requester_Users_Type !== 'staff') {
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
