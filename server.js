@@ -1531,10 +1531,10 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   let Users_Username = Users_Email.split('@')[0];
   Users_Username = xss(Users_Username.trim());
 
-  const usernameRegex = /^[a-zA-Z0-9.]+$/;
-  if (!usernameRegex.test(Users_Username) || Users_Username.length < 3 || Users_Username.length > 20) {
+  const usernameRegex = /^[a-zA-Z0-9.\-]+$/;
+  if (!usernameRegex.test(Users_Username) || Users_Username.length < 2 || Users_Username.length > 60) {
     return res.status(400).json({
-      message: 'Email username part (before @) must be 3-20 characters and can contain letters, numbers, and dot (.) only.',
+      message: 'Email username part (before @) must be 2-60 characters and can contain letters, numbers, and dot (.) only.',
       status: false
     });
   }
@@ -1573,13 +1573,29 @@ app.post('/api/admin/users/student/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
 
   if (Student_Birthdate) {
     Student_Birthdate = xss(Student_Birthdate.trim());
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(Student_Birthdate)) {
-      const parts = Student_Birthdate.split('-');
+    const dateRegex = /^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$/;
+
+    if (dateRegex.test(Student_Birthdate)) {
+      const parts = Student_Birthdate.split(/[-\/]/);
       const day = parts[0].padStart(2, '0');
       const month = parts[1].padStart(2, '0');
       const buddhistYear = parseInt(parts[2]);
-      const christianYear = buddhistYear - 543;
+      let christianYear = buddhistYear;
+      if (buddhistYear > 2400) {
+        christianYear = buddhistYear - 543;
+      }
+
       Student_Birthdate = `${christianYear}-${month}-${day}`;
+      const birthDate = new Date(Student_Birthdate);
+      const today = new Date();
+      if (birthDate > today) {
+        return res.status(400).json({ message: 'Birthdate cannot be in the future.', status: false });
+      }
+    } else {
+      return res.status(400).json({
+        message: 'Invalid birthdate format. Use dd-mm-yyyy or dd/mm/yyyy (e.g., 15-01-2545 or 15/01/1995)',
+        status: false
+      });
     }
   } else {
     Student_Birthdate = null;
@@ -1742,10 +1758,10 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   let Users_Username = Users_Email.split('@')[0];
   Users_Username = xss(Users_Username.trim());
 
-  const usernameRegex = /^[a-zA-Z0-9.]+$/;
-  if (!usernameRegex.test(Users_Username) || Users_Username.length < 3 || Users_Username.length > 20) {
+  const usernameRegex = /^[a-zA-Z0-9.\-]+$/;
+  if (!usernameRegex.test(Users_Username) || Users_Username.length < 2 || Users_Username.length > 60) {
     return res.status(400).json({
-      message: 'Email username part (before @) must be 3-20 characters and can contain letters, numbers, and dot (.) only.',
+      message: 'Email username part (before @) must be 2-60 characters and can contain letters, numbers, and dot (.) only.',
       status: false
     });
   }
@@ -1772,14 +1788,20 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
 
   if (Teacher_Birthdate) {
     Teacher_Birthdate = xss(Teacher_Birthdate.trim());
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(Teacher_Birthdate)) {
-      const parts = Teacher_Birthdate.split('-');
+    const dateRegex = /^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$/;
+
+    if (dateRegex.test(Teacher_Birthdate)) {
+      const parts = Teacher_Birthdate.split(/[-\/]/);
       const day = parts[0].padStart(2, '0');
       const month = parts[1].padStart(2, '0');
       const buddhistYear = parseInt(parts[2]);
-      const christianYear = buddhistYear - 543;
-      Teacher_Birthdate = `${christianYear}-${month}-${day}`;
 
+      let christianYear = buddhistYear;
+      if (buddhistYear > 2400) {
+        christianYear = buddhistYear - 543;
+      }
+
+      Teacher_Birthdate = `${christianYear}-${month}-${day}`;
       const birthDate = new Date(Teacher_Birthdate);
       const today = new Date();
       if (birthDate > today) {
@@ -1787,9 +1809,18 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
       }
 
       const age = today.getFullYear() - birthDate.getFullYear();
-      if (age < 20) {
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const actualAge = (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()))
+        ? age - 1 : age;
+
+      if (actualAge < 20) {
         return res.status(400).json({ message: 'Teacher must be at least 20 years old.', status: false });
       }
+    } else {
+      return res.status(400).json({
+        message: 'Invalid birthdate format. Use dd-mm-yyyy or dd/mm/yyyy (e.g., 15-01-2545 or 15/01/1995)',
+        status: false
+      });
     }
   } else {
     Teacher_Birthdate = null;
@@ -1932,7 +1963,7 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
 });
 
 // API Register Student from CSV website admin
-app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 1001), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Requester_Users_Type = userData?.Users_Type;
@@ -1969,10 +2000,10 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
   let Users_Username = Users_Email.split('@')[0];
   Users_Username = xss(Users_Username.trim());
 
-  const usernameRegex = /^[a-zA-Z0-9.]+$/;
-  if (!usernameRegex.test(Users_Username) || Users_Username.length < 3 || Users_Username.length > 20) {
+  const usernameRegex = /^[a-zA-Z0-9.\-]+$/;
+  if (!usernameRegex.test(Users_Username) || Users_Username.length < 2 || Users_Username.length > 60) {
     return res.status(400).json({
-      message: 'Email username part (before @) must be 3-20 characters and can contain letters, numbers, and dot (.) only.',
+      message: 'Email username part (before @) must be 2-60 characters and can contain letters, numbers, and dot (.) only.',
       status: false
     });
   }
@@ -2009,12 +2040,17 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
   Student_AcademicYear = academicYear;
   if (Student_Birthdate) {
     Student_Birthdate = xss(Student_Birthdate.trim());
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(Student_Birthdate)) {
-      const parts = Student_Birthdate.split('-');
+    const dateRegex = /^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$/;
+
+    if (dateRegex.test(Student_Birthdate)) {
+      const parts = Student_Birthdate.split(/[-\/]/);
       const day = parts[0].padStart(2, '0');
       const month = parts[1].padStart(2, '0');
       const buddhistYear = parseInt(parts[2]);
-      const christianYear = buddhistYear - 543;
+      let christianYear = buddhistYear;
+      if (buddhistYear > 2400) {
+        christianYear = buddhistYear - 543;
+      }
       Student_Birthdate = `${christianYear}-${month}-${day}`;
     }
   } else {
@@ -2140,7 +2176,7 @@ app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 5), Verif
 });
 
 // API Register Teacher from CSV website admin
-app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 1001), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_ID = userData?.Users_ID;
   const Requester_Users_Type = userData?.Users_Type;
@@ -2175,10 +2211,10 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
   let Users_Username = Users_Email.split('@')[0];
   Users_Username = xss(Users_Username.trim());
 
-  const usernameRegex = /^[a-zA-Z0-9.]+$/;
-  if (!usernameRegex.test(Users_Username) || Users_Username.length < 3 || Users_Username.length > 20) {
+  const usernameRegex = /^[a-zA-Z0-9.\-]+$/;
+  if (!usernameRegex.test(Users_Username) || Users_Username.length < 2 || Users_Username.length > 60) {
     return res.status(400).json({
-      message: 'Email username part (before @) must be 3-20 characters and can contain letters, numbers, and dot (.) only.',
+      message: 'Email username part (before @) must be 2-60 characters and can contain letters, numbers, and dot (.) only.',
       status: false
     });
   }
@@ -2204,14 +2240,20 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
   Teacher_MedicalProblem = Teacher_MedicalProblem ? xss(Teacher_MedicalProblem.trim()) : null;
   if (Teacher_Birthdate) {
     Teacher_Birthdate = xss(Teacher_Birthdate.trim());
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(Teacher_Birthdate)) {
-      const parts = Teacher_Birthdate.split('-');
+    const dateRegex = /^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$/;
+
+    if (dateRegex.test(Teacher_Birthdate)) {
+      const parts = Teacher_Birthdate.split(/[-\/]/);
       const day = parts[0].padStart(2, '0');
       const month = parts[1].padStart(2, '0');
       const buddhistYear = parseInt(parts[2]);
-      const christianYear = buddhistYear - 543;
-      Teacher_Birthdate = `${christianYear}-${month}-${day}`;
 
+      let christianYear = buddhistYear;
+      if (buddhistYear > 2400) {
+        christianYear = buddhistYear - 543;
+      }
+
+      Teacher_Birthdate = `${christianYear}-${month}-${day}`;
       const birthDate = new Date(Teacher_Birthdate);
       const today = new Date();
       if (birthDate > today) {
@@ -2219,7 +2261,11 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
       }
 
       const age = today.getFullYear() - birthDate.getFullYear();
-      if (age < 20) {
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const actualAge = (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()))
+        ? age - 1 : age;
+
+      if (actualAge < 20) {
         return res.status(400).json({ message: 'Teacher must be at least 20 years old.', status: false });
       }
     }
@@ -2360,7 +2406,7 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 5), Verif
 });
 
 // API Get All Faculties website admin
-app.get('/api/admin/faculties', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/faculties', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -2396,7 +2442,7 @@ app.get('/api/admin/faculties', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Web
 });
 
 // API Get All Departments website admin
-app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -2431,7 +2477,7 @@ app.get('/api/admin/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_W
 });
 
 // API Get Departments by Faculty ID website admin
-app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -2484,7 +2530,7 @@ app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000
 });
 
 // API Get Teachers by Department ID website admin
-app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -2568,7 +2614,7 @@ app.get('/api/admin/departments/:departmentId/teachers', RateLimiter(1 * 60 * 10
 });
 
 // API Get Department Statistics (Teachers and Students count) for Website Admin
-app.get('/api/admin/departments/:departmentId/stats', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/departments/:departmentId/stats', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -2642,7 +2688,7 @@ app.get('/api/admin/departments/:departmentId/stats', RateLimiter(1 * 60 * 1000,
 });
 
 // API Get All Departments Statistics for Website Admin
-app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 15), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -2677,9 +2723,9 @@ app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 15), Veri
         teacher_count: dept.teacher_count,
         student_count: dept.student_count,
         total_personnel: dept.teacher_count + dept.student_count,
-        teacher_ratio: (dept.teacher_count + dept.student_count) > 0 ? 
+        teacher_ratio: (dept.teacher_count + dept.student_count) > 0 ?
           ((dept.teacher_count / (dept.teacher_count + dept.student_count)) * 100).toFixed(1) : 0,
-        student_ratio: (dept.teacher_count + dept.student_count) > 0 ? 
+        student_ratio: (dept.teacher_count + dept.student_count) > 0 ?
           ((dept.student_count / (dept.teacher_count + dept.student_count)) * 100).toFixed(1) : 0
       }));
 
@@ -2702,11 +2748,11 @@ app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 15), Veri
         summary: {
           ...totalStats,
           faculties_count: [...new Set(departmentsWithStats.map(d => d.Faculty_ID))].length,
-          avg_teachers_per_dept: totalStats.total_departments > 0 ? 
+          avg_teachers_per_dept: totalStats.total_departments > 0 ?
             (totalStats.total_teachers / totalStats.total_departments).toFixed(1) : 0,
-          avg_students_per_dept: totalStats.total_departments > 0 ? 
+          avg_students_per_dept: totalStats.total_departments > 0 ?
             (totalStats.total_students / totalStats.total_departments).toFixed(1) : 0,
-          teacher_student_ratio: totalStats.total_students > 0 ? 
+          teacher_student_ratio: totalStats.total_students > 0 ?
             `1:${Math.round(totalStats.total_students / totalStats.total_teachers)}` : 'N/A'
         },
         count: departmentsWithStats.length
@@ -2719,8 +2765,8 @@ app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 15), Veri
   }
 });
 
-// API Get All Teachers with Pagination, Filtering, and Search of Website Admin
-app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+// API Get All Teachers with Pagination, Filtering, and Search of Website Admin**
+app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -2733,13 +2779,10 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
     return res.status(403).json({ message: "Permission denied. Only staff and teachers can perform this action.", status: false });
   }
 
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
   const includeResigned = req.query.includeResigned === 'true';
   const departmentId = req.query.departmentId ? parseInt(req.query.departmentId) : null;
   const facultyId = req.query.facultyId ? parseInt(req.query.facultyId) : null;
   const search = req.query.search ? req.query.search.trim() : '';
-  const offset = (page - 1) * limit;
 
   try {
     let whereConditions = [];
@@ -2766,79 +2809,57 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-    const countSql = `SELECT COUNT(*) as total FROM teacher t 
-      INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d 
-      ON t.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause}`;
 
-    db.query(countSql, queryParams, (err, countResult) => {
+    const sql = `SELECT t.Teacher_ID, t.Teacher_Code, t.Teacher_FirstName, t.Teacher_LastName, 
+      t.Teacher_Phone, t.Teacher_Birthdate, t.Teacher_Religion, t.Teacher_MedicalProblem, 
+      t.Teacher_RegisTime, t.Teacher_IsResign, t.Teacher_IsDean, t.Users_ID, t.Department_ID, 
+      d.Department_Name, f.Faculty_ID, f.Faculty_Name, u.Users_Email, u.Users_Username, 
+      u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive FROM teacher t 
+      INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d ON t.Department_ID = d.Department_ID 
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause} 
+      ORDER BY t.Teacher_IsDean DESC, f.Faculty_Name ASC, d.Department_Name ASC, 
+      t.Teacher_FirstName ASC, t.Teacher_LastName ASC`;
+
+    db.query(sql, queryParams, (err, results) => {
       if (err) {
-        console.error('Count Teachers Error:', err);
+        console.error('Get Teachers Error:', err);
         return res.status(500).json({ message: 'Database error', status: false });
       }
 
-      const total = countResult[0].total;
-      const totalPages = Math.ceil(total / limit);
-
-      const sql = `SELECT t.Teacher_ID, t.Teacher_Code, t.Teacher_FirstName, t.Teacher_LastName, 
-        t.Teacher_Phone, t.Teacher_Birthdate, t.Teacher_Religion, t.Teacher_MedicalProblem, 
-        t.Teacher_RegisTime, t.Teacher_IsResign, t.Teacher_IsDean, t.Users_ID, t.Department_ID, 
-        d.Department_Name, f.Faculty_ID, f.Faculty_Name, u.Users_Email, u.Users_Username, 
-        u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive FROM teacher t 
-        INNER JOIN users u ON t.Users_ID = u.Users_ID INNER JOIN department d ON t.Department_ID = d.Department_ID 
-        INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause} 
-        ORDER BY t.Teacher_IsDean DESC, f.Faculty_Name ASC, d.Department_Name ASC, 
-        t.Teacher_FirstName ASC, t.Teacher_LastName ASC LIMIT ? OFFSET ?`;
-
-      const finalParams = [...queryParams, limit, offset];
-      db.query(sql, finalParams, (err, results) => {
-        if (err) {
-          console.error('Get Teachers Error:', err);
-          return res.status(500).json({ message: 'Database error', status: false });
+      const teachers = results.map(teacher => ({
+        Teacher_ID: teacher.Teacher_ID,
+        Teacher_Code: teacher.Teacher_Code,
+        Teacher_FirstName: teacher.Teacher_FirstName,
+        Teacher_LastName: teacher.Teacher_LastName,
+        Teacher_FullName: `${teacher.Teacher_FirstName} ${teacher.Teacher_LastName}`,
+        Teacher_Phone: teacher.Teacher_Phone,
+        Teacher_Birthdate: teacher.Teacher_Birthdate,
+        Teacher_Religion: teacher.Teacher_Religion,
+        Teacher_MedicalProblem: teacher.Teacher_MedicalProblem,
+        Teacher_RegisTime: teacher.Teacher_RegisTime,
+        Teacher_IsDean: teacher.Teacher_IsDean,
+        Teacher_IsResign: teacher.Teacher_IsResign,
+        Department: {
+          Department_ID: teacher.Department_ID,
+          Department_Name: teacher.Department_Name,
+          Faculty_ID: teacher.Faculty_ID,
+          Faculty_Name: teacher.Faculty_Name
+        },
+        Users: {
+          Users_ID: teacher.Users_ID,
+          Users_Email: teacher.Users_Email,
+          Users_Username: teacher.Users_Username,
+          Users_RegisTime: teacher.Users_RegisTime,
+          Users_ImageFile: teacher.Users_ImageFile,
+          Users_IsActive: teacher.Users_IsActive
         }
+      }));
 
-        const teachers = results.map(teacher => ({
-          Teacher_ID: teacher.Teacher_ID,
-          Teacher_Code: teacher.Teacher_Code,
-          Teacher_FirstName: teacher.Teacher_FirstName,
-          Teacher_LastName: teacher.Teacher_LastName,
-          Teacher_FullName: `${teacher.Teacher_FirstName} ${teacher.Teacher_LastName}`,
-          Teacher_Phone: teacher.Teacher_Phone,
-          Teacher_Birthdate: teacher.Teacher_Birthdate,
-          Teacher_Religion: teacher.Teacher_Religion,
-          Teacher_MedicalProblem: teacher.Teacher_MedicalProblem,
-          Teacher_RegisTime: teacher.Teacher_RegisTime,
-          Teacher_IsDean: teacher.Teacher_IsDean,
-          Teacher_IsResign: teacher.Teacher_IsResign,
-          Department: {
-            Department_ID: teacher.Department_ID,
-            Department_Name: teacher.Department_Name,
-            Faculty_ID: teacher.Faculty_ID,
-            Faculty_Name: teacher.Faculty_Name
-          },
-          Users: {
-            Users_ID: teacher.Users_ID,
-            Users_Email: teacher.Users_Email,
-            Users_Username: teacher.Users_Username,
-            Users_RegisTime: teacher.Users_RegisTime,
-            Users_ImageFile: teacher.Users_ImageFile,
-            Users_IsActive: teacher.Users_IsActive
-          }
-        }));
-
-        res.status(200).json({
-          message: 'Teachers retrieved successfully.',
-          status: true,
-          data: teachers,
-          pagination: {
-            current_page: page,
-            total_pages: totalPages,
-            per_page: limit,
-            total_items: total,
-            has_next: page < totalPages,
-            has_prev: page > 1
-          },
-          count: teachers.length
-        });
+      res.status(200).json({
+        message: 'Teachers retrieved successfully.',
+        status: true,
+        data: teachers,
+        count: teachers.length
       });
     });
   } catch (err) {
@@ -2848,7 +2869,7 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
 });
 
 // API Get Teacher Detail by ID for Website Admin
-app.get('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -2887,7 +2908,7 @@ app.get('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_
 
       const teacher = teacherResults[0];
       const otherPhonesSql = `SELECT OtherPhone_ID, OtherPhone_Name, OtherPhone_Phone FROM otherphone WHERE Users_ID = ? ORDER BY OtherPhone_ID ASC`;
-      
+
       db.query(otherPhonesSql, [teacher.Users_ID], (err, phoneResults) => {
         if (err) {
           console.error('Get Other Phones Error:', err);
@@ -2955,7 +2976,7 @@ app.get('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_
 });
 
 // API Update Teacher Detail by ID for Website Admin
-app.put('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+app.put('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -3133,7 +3154,7 @@ app.put('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_
 });
 
 // API Update Teacher Status for Website Admin (Active/Inactive)
-app.patch('/api/admin/teachers/:id/status', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+app.patch('/api/admin/teachers/:id/status', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -3242,7 +3263,7 @@ app.patch('/api/admin/teachers/:id/status', RateLimiter(1 * 60 * 1000, 5), Verif
 });
 
 // API Get Teacher Basic Info for Website Admin
-app.get('/api/admin/teachers/:id/basic', RateLimiter(1 * 60 * 1000, 60), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/teachers/:id/basic', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -3304,8 +3325,8 @@ app.get('/api/admin/teachers/:id/basic', RateLimiter(1 * 60 * 1000, 60), VerifyT
   }
 });
 
-// API Get All Students with Pagination, Filtering, and Search of Website Admin
-app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+// API Get All Students with Filtering, and Search of Website Admin**
+app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -3318,14 +3339,11 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
   const includeGraduated = req.query.includeGraduated === 'true';
   const departmentId = req.query.departmentId ? parseInt(req.query.departmentId) : null;
   const facultyId = req.query.facultyId ? parseInt(req.query.facultyId) : null;
   const academicYear = req.query.academicYear ? parseInt(req.query.academicYear) : null;
   const search = req.query.search ? req.query.search.trim() : '';
-  const offset = (page - 1) * limit;
 
   try {
     let whereConditions = [];
@@ -3357,76 +3375,53 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-    const countSql = `SELECT COUNT(*) as total FROM student s 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID INNER JOIN department d 
-      ON s.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID ${whereClause}`;
+    const sql = `SELECT s.Student_ID, s.Student_Code, s.Student_FirstName, s.Student_LastName, 
+      s.Student_Phone, s.Student_AcademicYear, s.Student_Birthdate, s.Student_Religion, s.Student_MedicalProblem, 
+      s.Student_RegisTime, s.Student_IsGraduated, s.Users_ID, s.Teacher_ID, s.Department_ID, d.Department_Name, f.Faculty_ID, 
+      f.Faculty_Name, u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive FROM student s INNER JOIN 
+      users u ON s.Users_ID = u.Users_ID INNER JOIN department d ON s.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
+      ${whereClause} ORDER BY f.Faculty_Name ASC, d.Department_Name ASC, s.Student_AcademicYear DESC, s.Student_FirstName ASC, s.Student_LastName ASC`;
 
-    db.query(countSql, queryParams, (err, countResult) => {
+    db.query(sql, queryParams, (err, results) => {
       if (err) {
-        console.error('Count Students Error:', err);
+        console.error('Get Students Error:', err);
         return res.status(500).json({ message: 'Database error', status: false });
       }
 
-      const total = countResult[0].total;
-      const totalPages = Math.ceil(total / limit);
-
-      const sql = `SELECT s.Student_ID, s.Student_Code, s.Student_FirstName, s.Student_LastName, 
-        s.Student_Phone, s.Student_AcademicYear, s.Student_Birthdate, s.Student_Religion, s.Student_MedicalProblem, 
-        s.Student_RegisTime, s.Student_IsGraduated, s.Users_ID, s.Teacher_ID, s.Department_ID, d.Department_Name, f.Faculty_ID, 
-        f.Faculty_Name, u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive FROM student s INNER JOIN 
-        users u ON s.Users_ID = u.Users_ID INNER JOIN department d ON s.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
-        ${whereClause} ORDER BY f.Faculty_Name ASC, d.Department_Name ASC, s.Student_AcademicYear DESC, s.Student_FirstName ASC, s.Student_LastName ASC LIMIT ? OFFSET ?`;
-
-      const finalParams = [...queryParams, limit, offset];
-      db.query(sql, finalParams, (err, results) => {
-        if (err) {
-          console.error('Get Students Error:', err);
-          return res.status(500).json({ message: 'Database error', status: false });
+      const students = results.map(student => ({
+        Student_ID: student.Student_ID,
+        Student_Code: student.Student_Code,
+        Student_FirstName: student.Student_FirstName,
+        Student_LastName: student.Student_LastName,
+        Student_FullName: `${student.Student_FirstName} ${student.Student_LastName}`,
+        Student_Phone: student.Student_Phone,
+        Student_AcademicYear: student.Student_AcademicYear,
+        Student_Birthdate: student.Student_Birthdate,
+        Student_Religion: student.Student_Religion,
+        Student_MedicalProblem: student.Student_MedicalProblem,
+        Student_RegisTime: student.Student_RegisTime,
+        Student_IsGraduated: student.Student_IsGraduated,
+        Department: {
+          Department_ID: student.Department_ID,
+          Department_Name: student.Department_Name,
+          Faculty_ID: student.Faculty_ID,
+          Faculty_Name: student.Faculty_Name
+        },
+        Users: {
+          Users_ID: student.Users_ID,
+          Users_Email: student.Users_Email,
+          Users_Username: student.Users_Username,
+          Users_RegisTime: student.Users_RegisTime,
+          Users_ImageFile: student.Users_ImageFile,
+          Users_IsActive: student.Users_IsActive
         }
+      }));
 
-        const students = results.map(student => ({
-          Student_ID: student.Student_ID,
-          Student_Code: student.Student_Code,
-          Student_FirstName: student.Student_FirstName,
-          Student_LastName: student.Student_LastName,
-          Student_FullName: `${student.Student_FirstName} ${student.Student_LastName}`,
-          Student_Phone: student.Student_Phone,
-          Student_AcademicYear: student.Student_AcademicYear,
-          Student_Birthdate: student.Student_Birthdate,
-          Student_Religion: student.Student_Religion,
-          Student_MedicalProblem: student.Student_MedicalProblem,
-          Student_RegisTime: student.Student_RegisTime,
-          Student_IsGraduated: student.Student_IsGraduated,
-          Department: {
-            Department_ID: student.Department_ID,
-            Department_Name: student.Department_Name,
-            Faculty_ID: student.Faculty_ID,
-            Faculty_Name: student.Faculty_Name
-          },
-          Users: {
-            Users_ID: student.Users_ID,
-            Users_Email: student.Users_Email,
-            Users_Username: student.Users_Username,
-            Users_RegisTime: student.Users_RegisTime,
-            Users_ImageFile: student.Users_ImageFile,
-            Users_IsActive: student.Users_IsActive
-          }
-        }));
-
-        res.status(200).json({
-          message: 'Students retrieved successfully.',
-          status: true,
-          data: students,
-          pagination: {
-            current_page: page,
-            total_pages: totalPages,
-            per_page: limit,
-            total_items: total,
-            has_next: page < totalPages,
-            has_prev: page > 1
-          },
-          count: students.length
-        });
+      res.status(200).json({
+        message: 'Students retrieved successfully.',
+        status: true,
+        data: students,
+        count: students.length
       });
     });
   } catch (err) {
@@ -3436,7 +3431,7 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Webs
 });
 
 // API Get Student Detail by ID for Website Admin
-app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -3543,7 +3538,7 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_
 });
 
 // API Update Student Detail by ID for Website Admin
-app.put('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+app.put('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -3719,7 +3714,7 @@ app.put('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_
 });
 
 // API Update Student Status for Website Admin (Active/Inactive)
-app.patch('/api/admin/students/:id/status', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+app.patch('/api/admin/students/:id/status', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
@@ -3827,14 +3822,14 @@ app.patch('/api/admin/students/:id/status', RateLimiter(1 * 60 * 1000, 5), Verif
 });
 
 // API Get Student Basic Info for Website Admin
-app.get('/api/admin/students/:id/basic', RateLimiter(1 * 60 * 1000, 60), VerifyTokens_Website, async (req, res) => {
+app.get('/api/admin/students/:id/basic', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
   const studentId = parseInt(req.params.id);
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.",status: false });
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
   if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
@@ -4139,14 +4134,14 @@ app.get('/api/images/profile-images-admin/:filename', VerifyTokens_Website, (req
 
     const filePath = path.join(uploadDir_Profile, filename);
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ 
-        message: 'Image not found', 
-        status: false 
+      return res.status(404).json({
+        message: 'Image not found',
+        status: false
       });
     }
     res.type(ext);
     res.sendFile(filePath);
-    
+
   } catch (err) {
     console.error('Error serving profile image:', err);
     res.status(500).json({ message: 'Internal server error', status: false });

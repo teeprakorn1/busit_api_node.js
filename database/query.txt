@@ -1,7 +1,7 @@
 CREATE DATABASE IF NOT EXISTS busitplus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE busitplus;
 
-CREATE TABLE Users(
+CREATE TABLE IF NOT EXISTS Users(
 	Users_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Users_Email VARCHAR(255) NOT NULL,
     Users_Username VARCHAR(63) NOT NULL,
@@ -12,19 +12,19 @@ CREATE TABLE Users(
     Users_IsActive BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-CREATE TABLE Faculty(
+CREATE TABLE IF NOT EXISTS Faculty(
 	Faculty_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Faculty_Name VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE Department(
+CREATE TABLE IF NOT EXISTS Department(
 	Department_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Department_Name VARCHAR(255) NOT NULL UNIQUE,
     Faculty_ID INT(13) NOT NULL,
 	FOREIGN KEY (Faculty_ID) REFERENCES Faculty(Faculty_ID)
 );
 
-CREATE TABLE Staff(
+CREATE TABLE IF NOT EXISTS Staff(
 	Staff_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Staff_Code CHAR(15) NOT NULL UNIQUE,
     Staff_FirstName VARCHAR(63) NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE Staff(
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
 
-CREATE TABLE Teacher(
+CREATE TABLE IF NOT EXISTS Teacher(
 	Teacher_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Teacher_Code CHAR(15) NOT NULL UNIQUE,
     Teacher_FirstName VARCHAR(63) NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE Teacher(
     FOREIGN KEY (Department_ID) REFERENCES Department(Department_ID)
 );
 
-CREATE TABLE Student(
+CREATE TABLE IF NOT EXISTS Student(
 	Student_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Student_Code CHAR(15) NOT NULL UNIQUE,
     Student_FirstName VARCHAR(63) NOT NULL,
@@ -74,12 +74,12 @@ CREATE TABLE Student(
     FOREIGN KEY (Department_ID) REFERENCES Department(Department_ID)
 );
 
-CREATE TABLE DataEditType(
+CREATE TABLE IF NOT EXISTS DataEditType(
 	DataEditType_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     DataEditType_Name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE DataEdit(
+CREATE TABLE IF NOT EXISTS DataEdit(
 	DataEdit_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     DataEdit_ThisId INT(13) NOT NULL,
     DataEdit_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -92,7 +92,7 @@ CREATE TABLE DataEdit(
     FOREIGN KEY (DataEditType_ID) REFERENCES DataEditType(DataEditType_ID)
 );
 
-CREATE TABLE OtherPhone(
+CREATE TABLE IF NOT EXISTS OtherPhone(
 	OtherPhone_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     OtherPhone_Name VARCHAR(63) NOT NULL,
     OtherPhone_Phone VARCHAR(15) NOT NULL,
@@ -100,12 +100,12 @@ CREATE TABLE OtherPhone(
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
 
-CREATE TABLE TimestampType(
+CREATE TABLE IF NOT EXISTS TimestampType(
 	TimestampType_ID TINYINT(7) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     TimestampType_Name VARCHAR(63) NOT NULL
 );
 
-CREATE TABLE Timestamp(
+CREATE TABLE IF NOT EXISTS Timestamp(
 	Timestamp_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Timestamp_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Timestamp_Name VARCHAR(511),
@@ -117,12 +117,12 @@ CREATE TABLE Timestamp(
     FOREIGN KEY (TimestampType_ID) REFERENCES TimestampType(TimestampType_ID)
 );
 
-CREATE TABLE ActivityStatus(
+CREATE TABLE IF NOT EXISTS ActivityStatus(
 	ActivityStatus_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     ActivityStatus_Name VARCHAR(63) NOT NULL 
 );
 
-CREATE TABLE Activity(
+CREATE TABLE IF NOT EXISTS Activity(
 	Activity_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Activity_Title VARCHAR(255) NOT NULL,
     Activity_Description VARCHAR(1023) NOT NULL,
@@ -141,19 +141,19 @@ CREATE TABLE Activity(
     FOREIGN KEY (ActivityStatus_ID) REFERENCES ActivityStatus(ActivityStatus_ID)
 );
 
-CREATE TABLE ActivityDetail (
+CREATE TABLE IF NOT EXISTS ActivityDetail (
     ActivityDetail_ID INT(13) NOT NULL,
     Department_ID INT(13) NOT NULL,
     ActivityDetail_Total INT(13) NOT NULL,
     PRIMARY KEY (ActivityDetail_ID, Department_ID)
 );
 
-CREATE TABLE RegistrationStatus(
+CREATE TABLE IF NOT EXISTS RegistrationStatus(
 	RegistrationStatus_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationStatus_Name VARCHAR(63) NOT NULL 
 );
 
-CREATE TABLE Registration (
+CREATE TABLE IF NOT EXISTS Registration (
     Users_ID INT(13) NOT NULL,
     Activity_ID INT(13) NOT NULL,
     Registration_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -164,12 +164,12 @@ CREATE TABLE Registration (
     FOREIGN KEY (RegistrationStatus_ID) REFERENCES RegistrationStatus(RegistrationStatus_ID)
 );
 
-CREATE TABLE RegistrationPictureStatus(
+CREATE TABLE IF NOT EXISTS RegistrationPictureStatus(
 	RegistrationPictureStatus_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationPictureStatus_Name VARCHAR(63) NOT NULL 
 );
 
-CREATE TABLE RegistrationPicture (
+CREATE TABLE IF NOT EXISTS RegistrationPicture (
     RegistrationPicture_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationPicture_ImageFile VARCHAR(255) NOT NULL,
     RegistrationPicture_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -181,14 +181,14 @@ CREATE TABLE RegistrationPicture (
     FOREIGN KEY (RegistrationPictureStatus_ID) REFERENCES RegistrationPictureStatus(RegistrationPictureStatus_ID)
 );
 
-CREATE TABLE UsersForgetPassword(
+CREATE TABLE IF NOT EXISTS UsersForgetPassword(
 	UsersForgetPassword_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationPicture_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Users_ID INT(13),
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
 
-CREATE TABLE Evaluation(
+CREATE TABLE IF NOT EXISTS Evaluation(
 	Evaluation_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Evaluation_Title VARCHAR(255) NOT NULL,
 	Evaluation_Detail VARCHAR(1023) NOT NULL,
@@ -196,7 +196,7 @@ CREATE TABLE Evaluation(
     FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID)
 );
 
-CREATE TABLE Question(
+CREATE TABLE IF NOT EXISTS Question(
 	Question_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Question_Titile VARCHAR(511) NOT NULL,
     Question_Detail VARCHAR(1023) NOT NULL,
@@ -204,7 +204,7 @@ CREATE TABLE Question(
     FOREIGN KEY (Evaluation_ID) REFERENCES Evaluation(Evaluation_ID)
 );
 
-CREATE TABLE QuestionDetail(
+CREATE TABLE IF NOT EXISTS QuestionDetail(
 	QuestionDetail_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     QuestionDetail_Rating INT(1) NOT NULL,
     QuestionDetail_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -215,7 +215,7 @@ CREATE TABLE QuestionDetail(
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
 
-CREATE TABLE Notification(
+CREATE TABLE IF NOT EXISTS Notification(
 	Notifications_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Notification_Detail VARCHAR(511) NOT NULL,
     Notification_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -226,7 +226,7 @@ CREATE TABLE Notification(
 );
 
 INSERT INTO faculty (Faculty_Name) 
-VALUES ('คณะบริหารธุรกิจและเทคโนโลยีสารสนเทศ'),('คณะศิลปศาสตร์');
+VALUES ('บริหารธุรกิจและเทคโนโลยีสารสนเทศ'),('ศิลปศาสตร์');
 
 INSERT INTO department (Department_Name, Faculty_ID) VALUES
 ('วิทยาการคอมพิวเตอร์', 1),

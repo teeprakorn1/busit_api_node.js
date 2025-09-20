@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Mockup Data Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .upload-section {
+            background: #f7fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            margin: 10px 0;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            background: white;
+            margin: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: transform 0.2s;
+            min-width: 200px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            background: #edf2f7;
+            border-left: 4px solid #4299e1;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .success {
+            background: #f0fff4;
+            border-left-color: #38a169;
+            color: #2d3748;
+        }
+
+        .error {
+            background: #fed7d7;
+            border-left-color: #e53e3e;
+            color: #2d3748;
+        }
+
+        .preview {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .sample-email {
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎓 Student Mockup Data Generator</h1>
+
+        <div class="upload-section">
+            <h3>📂 อัปโหลดไฟล์ teachers_mockup.csv</h3>
+            <div class="file-input">
+                <input type="file" id="teacherFile" accept=".csv" />
+                <br>
+                <button class="btn" id="generateBtn">สร้างข้อมูลนักศึกษา</button>
+            </div>
+        </div>
+
+        <div id="status"></div>
+
+        <div id="results" class="hidden">
+            <h3>📊 สถิติข้อมูลที่สร้าง</h3>
+            <div class="stats-grid" id="statsGrid"></div>
+
+            <div class="sample-email">
+                <strong>ตัวอย่างอีเมล:</strong> <span id="sampleEmail"></span>
+            </div>
+
+            <h3>👀 ตัวอย่างข้อมูล</h3>
+            <div class="preview" id="preview"></div>
+
+            <div style="text-align: center;">
+                <button class="btn" id="downloadBtn">💾 ดาวน์โหลด students_mockup.csv</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('Script loaded');
+
+        let studentData = [];
+        let csvContent = '';
+
+        // ข้อมูลชื่อไทย
+        const thaiFirstNames = {
+            male: [
+                'ทีปกร', 'นพดล', 'สมชาย', 'วิทยา', 'ธนพล', 'สุรเชษฐ์', 'ปิยะชัย', 'อัครพล', 'ณัฐวุฒิ', 'พิพัฒน์',
+                'ธนาคาร', 'ศิวกร', 'ธีรเดช', 'ปรเมศ', 'สิทธิชัย', 'กฤษณ์', 'ธีรพัฒน์', 'วรากรณ์', 'ภคพล', 'รัฐพงษ์',
+                'เจษฎา', 'ชยพล', 'วันชัย', 'พุฒิพงษ์', 'อภิชัย', 'พีรพัฒน์', 'อิศรา', 'นิติพงษ์', 'เอกราช', 'อนุชา',
+                'อภิสิทธิ์', 'กฤษณะ', 'ชาญชัย', 'ดนัย', 'ธนากร', 'ธวัช', 'นฤบดินทร์', 'พงศกร', 'พงศ์สิทธิ์', 'ภานุพงษ์',
+                'ภาคภูมิ', 'ภัทรพงศ์', 'มหิศร', 'มงคล', 'วรากร', 'วรุตม์', 'วิศรุต', 'ศุภชัย', 'ศราวุธ', 'สันติ',
+                'สิทธิชัย', 'อิทธิพล', 'เอกชัย', 'เอกภพ', 'กานต์', 'ก้องเกียรติ', 'กิตติพงษ์', 'ก้องภพ', 'กานต์ชัย', 'จิรพัฒน์',
+                'จักริน', 'ฉัตรชัย', 'ชวลิต', 'ชินวัตร', 'ชำนาญ', 'ฑีฆายุ', 'ธีรยุทธ', 'ทรงพล', 'ธนกร', 'ธวัชพงศ์',
+                'นเรศ', 'นรินทร์', 'บดินทร์', 'บวร', 'บุญส่ง', 'ปฐมพงศ์', 'ปริญญา', 'ภัทร', 'พงศกร', 'พีรพล',
+                'วรวิทย์', 'ศักดา', 'วรเมธ', 'กวิน', 'ธนชัย', 'ศุภณัฐ', 'ธนวิทย์', 'ภูมิ', 'วรพันธ์', 'กฤตภพ',
+                'ณัฐวัฒน์', 'ปณิธาน', 'สิทธิพงษ์', 'อิศร', 'อนันต์', 'สันติสุข', 'พงศ์ภัทร', 'ก้องภพ', 'ธนกฤต', 'ธนวัฒน์',
+                'อัครพงศ์', 'นที', 'ปุณณวิช', 'พีรพล', 'ภัทรพล', 'พรเทพ', 'สมบูรณ์', 'วรพล', 'ศรัณย์', 'ชวิน',
+                'อภิชาติ', 'ธีรพงษ์', 'ภัทรเดช', 'จิรพงศ์', 'ณัฐพงษ์', 'วรวิชญ์', 'ธีรเดช', 'ธนพล', 'พีรพัฒน์', 'สิทธิพงษ์',
+                'วรพัฒน์', 'อภิชัย', 'อนุชา', 'ณัฐวุฒิ', 'ศุภพงษ์', 'วิชิต', 'กิตติพงษ์', 'สิทธิชัย', 'ปิยวัฒน์', 'นพดล',
+                'พีรพล', 'วรวิทย์', 'ธีรพัฒน์', 'ภูมิวัฒน์', 'ธนากร', 'ภานุพงษ์', 'อภิชัย', 'ศิริชัย', 'พงศกร', 'อิศรา',
+                'จิรภพ', 'วรเมธ', 'กฤษณ์', 'ศุภชัย', 'ธนพงษ์', 'อนุชา', 'พีรพัฒน์', 'วรวิชญ์', 'ศักดิ์สิทธิ์', 'ภานุวิชญ์',
+                'อิทธิพงษ์', 'ณัฐพงษ์', 'ปฐมภพ', 'วรพงศ์', 'ศุภวิชญ์', 'วิชาญ', 'กฤตยศ', 'ธีรพงษ์', 'พีรภัทร์', 'ธนวัฒน์',
+                'อัครพล', 'ธนากร', 'ภัทรพล', 'อภิพงษ์', 'อภิชัย', 'ณัฐพล', 'จิรภัทร', 'วรภพ', 'กิตติชัย', 'ศราวุฒิ',
+                'กิตติพัฒน์', 'วรวิทย์', 'นพดล', 'ศุภวัฒน์', 'ปริญญา', 'สิทธิศักดิ์', 'ปณิธาน', 'ชวลิต', 'อิทธิพงษ์', 'ภูมิวัฒน์'
+            ],
+            female: [
+                'สุภาพร', 'วรรณภา', 'ปิยนุช', 'ศิริรัตน์', 'สุธิดา', 'นันทนา', 'พิมพ์ชนก', 'จิราพร', 'ปณิดา', 'สุกัญญา',
+                'ธนิดา', 'วิไลลักษณ์', 'ชนิดาภา', 'อรทัย', 'พรรณี', 'ณิชาภา', 'สุวนันท์', 'กันต์ธิดา', 'วิภาวี', 'สิรินทร์',
+                'จุฑามาศ', 'ปริญญา', 'วราลี', 'สุธาสินี', 'ณัฐณิชา', 'อรอนงค์', 'พิชญา', 'ศุภรดา', 'อารีรัตน์', 'พัชรนันท์',
+                'กัญญารัตน์', 'กุลธิดา', 'ดาริน', 'นลิน', 'ปวีณา', 'ปาริชาติ', 'พรทิพย์', 'พัชรี', 'ฟ้าใส', 'ภัทรสุดา',
+                'อัจฉรา', 'อภิญญา', 'อินทิรา', 'กานต์ธีรา', 'จิราภรณ์', 'จารุวรรณ', 'ชุติมา', 'ชนิกา', 'ณัฐฐา', 'ณัฐธยาน์',
+                'ปุณิกา', 'ปิยวดี', 'พิมพ์ใจ', 'พัชราภา', 'มุกดา', 'รสสุคนธ์', 'วราภรณ์', 'วิไล', 'ศศิธร', 'ศุภิสรา',
+                'กมลชนก', 'ชนิกานต์', 'จินตนา', 'พิมพ์ชนก', 'วรัญญา', 'วรรณิศา', 'สุจิตรา', 'สุรางค์', 'สุพรรณี', 'สุพัตรา',
+                'ธนัญญา', 'วิลาสินี', 'วิลาวัลย์', 'ศศิธร', 'ศิริกาญจน์', 'สุนิสา', 'สุมิตรา', 'สุภาวดี', 'สุภาพร', 'สุวรรณี',
+                'สุวิมล', 'สุวารินทร์', 'สุรีย์รัตน์', 'สุรีย์พร', 'สุรีภร', 'สุวดี', 'สุวลักษณ์', 'สุวิชา', 'สุกัญญา', 'สุกัญญารัตน์',
+                'สุนิสา', 'สุนทรี', 'สุนันทา', 'สุพัตรา', 'สุพิน', 'สุภาวดี', 'สุภิญญา', 'สุพิชชา', 'สุวิกา', 'สุวิชชา',
+                'อภิรดี', 'อภิชญา', 'อภิชนันท์', 'อภิชญ์', 'อภิสรา', 'อภิรัตน์', 'อภิรักษ์', 'อัญชลี', 'อัญชนา', 'อัญชนารี',
+                'อัญชาลี', 'อัญชนา', 'อัญญา', 'อัญญารัตน์', 'อัญมณี', 'อัญพัชร', 'อัญชุลี', 'อัญชนา', 'อัญชลี', 'อัญชนา',
+                'จารุณี', 'จารุวรรณ', 'จารุรัตน์', 'จิราภรณ์', 'จิราภร', 'จิราพร', 'จิรารัตน์', 'จิราพัชร', 'จิราพรรณ', 'จิราพิมพ์',
+                'จินตนา', 'จินตพร', 'จินตภา', 'จินตลักษณ์', 'จินดา', 'จินดารัตน์', 'จินดาพร', 'จินดาภร', 'จินดาภา', 'จินดารัตน์',
+                'จินดามาศ', 'จินดามณี', 'จินดามณีรัตน์', 'จินดามณีพร', 'จินดาพิมพ์', 'จินดาพร', 'จินดาภร', 'จินดารัตน์', 'จินดารัตน์พร', 'จินดารัตน์ภา'
+            ]
+        };
+
+        const thaiLastNames = [
+            'คุ้มวงศ์', 'แสงทอง', 'สุขใส', 'ทองคำ', 'สิงห์ทอง', 'วงษ์สุวรรณ', 'เจริญสุข', 'ปัญญาดี', 'สุวรรณ', 'ภู่ทอง',
+            'แก้วใส', 'มณีรัตน์', 'สุขสวัสดิ์', 'เพชรศรี', 'อินทร์แก้ว', 'ทรัพย์สิน', 'ชัยวัฒนา', 'บุญมี', 'ดีมาก', 'สุดใจ',
+            'กุลประเสริฐ', 'ขจรศักดิ์', 'คงเดช', 'ชำนาญ', 'จิตตะวี', 'ชินวัตร', 'ฉัตรชัย', 'ทวีป', 'ธรรมโชติ', 'นามวงศ์',
+            'ปัญญาวงศ์', 'พงศ์ประเสริฐ', 'ภัทรพงษ์', 'มโนชัย', 'รัตนประเสริฐ', 'วรพงษ์', 'วิชชุวัฒน์', 'ศรีสุวรรณ', 'สวัสดิ์สุข', 'สมบูรณ์',
+            'อภิวัฒน์', 'อนุรักษ์', 'เอกราช', 'ภานุพงษ์', 'บุญญฤทธิ์', 'ทวีโชติ', 'พูนทรัพย์', 'พฤกษ์ทวี', 'มงคลศรี', 'สันติวงศ์',
+            'ชัยมงคล', 'สิริวัฒน์', 'วรเวช', 'อรุณวงศ์', 'กิตติพงษ์', 'ศรีมงคล', 'วรพัฒน์', 'สมาน', 'ภักดี', 'จิตต์นที',
+            'บุญเลิศ', 'ณรงค์ศักดิ์', 'ปราโมทย์', 'ธนากร', 'ภัทรเดช', 'พงษ์ศักดิ์', 'ศิริวัฒน์', 'วรเกียรติ', 'สุนทร', 'สุริยะ',
+            'ปิติพงศ์', 'นวลจันทร์', 'พูนสิน', 'ชวลิต', 'พรชัย', 'จักรพงศ์', 'จตุพร', 'วิกรม', 'พรเทพ', 'กมลวัฒน์',
+            'ปรีชา', 'อนุชิต', 'ทวีวงศ์', 'พงศ์ธร', 'ปัญญา', 'นฤพนธ์', 'ภานุวัฒน์', 'วีระพงษ์', 'สิทธิพงษ์', 'ธนวัฒน์',
+            'ภูมิวัฒน์', 'ศุภชัย', 'ศิริชัย', 'วรวิทย์', 'วรพล', 'อัครวัฒน์', 'จักรินทร์', 'พรหมศักดิ์', 'วรเมธ', 'พงศ์พันธ์',
+            'สุดใจ', 'สิทธิพงษ์', 'ปิติศักดิ์', 'กิตติศักดิ์', 'ธนกฤต', 'วรพงษ์', 'ปริญญา', 'ณัฐวัฒน์', 'อภิพงษ์', 'ธนาธิป',
+            'พรหมเทพ', 'พิพัฒน์', 'อิทธิพล', 'ชัชวาล', 'ชัยชนะ', 'ปณิธาน', 'ภานุพงศ์', 'อภิชัย', 'วรวิทย์', 'ศราวุธ',
+            'สุภัทร', 'ภัทรพล', 'พงศกร', 'พีรพงษ์', 'ภานุวิชญ์', 'กฤษดา', 'วรากร', 'พงศ์เดช', 'สถิตย์', 'ภูมิพล',
+            'กฤษณะ', 'ธนกุล', 'วรชาติ', 'ปุณณวิช', 'ณัฐพล', 'อิศรา', 'ธนากร', 'วรวิทย์', 'ศุภศักดิ์', 'ศุภวิชญ์',
+            'พรเทพ', 'ภูวดล', 'วิชิต', 'สิทธิชัย', 'อนุชา', 'ศักดิ์สิทธิ์', 'อรุณ', 'อนุวัฒน์', 'ภานุ', 'ธนวัฒน์',
+            'สุวรรณชัย', 'ศักดากร', 'วรเกียรติ', 'กิตติภพ', 'กฤษณ์', 'สิทธิพงษ์', 'วิศรุต', 'ธนกฤต', 'อัครพล', 'วรพล',
+            'ภานุวัฒน์', 'ธนพงษ์', 'พีรพล', 'วรวิชญ์', 'ศิริพงษ์', 'ธนกร', 'วรพงษ์', 'ภูมิพงษ์', 'พงศ์ศักดิ์', 'อัครวัฒน์',
+            'สุรศักดิ์', 'ปกรณ์', 'กิตติพงศ์', 'ปริญญา', 'ปริญญ์', 'วรเมธ', 'ศุภชัย', 'อัครพล', 'พงศกร', 'ปุณณวิช',
+            'อภิชาติ', 'ธีรพงศ์', 'ภัทรเดช', 'จิรพงศ์', 'ณัฐพงษ์', 'วรวิชญ์', 'ธีรเดช', 'ธนพล', 'พีรพัฒน์', 'สิทธิพงษ์',
+            'วรพัฒน์', 'อภิชัย', 'อนุชา', 'ณัฐวุฒิ', 'ศุภพงษ์', 'วิชิต', 'กิตติพงษ์', 'สิทธิชัย', 'ปิยวัฒน์', 'นพดล',
+            'พีรพล', 'วรวิทย์', 'ธีรพัฒน์', 'ภูมิวัฒน์', 'ธนากร', 'ภานุพงษ์', 'อภิชัย', 'ศิริชัย', 'พงศกร', 'อิศรา',
+            'จิรภพ', 'วรเมธ', 'กฤษณ์', 'ศุภชัย', 'ธนพงษ์', 'อนุชา', 'พีรพัฒน์', 'วรวิชญ์', 'ศักดิ์สิทธิ์', 'ภานุวิชญ์',
+            'สิทธิพงษ์', 'วรพล', 'กิตติศักดิ์', 'ธีรพงศ์', 'วรวิทย์', 'อัครพล', 'ภูมิพงษ์', 'พงศ์เดช', 'วรชาติ', 'ธนากร',
+            'จิรพัฒน์', 'อภิชาติ', 'ธนกฤต', 'วรพัฒน์', 'อัครวัฒน์', 'พงศกร', 'ปุณณวิช', 'ศุภศักดิ์', 'กิตติพงษ์', 'สิทธิชัย'
+        ];
+
+        const religions = [null, null, 'พุทธ', 'พุทธ', 'คริสต์', 'อิสลาม'];
+        const medicalProblems = [null, null, null, null, null, 'ภูมิแพ้', 'โรคหอบหืด', 'โรคเบาหวาน', 'ความดันโลหิตสูง',
+            'ไมเกรน', 'โรคหัวใจ', 'ปัญหาการมองเห็น', 'ปัญหาการได้ยิน'];
+
+        function thaiToEnglish(text) {
+            const mapping = {
+                'ก': 'k', 'ข': 'kh', 'ค': 'kh', 'ง': 'ng', 'จ': 'j', 'ฉ': 'ch', 'ช': 'ch', 'ซ': 's',
+                'ฌ': 'ch', 'ญ': 'y', 'ด': 'd', 'ต': 't', 'ถ': 'th', 'ท': 'th', 'ธ': 'th', 'น': 'n',
+                'บ': 'b', 'ป': 'p', 'ผ': 'ph', 'ฝ': 'f', 'พ': 'ph', 'ฟ': 'f', 'ภ': 'ph', 'ม': 'm',
+                'ย': 'y', 'ร': 'r', 'ล': 'l', 'ว': 'w', 'ศ': 's', 'ษ': 's', 'ส': 's', 'ห': 'h',
+                'ฬ': 'l', 'อ': 'o', 'ฮ': 'h', 'ะ': 'a', 'ั': 'a', 'า': 'a', 'ำ': 'am', 'ิ': 'i',
+                'ี': 'i', 'ึ': 'ue', 'ื': 'ue', 'ุ': 'u', 'ู': 'u', 'เ': 'e', 'แ': 'ae', 'โ': 'o',
+                'ใ': 'ai', 'ไ': 'ai', '่': '', '้': '', '๊': '', '๋': '', '์': '', 'ๆ': '', 'ฯ': ''
+            };
+
+            let result = '';
+            for (let char of text) {
+                if (mapping[char]) {
+                    result += mapping[char];
+                } else if (char.match(/[a-zA-Z0-9]/)) {
+                    result += char;
+                }
+            }
+            return result.toLowerCase();
+        }
+
+        function randomChoice(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function randomBirthdate() {
+            const year = Math.floor(Math.random() * 7) + 2000;
+            const month = Math.floor(Math.random() * 12) + 1;
+            const day = Math.floor(Math.random() * 28) + 1;
+            return `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year + 543}`;
+        }
+
+        function randomPhone() {
+            const prefix = ['08', '09', '06'];
+            const pre = randomChoice(prefix);
+            let number = pre;
+            for (let i = 0; i < 8; i++) {
+                number += Math.floor(Math.random() * 10);
+            }
+            return number;
+        }
+
+        // ฟังก์ชันสำหรับอ่านไฟล์ด้วย encoding ที่กำหนด
+        function readFileWithEncoding(file, encoding) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    resolve(e.target.result);
+                };
+
+                reader.onerror = function (e) {
+                    reject(new Error(`ไม่สามารถอ่านไฟล์ได้ด้วย ${encoding}`));
+                };
+
+                // ลองใช้ TextDecoder สำหรับ encoding ที่เฉพาะเจาะจง
+                if (encoding === 'TIS-620' || encoding === 'windows-1252') {
+                    reader.onload = function (e) {
+                        try {
+                            const decoder = new TextDecoder(encoding);
+                            const text = decoder.decode(new Uint8Array(e.target.result));
+                            resolve(text);
+                        } catch (err) {
+                            // ถ้า TextDecoder ไม่ทำงาน ใช้ readAsText ธรรมดา
+                            const textReader = new FileReader();
+                            textReader.onload = (textE) => resolve(textE.target.result);
+                            textReader.onerror = () => reject(err);
+                            textReader.readAsText(file, encoding);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    reader.readAsText(file, encoding);
+                }
+            });
+        }
+
+        function showStatus(message, type = 'status') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            console.log('Status:', message, type);
+        }
+
+        function generateStudentData() {
+            console.log('Generate button clicked');
+            const fileInput = document.getElementById('teacherFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showStatus('❌ กรุณาเลือกไฟล์ teachers_mockup.csv', 'error');
+                return;
+            }
+
+            showStatus('🔄 กำลังโหลดข้อมูลอาจารย์...');
+
+            // ลองอ่านไฟล์ด้วย encoding หลายรูปแบบ
+            const tryParseWithEncodings = async () => {
+                const encodings = ['UTF-8', 'UTF-16', 'windows-1252', 'TIS-620'];
+
+                for (const encoding of encodings) {
+                    try {
+                        showStatus(`🔄 กำลังลองอ่านไฟล์ด้วย ${encoding}...`);
+
+                        const text = await readFileWithEncoding(file, encoding);
+
+                        const result = Papa.parse(text, {
+                            header: true,
+                            skipEmptyLines: true,
+                            delimiter: ',',
+                            encoding: encoding
+                        });
+
+                        // ตรวจสอบว่าอ่านภาษาไทยได้หรือไม่
+                        const hasThaiText = result.data.some(row =>
+                            Object.values(row).some(value =>
+                                typeof value === 'string' && /[ก-๙]/.test(value)
+                            )
+                        );
+
+                        if (hasThaiText || encoding === 'UTF-8') {
+                            console.log(`Successfully parsed with ${encoding}:`, result);
+                            const teachers = result.data;
+                            createStudentMockup(teachers);
+                            return;
+                        }
+
+                    } catch (error) {
+                        console.log(`Failed with ${encoding}:`, error);
+                        continue;
+                    }
+                }
+
+                // ถ้าไม่สำเร็จด้วย encoding ใดเลย ลองวิธีสุดท้าย
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function (results) {
+                        console.log('Fallback Papa parse complete:', results);
+                        try {
+                            const teachers = results.data;
+                            createStudentMockup(teachers);
+                        } catch (error) {
+                            console.error('Error in createStudentMockup:', error);
+                            showStatus(`❌ เกิดข้อผิดพลาด: ${error.message}`, 'error');
+                        }
+                    },
+                    error: function (error) {
+                        console.error('Papa parse error:', error);
+                        showStatus(`❌ ไม่สามารถอ่านไฟล์ได้: ${error.message}`, 'error');
+                    }
+                });
+            };
+
+            tryParseWithEncodings();
+        }
+
+        function createStudentMockup(teachers) {
+            console.log('Creating student mockup with teachers:', teachers.length);
+            showStatus('🎲 กำลังสร้างข้อมูลนักศึกษา...');
+
+            // จัดกลุ่มอาจารย์ตามสาขา
+            const departmentGroups = {};
+            teachers.forEach(teacher => {
+                const dept = teacher.Department_Name;
+                if (!departmentGroups[dept]) {
+                    departmentGroups[dept] = [];
+                }
+                departmentGroups[dept].push(teacher);
+            });
+
+            console.log('Department groups:', Object.keys(departmentGroups));
+
+            studentData = [];
+            let studentIdCounter = 1;
+
+            Object.keys(departmentGroups).forEach(departmentName => {
+                const facultyName = departmentGroups[departmentName][0].Faculty_Name;
+                const teachersInDept = departmentGroups[departmentName];
+
+                // สุ่มจำนวนนักศึกษา 28-72 คนต่อสาขา
+                const studentCount = Math.floor(Math.random() * (72 - 28 + 1)) + 28;
+
+                console.log(`Creating ${studentCount} students for ${departmentName}`);
+
+                for (let i = 0; i < studentCount; i++) {
+                    const gender = Math.random() > 0.5 ? 'male' : 'female';
+                    const firstName = randomChoice(thaiFirstNames[gender]);
+                    const lastName = randomChoice(thaiLastNames);
+
+                    const advisor = randomChoice(teachersInDept);
+                    const academicYear = 2565 + Math.floor(Math.random() * 3);
+
+                    // สร้าง Student_Code รูปแบบ 582496221270-4
+                    const randomDigits1 = Math.floor(Math.random() * 900000) + 100000; // 6 หลัก
+                    const randomDigits2 = Math.floor(Math.random() * 900000) + 100000; // 6 หลัก
+                    const lastDigit = Math.floor(Math.random() * 10); // 1 หลัก
+                    const studentCode = `${randomDigits1}${randomDigits2}-${lastDigit}`;
+                    studentIdCounter++;
+
+                    // สร้างอีเมลแบบ priyya.aes@rmutto.ac.th (เอาเฉพาะ 3 ตัวอักษรหน้าของนามสกุล)
+                    const firstNameEng = thaiToEnglish(firstName);
+                    const lastNameEng = thaiToEnglish(lastName);
+                    const lastNameShort = lastNameEng.substring(0, 3); // เอาเฉพาะ 3 ตัวอักษรหน้า
+                    const email = `${firstNameEng}.${lastNameShort}@rmutto.ac.th`;
+
+                    const student = {
+                        Users_Email: email,
+                        Users_Password: 'Cs12345678',
+                        Student_Code: studentCode,
+                        Student_FirstName: firstName,
+                        Student_LastName: lastName,
+                        Student_Phone: randomPhone(),
+                        Student_Birthdate: randomBirthdate(),
+                        Student_Religion: randomChoice(religions),
+                        Student_MedicalProblem: randomChoice(medicalProblems),
+                        Faculty_Name: facultyName,
+                        Department_Name: departmentName,
+                        Teacher_Code: advisor.Teacher_Code,
+                        Student_AcademicYear: academicYear
+                    };
+
+                    studentData.push(student);
+                }
+            });
+
+            console.log('Student data created:', studentData.length);
+
+            // สร้าง CSV
+            const headers = [
+                'Users_Email', 'Users_Password', 'Student_Code', 'Student_FirstName', 'Student_LastName',
+                'Student_Phone', 'Student_Birthdate', 'Student_Religion', 'Student_MedicalProblem',
+                'Faculty_Name', 'Department_Name', 'Teacher_Code', 'Student_AcademicYear'
+            ];
+
+            // สร้าง CSV ด้วย BOM สำหรับรองรับภาษาไทย
+            const BOM = '\uFEFF';
+            csvContent = BOM + Papa.unparse({
+                fields: headers,
+                data: studentData
+            });
+
+            console.log('CSV created, length:', csvContent.length);
+
+            displayResults(departmentGroups);
+            showStatus(`✅ สร้างข้อมูลเสร็จแล้ว! จำนวน ${studentData.length} คน`, 'success');
+        }
+
+        function displayResults(departmentGroups) {
+            console.log('Displaying results');
+            // แสดงสถิติ
+            const deptStats = {};
+            studentData.forEach(student => {
+                const dept = student.Department_Name;
+                deptStats[dept] = (deptStats[dept] || 0) + 1;
+            });
+
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${studentData.length}</div>
+                    <div class="stat-label">นักศึกษาทั้งหมด</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${Object.keys(departmentGroups).length}</div>
+                    <div class="stat-label">สาขาวิชา</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${new Set(studentData.map(s => s.Teacher_Code)).size}</div>
+                    <div class="stat-label">อาจารย์ที่ปรึกษา</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2565-2567</div>
+                    <div class="stat-label">ปีการศึกษา</div>
+                </div>
+            `;
+
+            // แสดงตัวอย่างอีเมล
+            document.getElementById('sampleEmail').textContent = studentData[0].Users_Email;
+
+            // แสดงตัวอย่างข้อมูล
+            const preview = studentData.slice(0, 10).map((student, index) =>
+                `${index + 1}. ${student.Student_FirstName} ${student.Student_LastName} - ${student.Users_Email} - ${student.Department_Name}`
+            ).join('\n');
+
+            document.getElementById('preview').textContent = preview;
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        function downloadCSV() {
+            console.log('Download button clicked');
+            if (!csvContent) {
+                showStatus('❌ ไม่มีข้อมูลให้ดาวน์โหลด', 'error');
+                return;
+            }
+
+            const blob = new Blob([csvContent], {
+                type: 'text/csv;charset=utf-8;'
+            });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'students_mockup.csv');
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showStatus('✅ ดาวน์โหลดไฟล์เสร็จแล้ว!', 'success');
+        }
+
+        // Event Listeners - ใช้วิธีหลายแบบเพื่อให้แน่ใจ
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM loaded');
+
+            const generateBtn = document.getElementById('generateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            if (generateBtn) {
+                generateBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    console.log('Generate button event fired');
+                    generateStudentData();
+                });
+                console.log('Generate button listener added');
+            }
+
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    console.log('Download button event fired');
+                    downloadCSV();
+                });
+                console.log('Download button listener added');
+            }
+        });
+
+        // Backup event listeners
+        window.addEventListener('load', function () {
+            console.log('Window loaded');
+
+            const generateBtn = document.getElementById('generateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            if (generateBtn && !generateBtn.onclick) {
+                generateBtn.onclick = function () {
+                    console.log('Generate button onclick fired');
+                    generateStudentData();
+                };
+            }
+
+            if (downloadBtn && !downloadBtn.onclick) {
+                downloadBtn.onclick = function () {
+                    console.log('Download button onclick fired');
+                    downloadCSV();
+                };
+            }
+        });
+
+        // Global functions for debugging
+        window.generateStudentData = generateStudentData;
+        window.downloadCSV = downloadCSV;
+
+        console.log('All scripts loaded');
+    </script>
+</body>
+
+</html>
