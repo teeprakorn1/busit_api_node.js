@@ -2765,7 +2765,7 @@ app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 300), Ver
   }
 });
 
-// API Get All Teachers with Pagination, Filtering, and Search of Website Admin**
+// API Get All Teachers with Pagination, Filtering, and Search of Website Admin
 app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -2930,6 +2930,7 @@ app.get('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens
           email: teacher.Users_Email,
           username: teacher.Users_Username,
           userType: 'teacher',
+          Users_ID: teacher.Users_ID,
           isActive: teacher.Users_IsActive,
           regisTime: teacher.Users_RegisTime,
           imageFile: teacher.Users_ImageFile,
@@ -2983,6 +2984,10 @@ app.put('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
   const teacherId = parseInt(req.params.id);
   const updateData = req.body;
 
+  if (!userData) {
+    return res.status(401).json({ message: "Authentication required.", status: false });
+  }
+
   if (Login_Type !== 'website') {
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
@@ -2999,155 +3004,430 @@ app.put('/api/admin/teachers/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
     return res.status(400).json({ message: "Teacher data is required.", status: false });
   }
 
-  const { code, firstName, lastName, phone, otherPhones, birthdate, religion, medicalProblem, isDean, isResigned } = updateData.teacher;
+  const {
+    code, firstName, lastName, phone, otherPhones, birthdate, religion,
+    medicalProblem, isDean, isResigned
+  } = updateData.teacher;
 
   if (!firstName || !lastName) {
     return res.status(400).json({ message: "First name and last name are required.", status: false });
   }
 
+  const convertBooleanToInt = (value) => {
+    if (value === true || value === 'true' || value === 1 || value === '1') {
+      return 1;
+    }
+    return 0;
+  };
+
+  const formatDateForMySQL = (dateString) => {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return null;
+    }
+  };
+
+  const formattedBirthdate = formatDateForMySQL(birthdate);
+
   try {
-    // Start transaction
-    db.beginTransaction((err) => {
-      if (err) {
-        console.error('Transaction Error:', err);
-        return res.status(500).json({ message: 'Database transaction error.', status: false });
-      }
-
-      const checkSql = `SELECT Users_ID FROM teacher WHERE Teacher_ID = ?`;
-      db.query(checkSql, [teacherId], (err, checkResults) => {
-        if (err) {
-          return db.rollback(() => {
-            console.error('Check Teacher Error:', err);
-            res.status(500).json({
-              message: 'Database error while checking teacher.',
-              status: false
-            });
-          });
-        }
-
-        if (checkResults.length === 0) {
-          return db.rollback(() => {
-            res.status(404).json({
-              message: 'Teacher not found.',
-              status: false
-            });
-          });
-        }
-
-        const usersId = checkResults[0].Users_ID;
-        const updateTeacherSql = `UPDATE teacher SET Teacher_Code = ?, Teacher_FirstName = ?, 
-          Teacher_LastName = ?, Teacher_Phone = ?, Teacher_Birthdate = ?, Teacher_Religion = ?, 
-          Teacher_MedicalProblem = ?, Teacher_IsDean = ?, Teacher_IsResign = ? WHERE Teacher_ID = ?`;
-
-        const teacherParams = [code || null, firstName, lastName, phone || null, birthdate || null,
-        religion || null, medicalProblem || null, isDean || false, isResigned || false, teacherId];
-
-        db.query(updateTeacherSql, teacherParams, (err, updateResult) => {
+    const queryDatabase = (sql, params = []) => {
+      return new Promise((resolve, reject) => {
+        db.query(sql, params, (err, results) => {
           if (err) {
-            return db.rollback(() => {
-              console.error('Update Teacher Error:', err);
-              res.status(500).json({ message: 'Database error while updating teacher.', status: false });
-            });
-          }
-
-          if (otherPhones && Array.isArray(otherPhones)) {
-            const deletePhonesSql = `DELETE FROM otherphone WHERE Users_ID = ?`;
-            db.query(deletePhonesSql, [usersId], (err) => {
-              if (err) {
-                return db.rollback(() => {
-                  console.error('Delete Other Phones Error:', err);
-                  res.status(500).json({ message: 'Database error while deleting other phones.', status: false });
-                });
-              }
-
-              const validPhones = otherPhones.filter(phone =>
-                phone.name?.trim() || phone.phone?.trim()
-              );
-
-              if (validPhones.length > 0) {
-                const insertPhonesSql = `INSERT INTO otherphone (OtherPhone_Name, OtherPhone_Phone, Users_ID) VALUES ?`;
-                const phoneValues = validPhones.map(phone => [
-                  phone.name?.trim() || '',
-                  phone.phone?.trim() || '',
-                  usersId
-                ]);
-
-                db.query(insertPhonesSql, [phoneValues], (err) => {
-                  if (err) {
-                    return db.rollback(() => {
-                      console.error('Insert Other Phones Error:', err);
-                      res.status(500).json({ message: 'Database error while inserting other phones.', status: false });
-                    });
-                  }
-
-                  // Commit transaction
-                  db.commit((err) => {
-                    if (err) {
-                      return db.rollback(() => {
-                        console.error('Commit Error:', err);
-                        res.status(500).json({ message: 'Database commit error.', status: false });
-                      });
-                    }
-
-                    res.status(200).json({
-                      message: 'Teacher details updated successfully.',
-                      status: true,
-                      data: {
-                        teacherId: teacherId,
-                        updated: true
-                      }
-                    });
-                  });
-                });
-              } else {
-                db.commit((err) => {
-                  if (err) {
-                    return db.rollback(() => {
-                      console.error('Commit Error:', err);
-                      res.status(500).json({ message: 'Database commit error.', status: false });
-                    });
-                  }
-
-                  res.status(200).json({
-                    message: 'Teacher details updated successfully.',
-                    status: true,
-                    data: {
-                      teacherId: teacherId,
-                      updated: true
-                    }
-                  });
-                });
-              }
-            });
+            console.error('Database query error:', err);
+            reject(err);
           } else {
-            db.commit((err) => {
-              if (err) {
-                return db.rollback(() => {
-                  console.error('Commit Error:', err);
-                  res.status(500).json({
-                    message: 'Database commit error.',
-                    status: false
-                  });
-                });
-              }
-              res.status(200).json({
-                message: 'Teacher details updated successfully.',
-                status: true,
-                data: {
-                  teacherId: teacherId,
-                  updated: true
-                }
-              });
-            });
+            resolve(results);
           }
         });
+      });
+    };
+
+    await queryDatabase('START TRANSACTION');
+
+    try {
+      const checkSql = `SELECT Users_ID FROM teacher WHERE Teacher_ID = ?`;
+      const checkResults = await queryDatabase(checkSql, [teacherId]);
+
+      if (checkResults.length === 0) {
+        await queryDatabase('ROLLBACK');
+        return res.status(404).json({ message: 'Teacher not found.', status: false });
+      }
+
+      const usersId = checkResults[0].Users_ID;
+      const updateTeacherSql = `UPDATE teacher SET Teacher_Code = ?, Teacher_FirstName = ?, 
+        Teacher_LastName = ?, Teacher_Phone = ?, Teacher_Birthdate = ?, Teacher_Religion = ?, 
+        Teacher_MedicalProblem = ?, Teacher_IsDean = ?, Teacher_IsResign = ? WHERE Teacher_ID = ?`;
+
+      const teacherParams = [
+        code || null,
+        firstName,
+        lastName,
+        phone || null,
+        formattedBirthdate,
+        religion || null,
+        medicalProblem || null,
+        convertBooleanToInt(isDean),
+        convertBooleanToInt(isResigned),
+        teacherId
+      ];
+
+      await queryDatabase(updateTeacherSql, teacherParams);
+      if (otherPhones && Array.isArray(otherPhones)) {
+        await queryDatabase(`DELETE FROM otherphone WHERE Users_ID = ?`, [usersId]);
+        const validPhones = otherPhones.filter(phone =>
+          phone.name?.trim() || phone.phone?.trim()
+        );
+
+        if (validPhones.length > 0) {
+          const insertPhonesSql = `INSERT INTO otherphone (OtherPhone_Name, OtherPhone_Phone, Users_ID) VALUES ?`;
+          const phoneValues = validPhones.map(phone => [
+            phone.name?.trim() || '',
+            phone.phone?.trim() || '',
+            usersId
+          ]);
+
+          await queryDatabase(insertPhonesSql, [phoneValues]);
+        }
+      }
+
+      await queryDatabase('COMMIT');
+
+      const response = {
+        message: 'Teacher details updated successfully.',
+        status: true,
+        data: {
+          teacherId: teacherId,
+          updated: true,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      res.status(200).json(response);
+
+    } catch (transactionError) {
+      console.error('Transaction error:', transactionError);
+      await queryDatabase('ROLLBACK');
+      res.status(500).json({
+        message: 'Database transaction failed.',
+        status: false
+      });
+    }
+
+  } catch (err) {
+    console.error('Unexpected error in teacher update:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating teacher details.',
+      status: false
+    });
+  }
+});
+
+// API Get Teachers for Advisor Dropdown
+app.get('/api/admin/teacher-advisors', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (!userData) {
+    return res.status(401).json({ message: "Authentication required.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. Website access required.", status: false });
+  }
+
+  if (!Requester_Users_Type || !['staff', 'teacher'].includes(Requester_Users_Type)) {
+    return res.status(403).json({ message: "Permission denied. Staff, teacher, or admin access required.", status: false });
+  }
+
+  try {
+    const sql = `SELECT t.Teacher_ID, t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code, 
+      d.Department_Name, f.Faculty_Name FROM teacher t INNER JOIN department d ON t.Department_ID = d.Department_ID 
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID WHERE t.Teacher_IsResign = FALSE ORDER BY f.Faculty_Name ASC, 
+      d.Department_Name ASC, t.Teacher_FirstName ASC, t.Teacher_LastName ASC`;
+
+    const executeQuery = () => {
+      return new Promise((resolve, reject) => {
+        db.query(sql, (err, results) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(results);
+          }
+        });
+      });
+    };
+
+    const results = await executeQuery();
+    if (!results || results.length === 0) {
+      return res.status(200).json({
+        message: 'No teachers found.',
+        status: true,
+        data: [],
+        count: 0
+      });
+    }
+
+    try {
+      const teachers = results.map((teacher, index) => {
+        const firstName = teacher.Teacher_FirstName || '';
+        const lastName = teacher.Teacher_LastName || '';
+        const departmentName = teacher.Department_Name || '';
+        return {
+          Teacher_ID: teacher.Teacher_ID,
+          Teacher_Code: teacher.Teacher_Code || '',
+          Teacher_Name: `${firstName} ${lastName}`.trim(),
+          Teacher_FirstName: firstName,
+          Teacher_LastName: lastName,
+          Department_Name: departmentName,
+          Faculty_Name: teacher.Faculty_Name || '',
+          Display_Name: `${firstName} ${lastName} (${departmentName})`.trim()
+        };
+      });
+
+      res.status(200).json({
+        message: 'Teachers retrieved successfully.',
+        status: true,
+        data: teachers,
+        count: teachers.length,
+        debug: {
+          endpoint: 'teacher-advisors',
+          user_type: Requester_Users_Type,
+          query_time: new Date().toISOString()
+        }
+      });
+
+    } catch (processingError) {
+      console.error('Error processing teachers data:', processingError);
+      res.status(500).json({
+        message: 'Error processing teachers data.',
+        status: false,
+      });
+    }
+
+  } catch (err) {
+    console.error('Error fetching teacher advisors:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//admin teachers get teacherId
+app.get('/api/admin/teachers/:teacherId', RateLimiter(1 * 60 * 1000, 100), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const teacherId = parseInt(req.params.teacherId);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
+
+  if (!['staff', 'teacher', 'admin'].includes(Requester_Users_Type)) {
+    return res.status(403).json({
+      message: "Permission denied. Only staff, teachers, and administrators can perform this action.",
+      status: false
+    });
+  }
+
+  if (!teacherId || isNaN(teacherId)) {
+    return res.status(400).json({
+      message: "Invalid teacher ID provided.",
+      status: false
+    });
+  }
+
+  try {
+    const sql = `SELECT t.Teacher_ID, t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code, 
+      d.Department_Name, f.Faculty_Name, t.Teacher_IsResign FROM teacher t INNER JOIN department d ON 
+      t.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID WHERE t.Teacher_ID = ?`;
+
+    db.query(sql, [teacherId], (err, results) => {
+      if (err) {
+        console.error('Database query error for individual teacher:', err);
+        return res.status(500).json({
+          message: 'Database error.',
+          status: false
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          message: 'Teacher not found.',
+          status: false
+        });
+      }
+
+      const teacher = results[0];
+      const teacherData = {
+        Teacher_ID: teacher.Teacher_ID,
+        Teacher_Code: teacher.Teacher_Code || '',
+        Teacher_Name: `${teacher.Teacher_FirstName || ''} ${teacher.Teacher_LastName || ''}`.trim(),
+        Teacher_FirstName: teacher.Teacher_FirstName || '',
+        Teacher_LastName: teacher.Teacher_LastName || '',
+        Department_Name: teacher.Department_Name || '',
+        Faculty_Name: teacher.Faculty_Name || '',
+        Display_Name: `${teacher.Teacher_FirstName || ''} ${teacher.Teacher_LastName || ''} (${teacher.Department_Name || ''})`.trim(),
+        isResigned: teacher.Teacher_IsResign || false
+      };
+
+      res.status(200).json({
+        message: 'Teacher retrieved successfully.',
+        status: true,
+        data: teacherData
       });
     });
 
   } catch (err) {
-    console.error('Update Teacher Detail Error:', err);
+    console.error('Unexpected error in individual teacher API:', err);
     res.status(500).json({
-      message: 'An unexpected error occurred while updating teacher details.',
+      message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+});
+
+// API Update Student's Department, Faculty, and Advisor - Improved
+app.put('/api/admin/students/:id/assignment', RateLimiter(1 * 60 * 1000, 50), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const studentId = parseInt(req.params.id);
+  const { Department_ID, Teacher_ID } = req.body;
+
+  if (!userData) {
+    return res.status(401).json({
+      message: "Authentication required.",
+      status: false
+    });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
+
+  if (!['staff', 'admin', 'teacher'].includes(Requester_Users_Type)) {
+    return res.status(403).json({
+      message: "Permission denied. Only staff, administrators, and teachers can change student assignments.",
+      status: false
+    });
+  }
+
+  if (!studentId || isNaN(studentId)) {
+    return res.status(400).json({
+      message: "Invalid student ID provided.",
+      status: false
+    });
+  }
+
+  if (Department_ID === null || Department_ID === undefined || isNaN(Department_ID)) {
+    return res.status(400).json({
+      message: "Department ID is required and must be a valid number.",
+      status: false
+    });
+  }
+
+  if (Teacher_ID === null || Teacher_ID === undefined || isNaN(Teacher_ID)) {
+    return res.status(400).json({
+      message: "Teacher ID is required and must be a valid number.",
+      status: false
+    });
+  }
+
+  try {
+    const queryDatabase = (sql, params = []) => {
+      return new Promise((resolve, reject) => {
+        db.query(sql, params, (err, results) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(results);
+          }
+        });
+      });
+    };
+
+    await queryDatabase('START TRANSACTION');
+
+    try {
+      const checkStudentSql = `SELECT Student_ID, Users_ID FROM student WHERE Student_ID = ?`;
+      const studentResults = await queryDatabase(checkStudentSql, [studentId]);
+
+      if (studentResults.length === 0) {
+        await queryDatabase('ROLLBACK');
+        return res.status(404).json({
+          message: 'Student not found.',
+          status: false
+        });
+      }
+
+      const checkDepartmentSql = `SELECT Department_ID, Faculty_ID FROM department WHERE Department_ID = ?`;
+      const deptResults = await queryDatabase(checkDepartmentSql, [Department_ID]);
+
+      if (deptResults.length === 0) {
+        await queryDatabase('ROLLBACK');
+        return res.status(400).json({
+          message: 'Invalid Department ID.',
+          status: false
+        });
+      }
+
+      const checkTeacherSql = `SELECT Teacher_ID FROM teacher WHERE Teacher_ID = ? AND Department_ID = ? AND Teacher_IsResign = FALSE`;
+      const teacherResults = await queryDatabase(checkTeacherSql, [Teacher_ID, Department_ID]);
+
+      if (teacherResults.length === 0) {
+        await queryDatabase('ROLLBACK');
+        return res.status(400).json({
+          message: 'Invalid Teacher ID or teacher does not belong to the selected department.',
+          status: false
+        });
+      }
+
+      const updateStudentSql = `UPDATE student SET Department_ID = ?, Teacher_ID = ? WHERE Student_ID = ?`;
+      const updateResult = await queryDatabase(updateStudentSql, [Department_ID, Teacher_ID, studentId]);
+
+      if (updateResult.affectedRows === 0) {
+        await queryDatabase('ROLLBACK');
+        return res.status(500).json({
+          message: 'Failed to update student assignment.',
+          status: false
+        });
+      }
+
+      await queryDatabase('COMMIT');
+      res.status(200).json({
+        message: 'Student assignment updated successfully.',
+        status: true,
+        data: {
+          studentId: studentId,
+          Department_ID: Department_ID,
+          Teacher_ID: Teacher_ID,
+          updated: true
+        }
+      });
+
+    } catch (transactionError) {
+      await queryDatabase('ROLLBACK');
+      throw transactionError;
+    }
+
+  } catch (err) {
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating student assignment.',
       status: false
     });
   }
@@ -3325,7 +3605,7 @@ app.get('/api/admin/teachers/:id/basic', RateLimiter(1 * 60 * 1000, 300), Verify
   }
 });
 
-// API Get All Students with Filtering, and Search of Website Admin**
+// API Get All Students with Filtering, and Search of Website Admin
 app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -3489,6 +3769,7 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
           email: student.Users_Email,
           username: student.Users_Username,
           userType: 'student',
+          Users_ID: student.Users_ID,
           isActive: student.Users_IsActive,
           regisTime: student.Users_RegisTime,
           imageFile: student.Users_ImageFile,
@@ -3545,12 +3826,16 @@ app.put('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
   const studentId = parseInt(req.params.id);
   const updateData = req.body;
 
+  if (!userData) {
+    return res.status(401).json({ message: "Authentication required.", status: false });
+  }
+
   if (Login_Type !== 'website') {
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
-  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
-    return res.status(403).json({ message: "Permission denied. Only staff and teachers can perform this action.", status: false });
+  if (!['staff', 'teacher'].includes(Requester_Users_Type)) {
+    return res.status(403).json({ message: "Permission denied. Only staff, teachers, and administrators can perform this action.", status: false });
   }
 
   if (!studentId || isNaN(studentId)) {
@@ -3561,155 +3846,117 @@ app.put('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
     return res.status(400).json({ message: "Student data is required.", status: false });
   }
 
-  const { code, firstName, lastName, phone, otherPhones, academicYear, birthdate, religion, medicalProblem, isGraduated } = updateData.student;
+  const { code, firstName, lastName, phone, otherPhones,
+    academicYear, birthdate, religion, medicalProblem, isGraduated } = updateData.student;
 
   if (!firstName || !lastName) {
     return res.status(400).json({ message: "First name and last name are required.", status: false });
   }
 
+  const formatDateForMySQL = (dateString) => {
+    if (!dateString) return null;
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return null;
+    }
+  };
+
+  const formattedBirthdate = formatDateForMySQL(birthdate);
   try {
-    // Start transaction
-    db.beginTransaction((err) => {
-      if (err) {
-        console.error('Transaction Error:', err);
-        return res.status(500).json({ message: 'Database transaction error.', status: false });
-      }
-      const checkSql = `SELECT Users_ID FROM student WHERE Student_ID = ?`;
-      db.query(checkSql, [studentId], (err, checkResults) => {
-        if (err) {
-          return db.rollback(() => {
-            console.error('Check Student Error:', err);
-            res.status(500).json({
-              message: 'Database error while checking student.',
-              status: false
-            });
-          });
-        }
-
-        if (checkResults.length === 0) {
-          return db.rollback(() => {
-            res.status(404).json({
-              message: 'Student not found.',
-              status: false
-            });
-          });
-        }
-        const usersId = checkResults[0].Users_ID;
-        const updateStudentSql = `UPDATE student SET Student_Code = ?, Student_FirstName = ?, 
-          Student_LastName = ?, Student_Phone = ?, Student_AcademicYear = ?, Student_Birthdate = ?,
-          Student_Religion = ?, Student_MedicalProblem = ?, Student_IsGraduated = ? WHERE Student_ID = ?`;
-
-        const studentParams = [code || null, firstName, lastName, phone || null, academicYear || null,
-        birthdate || null, religion || null, medicalProblem || null, isGraduated || false, studentId];
-
-        db.query(updateStudentSql, studentParams, (err, updateResult) => {
+    const queryDatabase = (sql, params = []) => {
+      return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+        db.query(sql, params, (err, results) => {
+          const endTime = Date.now();
           if (err) {
-            return db.rollback(() => {
-              console.error('Update Student Error:', err);
-              res.status(500).json({ message: 'Database error while updating student.', status: false });
-            });
-          }
-
-          if (otherPhones && Array.isArray(otherPhones)) {
-            const deletePhonesSql = `DELETE FROM otherphone WHERE Users_ID = ?`;
-            db.query(deletePhonesSql, [usersId], (err) => {
-              if (err) {
-                return db.rollback(() => {
-                  console.error('Delete Other Phones Error:', err);
-                  res.status(500).json({ message: 'Database error while deleting other phones.', status: false });
-                });
-              }
-
-              const validPhones = otherPhones.filter(phone =>
-                phone.name?.trim() || phone.phone?.trim()
-              );
-
-              if (validPhones.length > 0) {
-                const insertPhonesSql = `INSERT INTO otherphone (OtherPhone_Name, OtherPhone_Phone, Users_ID) VALUES ?`;
-                const phoneValues = validPhones.map(phone => [
-                  phone.name?.trim() || '',
-                  phone.phone?.trim() || '',
-                  usersId
-                ]);
-
-                db.query(insertPhonesSql, [phoneValues], (err) => {
-                  if (err) {
-                    return db.rollback(() => {
-                      console.error('Insert Other Phones Error:', err);
-                      res.status(500).json({ message: 'Database error while inserting other phones.', status: false });
-                    });
-                  }
-
-                  // Commit transaction
-                  db.commit((err) => {
-                    if (err) {
-                      return db.rollback(() => {
-                        console.error('Commit Error:', err);
-                        res.status(500).json({ message: 'Database commit error.', status: false });
-                      });
-                    }
-
-                    res.status(200).json({
-                      message: 'Student details updated successfully.',
-                      status: true,
-                      data: {
-                        studentId: studentId,
-                        updated: true
-                      }
-                    });
-                  });
-                });
-              } else {
-                db.commit((err) => {
-                  if (err) {
-                    return db.rollback(() => {
-                      console.error('Commit Error:', err);
-                      res.status(500).json({ message: 'Database commit error.', status: false });
-                    });
-                  }
-
-                  res.status(200).json({
-                    message: 'Student details updated successfully.',
-                    status: true,
-                    data: {
-                      studentId: studentId,
-                      updated: true
-                    }
-                  });
-                });
-              }
-            });
+            console.error('Database query error:', err);
+            reject(err);
           } else {
-            db.commit((err) => {
-              if (err) {
-                return db.rollback(() => {
-                  console.error('Commit Error:', err);
-                  res.status(500).json({
-                    message: 'Database commit error.',
-                    status: false
-                  });
-                });
-              }
-              res.status(200).json({
-                message: 'Student details updated successfully.',
-                status: true,
-                data: {
-                  studentId: studentId,
-                  updated: true
-                }
-              });
-            });
+            resolve(results);
           }
         });
       });
-    });
+    };
+
+    await queryDatabase('START TRANSACTION');
+    try {
+      const checkSql = `SELECT Users_ID FROM student WHERE Student_ID = ?`;
+      const checkResults = await queryDatabase(checkSql, [studentId]);
+
+      if (checkResults.length === 0) {
+        await queryDatabase('ROLLBACK');
+        return res.status(404).json({ message: 'Student not found.', status: false });
+      }
+
+      const usersId = checkResults[0].Users_ID;
+      const updateStudentSql = `UPDATE student SET Student_Code = ?, Student_FirstName = ?, 
+        Student_LastName = ?, Student_Phone = ?, Student_AcademicYear = ?, Student_Birthdate = ?,
+        Student_Religion = ?, Student_MedicalProblem = ?, Student_IsGraduated = ? WHERE Student_ID = ?`;
+
+      const studentParams = [
+        code || null,
+        firstName,
+        lastName,
+        phone || null,
+        academicYear || null,
+        formattedBirthdate,
+        religion || null,
+        medicalProblem || null,
+        isGraduated || false,
+        studentId
+      ];
+
+      await queryDatabase(updateStudentSql, studentParams);
+      if (otherPhones && Array.isArray(otherPhones)) {
+        const deletePhonesSql = `DELETE FROM otherphone WHERE Users_ID = ?`;
+        await queryDatabase(deletePhonesSql, [usersId]);
+        const validPhones = otherPhones.filter(phone =>
+          phone.name?.trim() || phone.phone?.trim()
+        );
+
+        if (validPhones.length > 0) {
+          const insertPhonesSql = `INSERT INTO otherphone (OtherPhone_Name, OtherPhone_Phone, Users_ID) VALUES ?`;
+          const phoneValues = validPhones.map(phone => [
+            phone.name?.trim() || '',
+            phone.phone?.trim() || '',
+            usersId
+          ]);
+
+          await queryDatabase(insertPhonesSql, [phoneValues]);
+        }
+      }
+
+      await queryDatabase('COMMIT');
+      const response = {
+        message: 'Student details updated successfully.',
+        status: true,
+        data: {
+          studentId: studentId,
+          updated: true,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      res.status(200).json(response);
+    } catch (transactionError) {
+      console.error('Transaction error:', transactionError);
+      await queryDatabase('ROLLBACK');
+      res.status(500).json({ message: 'Database transaction failed.', status: false, });
+    }
 
   } catch (err) {
-    console.error('Update Student Detail Error:', err);
-    res.status(500).json({
-      message: 'An unexpected error occurred while updating student details.',
-      status: false
-    });
+    console.error('Unexpected error in student update:', err);
+    res.status(500).json({ message: 'An unexpected error occurred while updating student details.', status: false, });
   }
 });
 
@@ -3878,6 +4125,470 @@ app.get('/api/admin/students/:id/basic', RateLimiter(1 * 60 * 1000, 300), Verify
     console.error('Get Student Basic Info Error:', err);
     res.status(500).json({
       message: 'An unexpected error occurred while fetching student basic information.',
+      status: false
+    });
+  }
+});
+
+// API Change Password for Admin Website
+app.put('/api/admin/users/:Users_ID/change-password', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Target_Users_ID = parseInt(req.params.Users_ID, 10);
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can change user passwords.", status: false });
+  }
+
+  if (!Target_Users_ID || isNaN(Target_Users_ID)) {
+    return res.status(400).json({ message: "Missing or invalid Users_ID parameter.", status: false });
+  }
+
+  let { newPassword } = req.body || {};
+
+  if (!newPassword) {
+    return res.status(400).json({ message: "New password is required.", status: false });
+  }
+
+  const isValidPassword = (password) => {
+    if (password.length < 8) {
+      return { valid: false, message: "Password must be at least 8 characters long." };
+    }
+
+    if (!/[a-zA-Z]/.test(password)) {
+      return { valid: false, message: "Password must contain at least 1 letter." };
+    }
+
+    if (!/[0-9]/.test(password)) {
+      return { valid: false, message: "Password must contain at least 1 number." };
+    }
+
+    return { valid: true };
+  };
+
+  const passwordValidation = isValidPassword(newPassword);
+  if (!passwordValidation.valid) {
+    return res.status(400).json({
+      message: passwordValidation.message,
+      status: false
+    });
+  }
+
+  try {
+    const checkUserSql = "SELECT Users_ID, Users_Type, Users_Email FROM users WHERE Users_ID = ?";
+    db.query(checkUserSql, [Target_Users_ID], async (err, userResults) => {
+      if (err) {
+        console.error("Database error (check user):", err);
+        return res.status(500).json({ message: "Database error occurred.", status: false });
+      }
+
+      if (userResults.length === 0) {
+        return res.status(404).json({ message: "User not found.", status: false });
+      }
+
+      try {
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+        const updatePasswordSql = "UPDATE users SET Users_Password = ? WHERE Users_ID = ?";
+        db.query(updatePasswordSql, [hashedPassword, Target_Users_ID], (err, updateResult) => {
+          if (err) {
+            console.error("Database error (update password):", err);
+            return res.status(500).json({ message: "Database error occurred.", status: false });
+          }
+
+          if (updateResult.affectedRows === 0) {
+            return res.status(500).json({ message: "Failed to update password.", status: false });
+          }
+
+          return res.status(200).json({
+            message: "Password changed successfully.",
+            status: true,
+            data: {
+              Users_ID: Target_Users_ID,
+              changedBy: Requester_Users_ID,
+              changedAt: new Date().toISOString()
+            }
+          });
+        });
+      } catch (hashError) {
+        console.error("Password hashing error:", hashError);
+        return res.status(500).json({ message: "Password processing error.", status: false });
+      }
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    return res.status(500).json({ message: "An unexpected error occurred.", status: false });
+  }
+});
+
+// API Get All Staff with Pagination, Filtering, and Search of Website Admin
+app.get('/api/admin/staff', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const includeResigned = req.query.includeResigned === 'true';
+  const search = req.query.search ? req.query.search.trim() : '';
+
+  try {
+    let whereConditions = [];
+    let queryParams = [];
+
+    if (!includeResigned) {
+      whereConditions.push('s.Staff_IsResign = FALSE');
+    }
+
+    if (search) {
+      whereConditions.push(`(s.Staff_FirstName LIKE ? OR s.Staff_LastName LIKE ? OR s.Staff_Code LIKE ? OR u.Users_Email LIKE ?)`);
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    const sql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
+      s.Staff_Phone, s.Staff_RegisTime, s.Staff_IsResign, s.Users_ID,
+      u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive 
+      FROM staff s 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID 
+      ${whereClause} 
+      ORDER BY s.Staff_FirstName ASC, s.Staff_LastName ASC`;
+
+    db.query(sql, queryParams, (err, results) => {
+      if (err) {
+        console.error('Get Staff Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      const staff = results.map(staff => ({
+        Staff_ID: staff.Staff_ID,
+        Staff_Code: staff.Staff_Code,
+        Staff_FirstName: staff.Staff_FirstName,
+        Staff_LastName: staff.Staff_LastName,
+        Staff_FullName: `${staff.Staff_FirstName} ${staff.Staff_LastName}`,
+        Staff_Phone: staff.Staff_Phone,
+        Staff_RegisTime: staff.Staff_RegisTime,
+        Staff_IsResign: staff.Staff_IsResign,
+        Users: {
+          Users_ID: staff.Users_ID,
+          Users_Email: staff.Users_Email,
+          Users_Username: staff.Users_Username,
+          Users_RegisTime: staff.Users_RegisTime,
+          Users_ImageFile: staff.Users_ImageFile,
+          Users_IsActive: staff.Users_IsActive
+        }
+      }));
+
+      res.status(200).json({
+        message: 'Staff retrieved successfully.',
+        status: true,
+        data: staff,
+        count: staff.length
+      });
+    });
+  } catch (err) {
+    console.error('Get Staff Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Update Staff Detail by ID for Website Admin
+app.put('/api/admin/staff/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const staffId = parseInt(req.params.id);
+  const updateData = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (!staffId || isNaN(staffId)) {
+    return res.status(400).json({ message: "Invalid staff ID provided.", status: false });
+  }
+
+  if (!updateData.staff) {
+    return res.status(400).json({ message: "Staff data is required.", status: false });
+  }
+
+  const { code, firstName, lastName, phone, otherPhones, isResigned } = updateData.staff;
+
+  if (!firstName || !lastName) {
+    return res.status(400).json({ message: "First name and last name are required.", status: false });
+  }
+
+  try {
+    // Start transaction using MySQL query
+    db.query('START TRANSACTION', (err) => {
+      if (err) {
+        console.error('Transaction Error:', err);
+        return res.status(500).json({ message: 'Database transaction error.', status: false });
+      }
+
+      const checkSql = `SELECT Users_ID FROM staff WHERE Staff_ID = ?`;
+      db.query(checkSql, [staffId], (err, checkResults) => {
+        if (err) {
+          return db.query('ROLLBACK', () => {
+            console.error('Check Staff Error:', err);
+            res.status(500).json({
+              message: 'Database error while checking staff.',
+              status: false
+            });
+          });
+        }
+
+        if (checkResults.length === 0) {
+          return db.query('ROLLBACK', () => {
+            res.status(404).json({
+              message: 'Staff not found.',
+              status: false
+            });
+          });
+        }
+
+        const usersId = checkResults[0].Users_ID;
+        const updateStaffSql = `UPDATE staff SET Staff_Code = ?, Staff_FirstName = ?, 
+          Staff_LastName = ?, Staff_Phone = ?, Staff_IsResign = ? WHERE Staff_ID = ?`;
+
+        const staffParams = [code || null, firstName, lastName, phone || null, isResigned || false, staffId];
+
+        db.query(updateStaffSql, staffParams, (err, updateResult) => {
+          if (err) {
+            return db.query('ROLLBACK', () => {
+              console.error('Update Staff Error:', err);
+              res.status(500).json({ message: 'Database error while updating staff.', status: false });
+            });
+          }
+
+          if (otherPhones && Array.isArray(otherPhones)) {
+            const deletePhonesSql = `DELETE FROM otherphone WHERE Users_ID = ?`;
+            db.query(deletePhonesSql, [usersId], (err) => {
+              if (err) {
+                return db.query('ROLLBACK', () => {
+                  console.error('Delete Other Phones Error:', err);
+                  res.status(500).json({ message: 'Database error while deleting other phones.', status: false });
+                });
+              }
+
+              const validPhones = otherPhones.filter(phone =>
+                phone.name?.trim() || phone.phone?.trim()
+              );
+
+              if (validPhones.length > 0) {
+                const insertPhonesSql = `INSERT INTO otherphone (OtherPhone_Name, OtherPhone_Phone, Users_ID) VALUES ?`;
+                const phoneValues = validPhones.map(phone => [
+                  phone.name?.trim() || '',
+                  phone.phone?.trim() || '',
+                  usersId
+                ]);
+
+                db.query(insertPhonesSql, [phoneValues], (err) => {
+                  if (err) {
+                    return db.query('ROLLBACK', () => {
+                      console.error('Insert Other Phones Error:', err);
+                      res.status(500).json({ message: 'Database error while inserting other phones.', status: false });
+                    });
+                  }
+
+                  // Commit transaction
+                  db.query('COMMIT', (err) => {
+                    if (err) {
+                      return db.query('ROLLBACK', () => {
+                        console.error('Commit Error:', err);
+                        res.status(500).json({ message: 'Database commit error.', status: false });
+                      });
+                    }
+
+                    res.status(200).json({
+                      message: 'Staff details updated successfully.',
+                      status: true,
+                      data: {
+                        staffId: staffId,
+                        updated: true
+                      }
+                    });
+                  });
+                });
+              } else {
+                db.query('COMMIT', (err) => {
+                  if (err) {
+                    return db.query('ROLLBACK', () => {
+                      console.error('Commit Error:', err);
+                      res.status(500).json({ message: 'Database commit error.', status: false });
+                    });
+                  }
+
+                  res.status(200).json({
+                    message: 'Staff details updated successfully.',
+                    status: true,
+                    data: {
+                      staffId: staffId,
+                      updated: true
+                    }
+                  });
+                });
+              }
+            });
+          } else {
+            db.query('COMMIT', (err) => {
+              if (err) {
+                return db.query('ROLLBACK', () => {
+                  console.error('Commit Error:', err);
+                  res.status(500).json({
+                    message: 'Database commit error.',
+                    status: false
+                  });
+                });
+              }
+              res.status(200).json({
+                message: 'Staff details updated successfully.',
+                status: true,
+                data: {
+                  staffId: staffId,
+                  updated: true
+                }
+              });
+            });
+          }
+        });
+      });
+    });
+
+  } catch (err) {
+    console.error('Update Staff Detail Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating staff details.',
+      status: false
+    });
+  }
+});
+
+// API Update Staff Status for Website Admin (Active/Inactive)
+app.patch('/api/admin/staff/:id/status', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const staffId = parseInt(req.params.id);
+  const { isActive } = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can change user status.", status: false });
+  }
+
+  if (!staffId || isNaN(staffId) || staffId <= 0 || staffId > 2147483647) {
+    return res.status(400).json({ message: "Invalid staff ID provided.", status: false });
+  }
+
+  if (typeof isActive !== 'boolean') {
+    return res.status(400).json({ message: "Invalid status value. Must be true or false.", status: false });
+  }
+
+  try {
+    const checkSql = `SELECT s.Staff_ID, s.Users_ID, u.Users_IsActive, s.Staff_FirstName, s.Staff_LastName FROM 
+      staff s INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE s.Staff_ID = ?`;
+
+    db.query(checkSql, [staffId], (err, checkResults) => {
+      if (err) {
+        console.error('Check Staff Error:', err);
+        return res.status(500).json({ message: 'Database error while checking staff.', status: false });
+      }
+
+      if (checkResults.length === 0) {
+        return res.status(404).json({ message: 'Staff not found.', status: false });
+      }
+
+      const staff = checkResults[0];
+      if (staff.Users_IsActive === isActive) {
+        return res.status(400).json({ message: `Staff is already ${isActive ? 'active' : 'inactive'}.`, status: false });
+      }
+
+      const updateSql = `UPDATE users SET Users_IsActive = ? WHERE Users_ID = ?`;
+      db.query(updateSql, [isActive, staff.Users_ID], (err, updateResult) => {
+        if (err) {
+          console.error('Update Status Error:', err);
+          return res.status(500).json({ message: 'Database error while updating status.', status: false });
+        }
+
+        if (updateResult.affectedRows === 0) {
+          return res.status(500).json({ message: 'Failed to update user status.', status: false });
+        }
+
+        const logAction = () => {
+          const getEditTypeSql = `SELECT DataEditType_ID FROM dataedittype WHERE DataEditType_Name = 'dataedit_users_status_change' LIMIT 1`;
+          db.query(getEditTypeSql, [], (err, editTypeResults) => {
+            if (err || editTypeResults.length === 0) {
+              console.warn('Could not find DataEditType_ID for dataedit_users_status_change:', err);
+              return;
+            }
+
+            const dataEditTypeId = editTypeResults[0].DataEditType_ID;
+            const getStaffSql = `SELECT Staff_ID FROM staff WHERE Users_ID = ?`;
+            db.query(getStaffSql, [userData.Users_ID], (err, staffResults) => {
+              if (err || staffResults.length === 0) {
+                console.warn('Could not log action - staff not found:', err);
+                return;
+              }
+
+              const requesterStaffId = staffResults[0].Staff_ID;
+              const actionName = `${isActive ? 'Activated' : 'Deactivated'} staff: ${staff.Staff_FirstName} ${staff.Staff_LastName}`;
+              const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
+                DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID) VALUES (?, ?, ?, ?, ?, ?)`;
+
+              db.query(logSql, [staffId, actionName, req.ip || 'unknown', req.get('User-Agent') || 'unknown',
+                requesterStaffId, dataEditTypeId], (logErr) => {
+                  if (logErr) {
+                    console.warn('Action logging failed:', logErr);
+                  } else {
+                    console.log('Action logged successfully:', actionName);
+                  }
+                });
+            });
+          });
+        };
+
+        logAction();
+        res.status(200).json({
+          message: `Staff status updated successfully to ${isActive ? 'active' : 'inactive'}.`,
+          status: true,
+          data: {
+            staffId: staffId,
+            isActive: isActive,
+            updatedBy: userData.Users_Username || userData.Users_Email,
+            updatedAt: new Date().toISOString()
+          }
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Update Staff Status Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating staff status.',
       status: false
     });
   }
@@ -4077,6 +4788,7 @@ app.put('/api/profile/teacher/update', RateLimiter(0.5 * 60 * 1000, 12), VerifyT
   });
 });
 
+//////////////////////////////////Image API///////////////////////////////////////
 //API Get Profile Image by Filename
 app.get('/api/images/profile-images/:filename', VerifyTokens, (req, res) => {
   try {

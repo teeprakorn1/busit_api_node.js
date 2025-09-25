@@ -4495,6 +4495,317 @@ paths:
           description: Internal server error
       security: []
 
+  /api/admin/teachers/{id}:
+    put:
+      summary: Update teacher details by ID
+      description: Update detailed information about a teacher (only staff on website login).
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Teacher ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teacher:
+                  type: object
+                  required:
+                    - firstName
+                    - lastName
+                  properties:
+                    code:
+                      type: string
+                      example: T12345
+                    firstName:
+                      type: string
+                      example: John
+                    lastName:
+                      type: string
+                      example: Doe
+                    phone:
+                      type: string
+                      example: "0812345678"
+                    otherPhones:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: Emergency
+                          phone:
+                            type: string
+                            example: "0998765432"
+                    birthdate:
+                      type: string
+                      format: date
+                      example: "1980-01-15"
+                    religion:
+                      type: string
+                      example: Buddhism
+                    medicalProblem:
+                      type: string
+                      example: Asthma
+                    isDean:
+                      type: boolean
+                      example: false
+                    isResigned:
+                      type: boolean
+                      example: false
+      responses:
+        "200":
+          description: Teacher details updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Teacher details updated successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      teacherId:
+                        type: integer
+                        example: 1
+                      updated:
+                        type: boolean
+                        example: true
+                      timestamp:
+                        type: string
+                        format: date-time
+                        example: "2025-09-26T10:00:00.000Z"
+        "400":
+          description: Invalid input
+        "401":
+          description: Authentication required
+        "403":
+          description: Permission denied
+        "404":
+          description: Teacher not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/admin/teachers/{teacherId}:
+    get:
+      summary: Get teacher details by ID
+      description: Retrieve detailed information about a teacher (staff, teacher, or admin).
+      tags:
+        - Admin
+      parameters:
+        - name: teacherId
+          in: path
+          required: true
+          description: Teacher ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Teacher retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Teacher retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Teacher_ID:
+                        type: integer
+                        example: 1
+                      Teacher_Code:
+                        type: string
+                        example: T12345
+                      Teacher_Name:
+                        type: string
+                        example: John Doe
+                      Teacher_FirstName:
+                        type: string
+                        example: John
+                      Teacher_LastName:
+                        type: string
+                        example: Doe
+                      Department_Name:
+                        type: string
+                        example: Computer Science
+                      Faculty_Name:
+                        type: string
+                        example: Business and IT
+                      Display_Name:
+                        type: string
+                        example: John Doe (Computer Science)
+                      isResigned:
+                        type: boolean
+                        example: false
+        "400":
+          description: Invalid teacher ID
+        "403":
+          description: Permission denied
+        "404":
+          description: Teacher not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/admin/teacher-advisors:
+    get:
+      summary: Get all teachers for advisor dropdown
+      description: Retrieve a list of teachers available for student assignment (staff or teacher login required).
+      tags:
+        - Admin
+      responses:
+        "200":
+          description: Teachers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Teachers retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Teacher_ID:
+                          type: integer
+                          example: 1
+                        Teacher_Code:
+                          type: string
+                          example: T12345
+                        Teacher_Name:
+                          type: string
+                          example: John Doe
+                        Teacher_FirstName:
+                          type: string
+                          example: John
+                        Teacher_LastName:
+                          type: string
+                          example: Doe
+                        Department_Name:
+                          type: string
+                          example: Computer Science
+                        Faculty_Name:
+                          type: string
+                          example: Business and IT
+                        Display_Name:
+                          type: string
+                          example: John Doe (Computer Science)
+                  count:
+                    type: integer
+                    example: 10
+                  debug:
+                    type: object
+                    properties:
+                      endpoint:
+                        type: string
+                        example: teacher-advisors
+                      user_type:
+                        type: string
+                        example: staff
+                      query_time:
+                        type: string
+                        format: date-time
+                        example: "2025-09-26T10:00:00.000Z"
+      security: []
+
+  /api/admin/students/{id}/assignment:
+    put:
+      summary: Update student's department, faculty, and advisor
+      description: Change student's assignment to a new department and advisor (staff, admin, or teacher required).
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Student ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Department_ID
+                - Teacher_ID
+              properties:
+                Department_ID:
+                  type: integer
+                  example: 2
+                Teacher_ID:
+                  type: integer
+                  example: 5
+      responses:
+        "200":
+          description: Student assignment updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student assignment updated successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      studentId:
+                        type: integer
+                        example: 1
+                      Department_ID:
+                        type: integer
+                        example: 2
+                      Teacher_ID:
+                        type: integer
+                        example: 5
+                      updated:
+                        type: boolean
+                        example: true
+        "400":
+          description: Invalid input
+        "401":
+          description: Authentication required
+        "403":
+          description: Permission denied
+        "404":
+          description: Student not found
+        "500":
+          description: Internal server error
+      security: []
+
   /api/admin/teachers/{id}/status:
     patch:
       summary: Update teacher account status (Active/Inactive) (Admin only)
@@ -4887,6 +5198,9 @@ paths:
                       userType:
                         type: string
                         example: student
+                      Users_ID:
+                        type: integer
+                        example: 101
                       isActive:
                         type: boolean
                         example: true
@@ -4917,6 +5231,9 @@ paths:
                             items:
                               type: object
                               properties:
+                                id:
+                                  type: integer
+                                  example: 1
                                 name:
                                   type: string
                                   example: Emergency
@@ -4972,17 +5289,61 @@ paths:
                                 example: Business and IT
         "400":
           description: Invalid student ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid student ID provided.
+                  status:
+                    type: boolean
+                    example: false
         "403":
           description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff and teachers can perform this action.
+                  status:
+                    type: boolean
+                    example: false
         "404":
           description: Student not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student not found.
+                  status:
+                    type: boolean
+                    example: false
         "500":
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An unexpected error occurred while fetching student details.
+                  status:
+                    type: boolean
+                    example: false
       security: []
 
     put:
       summary: Update student details by ID
-      description: Update detailed information of a student (only staff or teacher on website login).
+      description: Update detailed information about a student (only staff or teacher on website login).
       tags:
         - Admin
       parameters:
@@ -4999,9 +5360,14 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - student
               properties:
                 student:
                   type: object
+                  required:
+                    - firstName
+                    - lastName
                   properties:
                     code:
                       type: string
@@ -5065,43 +5431,12 @@ paths:
                       updated:
                         type: boolean
                         example: true
+                      timestamp:
+                        type: string
+                        format: date-time
+                        example: "2025-09-26T10:00:00.000Z"
         "400":
-          description: Bad request
-        "403":
-          description: Permission denied
-        "404":
-          description: Student not found
-        "500":
-          description: Internal server error
-      security: []
-
-  /api/admin/students/{id}/status:
-    patch:
-      summary: Update student status (active/inactive)
-      description: Change student account status (only staff on website login).
-      tags:
-        - Admin
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Student ID
-          schema:
-            type: integer
-            example: 1
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                isActive:
-                  type: boolean
-                  example: true
-      responses:
-        "200":
-          description: Student status updated successfully
+          description: Invalid input (e.g. missing names, invalid student ID, missing student data)
           content:
             application/json:
               schema:
@@ -5109,34 +5444,62 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Student status updated successfully to active.
+                    example: Invalid student ID provided.
                   status:
                     type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      studentId:
-                        type: integer
-                        example: 1
-                      isActive:
-                        type: boolean
-                        example: true
-                      updatedBy:
-                        type: string
-                        example: admin.staff
-                      updatedAt:
-                        type: string
-                        format: date-time
-                        example: "2024-09-01T12:00:00.000Z"
-        "400":
-          description: Invalid input or already in desired state
+                    example: false
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Authentication required.
+                  status:
+                    type: boolean
+                    example: false
         "403":
-          description: Permission denied
+          description: Permission denied (only staff or teacher on website login)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff or teacher can perform this action.
+                  status:
+                    type: boolean
+                    example: false
         "404":
           description: Student not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Student not found.
+                  status:
+                    type: boolean
+                    example: false
         "500":
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: An unexpected error occurred while updating student details.
+                  status:
+                    type: boolean
+                    example: false
       security: []
 
   /api/admin/students/{id}/basic:
@@ -5211,6 +5574,458 @@ paths:
           description: Student not found
         "500":
           description: Internal server error
+      security: []
+
+  /api/admin/users/{Users_ID}/change-password:
+    put:
+      summary: Change user password by ID (Admin Website)
+      description: Staff can change password of any user in the system
+      tags:
+        - Admin
+      parameters:
+        - name: Users_ID
+          in: path
+          required: true
+          description: ID of the target user
+          schema:
+            type: integer
+            example: 5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                  example: "NewPass123"
+      responses:
+        "200":
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password changed successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Users_ID:
+                        type: integer
+                        example: 5
+                      changedBy:
+                        type: integer
+                        example: 1
+                      changedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-09-26T08:12:34.000Z
+        "400":
+          description: Invalid request or missing parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: New password is required.
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can change user passwords.
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User not found.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error occurred.
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/admin/staff:
+    get:
+      summary: Get all staff with optional search and filter
+      description: Retrieve list of staff with pagination, filtering, and search
+      tags:
+        - Admin
+      parameters:
+        - name: includeResigned
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Include resigned staff if true
+          example: false
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search by first name, last name, staff code, or email
+          example: "Somchai"
+      responses:
+        "200":
+          description: Staff retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Staff retrieved successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Staff_ID:
+                          type: integer
+                          example: 10
+                        Staff_Code:
+                          type: string
+                          example: ST001
+                        Staff_FirstName:
+                          type: string
+                          example: Somchai
+                        Staff_LastName:
+                          type: string
+                          example: Jaidee
+                        Staff_FullName:
+                          type: string
+                          example: Somchai Jaidee
+                        Staff_Phone:
+                          type: string
+                          example: "0812345678"
+                        Staff_IsResign:
+                          type: boolean
+                          example: false
+                        Users:
+                          type: object
+                          properties:
+                            Users_ID:
+                              type: integer
+                              example: 2
+                            Users_Email:
+                              type: string
+                              example: somchai@example.com
+                            Users_Username:
+                              type: string
+                              example: somchai
+                            Users_RegisTime:
+                              type: string
+                              format: date-time
+                              example: 2025-01-01T08:12:34.000Z
+                            Users_ImageFile:
+                              type: string
+                              example: profile123.png
+                            Users_IsActive:
+                              type: boolean
+                              example: true
+                  count:
+                    type: integer
+                    example: 25
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/admin/staff/{id}:
+    put:
+      summary: Update staff details by ID
+      description: Staff can update staff details (including phone numbers)
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 10
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                staff:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                      example: ST002
+                    firstName:
+                      type: string
+                      example: Anucha
+                    lastName:
+                      type: string
+                      example: Saelim
+                    phone:
+                      type: string
+                      example: "0891112233"
+                    otherPhones:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: "Home"
+                          phone:
+                            type: string
+                            example: "023456789"
+                    isResigned:
+                      type: boolean
+                      example: false
+      responses:
+        "200":
+          description: Staff updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Staff details updated successfully.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      staffId:
+                        type: integer
+                        example: 10
+                      updated:
+                        type: boolean
+                        example: true
+        "400":
+          description: Invalid staff ID or data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: First name and last name are required.
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can perform this action.
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: Staff not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Staff not found.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error while updating staff.
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/admin/staff/{id}/status:
+    patch:
+      summary: Update staff status (active/inactive) by ID
+      description: Staff can activate or deactivate staff account
+      tags:
+        - Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 10
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isActive:
+                  type: boolean
+                  example: true
+      responses:
+        "200":
+          description: Staff status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Staff status updated successfully to active.
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      staffId:
+                        type: integer
+                        example: 10
+                      isActive:
+                        type: boolean
+                        example: true
+                      updatedBy:
+                        type: string
+                        example: admin@example.com
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-09-26T08:12:34.000Z
+        "400":
+          description: Invalid staff ID or status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Invalid status value. Must be true or false.
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Permission denied. Only staff can change user status.
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: Staff not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Staff not found.
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database error while updating status.
+                  status:
+                    type: boolean
+                    example: false
       security: []
 
   /api/profile/student/update:
