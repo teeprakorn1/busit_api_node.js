@@ -276,7 +276,8 @@ VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_update_otherphone_users'),('timestamp_delete_otherphone_users'),
 ('timestamp_application_request_otp'),('timestamp_application_resetpassword_otp'),
 ('timestamp_application_verify_otp'),('timestamp_website_add_student'),('timestamp_website_add_teacher'),
-('timestamp_website_add_csv_student'),('timestamp_website_add_csv_teacher');
+('timestamp_website_add_csv_student'),('timestamp_website_add_csv_teacher'),
+('timestamp_website_add_staff'),('timestamp_website_add_csv_staff');
 
 INSERT INTO dataedittype (DataEditType_Name) VALUES 
 ('dataedit_users_status_change'),('dataedit_student_data_update'),

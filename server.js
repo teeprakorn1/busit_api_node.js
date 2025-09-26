@@ -1036,6 +1036,120 @@ app.get('/api/timestamp/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_
   }
 });
 
+
+//////////////////////////////////Admin DataEdit API///////////////////////////////////////
+//API DataEdit Insert for Website**
+app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+
+  // ตรวจสอบว่าเป็น staff เท่านั้น
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const { DataEdit_ThisId, DataEdit_Name, DataEditType_ID } = req.body || {};
+
+  const DataEdit_IP_Address = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || null;
+  const DataEdit_UserAgent = req.headers['user-agent'] || null;
+
+  // ดึง Staff_ID จาก Users_ID
+  const usersID = userData.Users_ID;
+
+  if (!DataEdit_ThisId || !DataEditType_ID || !usersID) {
+    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  }
+  if (typeof DataEdit_ThisId !== 'number' || typeof DataEditType_ID !== 'number' || typeof usersID !== 'number') {
+    return res.status(400).json({ message: "DataEdit_ThisId, DataEditType_ID and Users_ID must be numbers.", status: false });
+  }
+  if (DataEdit_Name && typeof DataEdit_Name !== 'string') {
+    return res.status(400).json({ message: "DataEdit_Name must be a string.", status: false });
+  }
+
+  try {
+    // หา Staff_ID จาก Users_ID
+    const getStaffSql = `SELECT Staff_ID FROM staff WHERE Users_ID = ?`;
+    db.query(getStaffSql, [usersID], (err, staffResult) => {
+      if (err) {
+        console.error('Database error (get staff)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      
+      if (staffResult.length === 0) {
+        return res.status(404).json({ message: 'Staff not found.', status: false });
+      }
+
+      const staffID = staffResult[0].Staff_ID;
+
+      const sql = `
+        INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      db.query(sql, [DataEdit_ThisId, DataEdit_Name, DataEdit_IP_Address, DataEdit_UserAgent, staffID, DataEditType_ID], (err, result) => {
+        if (err) {
+          console.error('Database error (dataedit)', err);
+          return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+        }
+        if (result.affectedRows > 0) {
+          return res.status(200).json({ message: 'DataEdit inserted successfully.', status: true });
+        } else {
+          return res.status(501).json({ message: 'DataEdit not inserted.', status: false });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API DataEdit Get All Data website admin**
+app.get('/api/dataedit/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  try {
+    const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
+      de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
+      det.DataEditType_Name 
+      FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID
+      WHERE de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY 
+      ORDER BY de.DataEdit_RegisTime DESC`;
+      
+    db.query(sql, (err, result) => {
+      if (err) {
+        console.error('Database error (dataedit)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length > 0) {
+        return res.status(200).json({
+          message: "Get data edits successfully.",
+          status: true,
+          data: result
+        });
+      } else {
+        return res.status(404).json({ message: 'No data edits found.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
 //////////////////////////////////Admin Website API///////////////////////////////////////
 // API Get Data Admin by VerifyTokens of Admin Website
 app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_Website, async (req, res) => {
@@ -1962,6 +2076,148 @@ app.post('/api/admin/users/teacher/add', RateLimiter(1 * 60 * 1000, 5), VerifyTo
   }
 });
 
+// API Register Staff Admin Website**
+app.post('/api/admin/users/staff/add', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  let { Users_Email, Users_Password, Staff_Code, Staff_FirstName, Staff_LastName, Staff_Phone } = req.body || {};
+
+  if (!Users_Email || !Users_Password || !Staff_Code || !Staff_FirstName || !Staff_LastName) {
+    return res.status(400).json({
+      message: 'Please fill in all required fields: Users_Email, Users_Password, Staff_Code, Staff_FirstName, Staff_LastName',
+      status: false
+    });
+  }
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  Users_Email = xss(Users_Email.trim());
+  if (!validator.isEmail(Users_Email)) {
+    return res.status(400).json({ message: 'Invalid email format.', status: false });
+  }
+
+  let Users_Username = Users_Email.split('@')[0];
+  Users_Username = xss(Users_Username.trim());
+
+  const usernameRegex = /^[a-zA-Z0-9.\-]+$/;
+  if (!usernameRegex.test(Users_Username) || Users_Username.length < 2 || Users_Username.length > 60) {
+    return res.status(400).json({
+      message: 'Email username part (before @) must be 2-60 characters and can contain letters, numbers, and dot (.) only.',
+      status: false
+    });
+  }
+
+  Users_Password = xss(Users_Password);
+  if (!validator.isStrongPassword(Users_Password, { minLength: 8, minNumbers: 1, minSymbols: 0, minUppercase: 0, minLowercase: 0 })) {
+    return res.status(400).json({ message: 'Password is not strong enough.', status: false });
+  }
+
+  Staff_Code = xss(Staff_Code.trim());
+  if (!/^\d{12}-\d{1}$/.test(Staff_Code)) {
+    return res.status(400).json({
+      message: 'Staff code must be in format: 12 digits followed by - and 1 digit (e.g., 026530461001-6)',
+      status: false
+    });
+  }
+
+  Staff_FirstName = xss(Staff_FirstName.trim());
+  Staff_LastName = xss(Staff_LastName.trim());
+  Staff_Phone = Staff_Phone ? xss(Staff_Phone.trim()) : null;
+
+  try {
+    const hashedPassword = await bcrypt.hash(Users_Password, saltRounds);
+
+    // Start Transaction
+    db.query('START TRANSACTION', async (err) => {
+      if (err) {
+        console.error('Transaction Start Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      const checkDuplicateSql = `SELECT CASE WHEN EXISTS(SELECT 1 FROM users WHERE Users_Email = ? OR Users_Username = ?) 
+        THEN 'email_username' WHEN EXISTS(SELECT 1 FROM staff WHERE Staff_Code = ?) THEN 'staff_code' ELSE NULL END as duplicate_type`;
+
+      db.query(checkDuplicateSql, [Users_Email, Users_Username, Staff_Code], (err, duplicateResult) => {
+        if (err) {
+          db.query('ROLLBACK', () => { });
+          console.error('Check Duplicate Error:', err);
+          return res.status(500).json({ message: 'Database error', status: false });
+        }
+
+        const duplicateType = duplicateResult[0]?.duplicate_type;
+        if (duplicateType) {
+          db.query('ROLLBACK', () => { });
+          if (duplicateType === 'email_username') {
+            return res.status(409).json({ message: 'Email or username already exists.', status: false });
+          } else if (duplicateType === 'staff_code') {
+            return res.status(409).json({ message: 'Staff code already exists.', status: false });
+          }
+        }
+
+        const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES (?, ?, ?, 'staff')`;
+        db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
+          if (err) {
+            db.query('ROLLBACK', () => { });
+            console.error('Insert Users Error:', err);
+            return res.status(500).json({ message: 'Database error', status: false });
+          }
+
+          const Users_ID = userResult.insertId;
+          const sqlStaff = `INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Staff_Phone, Users_ID) 
+            VALUES (?, ?, ?, ?, ?)`;
+
+          db.query(sqlStaff, [Staff_Code, Staff_FirstName, Staff_LastName, Staff_Phone, Users_ID], (err, staffResult) => {
+            if (err) {
+              db.query('ROLLBACK', () => { });
+              console.error('Insert Staff Error:', err);
+              return res.status(500).json({ message: 'Database error', status: false });
+            }
+
+            // Commit Transaction
+            db.query('COMMIT', (err) => {
+              if (err) {
+                db.query('ROLLBACK', () => { });
+                console.error('Commit Error:', err);
+                return res.status(500).json({ message: 'Database error', status: false });
+              }
+
+              res.status(201).json({
+                message: 'Staff registered successfully.',
+                status: true,
+                data: {
+                  Users_ID: Users_ID,
+                  Staff_ID: staffResult.insertId,
+                  Staff_Code: Staff_Code,
+                  Staff_FirstName: Staff_FirstName,
+                  Staff_LastName: Staff_LastName,
+                  Users_Email: Users_Email,
+                  Users_Username: Users_Username
+                }
+              });
+            });
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Register Staff Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
 // API Register Student from CSV website admin
 app.post('/api/admin/users/student/import', RateLimiter(1 * 60 * 1000, 1001), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
@@ -2401,6 +2657,134 @@ app.post('/api/admin/users/teacher/import', RateLimiter(1 * 60 * 1000, 1001), Ve
     });
   } catch (err) {
     console.error('Import Teacher Error:', err);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Register Staff from CSV website admin**
+app.post('/api/admin/users/staff/import', RateLimiter(1 * 60 * 1000, 1001), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  let { Users_Email, Users_Password, Staff_Code, Staff_FirstName, Staff_LastName, Staff_Phone } = req.body || {};
+
+  if (!Users_Email || !Users_Password || !Staff_Code || !Staff_FirstName || !Staff_LastName) {
+    return res.status(400).json({
+      message: 'Please fill in all required fields for CSV import',
+      status: false
+    });
+  }
+
+  if (!Requester_Users_ID || typeof Requester_Users_ID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid token information.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  Users_Email = xss(Users_Email.trim());
+  if (!validator.isEmail(Users_Email)) {
+    return res.status(400).json({ message: 'Invalid email format.', status: false });
+  }
+
+  let Users_Username = Users_Email.split('@')[0];
+  Users_Username = xss(Users_Username.trim());
+
+  const usernameRegex = /^[a-zA-Z0-9.\-]+$/;
+  if (!usernameRegex.test(Users_Username) || Users_Username.length < 2 || Users_Username.length > 60) {
+    return res.status(400).json({
+      message: 'Email username part (before @) must be 2-60 characters and can contain letters, numbers, and dot (.) only.',
+      status: false
+    });
+  }
+
+  Users_Password = xss(Users_Password);
+  if (!validator.isStrongPassword(Users_Password, { minLength: 8, minNumbers: 1, minSymbols: 0, minUppercase: 0, minLowercase: 0 })) {
+    return res.status(400).json({ message: 'Password is not strong enough.', status: false });
+  }
+
+  Staff_Code = xss(Staff_Code.trim());
+  const StaffCodeRegex = /^\d{12}-\d{1}$/;
+  if (!StaffCodeRegex.test(Staff_Code)) {
+    return res.status(400).json({
+      message: 'Staff code must be in format: 12 digits followed by - and 1 digit (e.g., 026530461001-6)',
+      status: false
+    });
+  }
+
+  Staff_FirstName = xss(Staff_FirstName.trim());
+  Staff_LastName = xss(Staff_LastName.trim());
+  Staff_Phone = Staff_Phone ? xss(Staff_Phone.trim()) : null;
+
+  try {
+    const hashedPassword = await bcrypt.hash(Users_Password, saltRounds);
+
+    // Transaction
+    db.query('START TRANSACTION', async (err) => {
+      if (err) {
+        console.error('Transaction Start Error:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      const sqlUser = `INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES (?, ?, ?, 'staff')`;
+      db.query(sqlUser, [Users_Email, Users_Username, hashedPassword], (err, userResult) => {
+        if (err) {
+          db.query('ROLLBACK', () => { });
+          if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ message: 'Email or username already exists.', status: false });
+          }
+          console.error('Insert Users Error:', err);
+          return res.status(500).json({ message: 'Database error', status: false });
+        }
+
+        const Users_ID = userResult.insertId;
+        const sqlStaff = `INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Staff_Phone, Users_ID) 
+          VALUES (?, ?, ?, ?, ?)`;
+
+        db.query(sqlStaff, [Staff_Code, Staff_FirstName, Staff_LastName, Staff_Phone, Users_ID], (err, staffResult) => {
+          if (err) {
+            db.query('ROLLBACK', () => { });
+            if (err.code === 'ER_DUP_ENTRY') {
+              return res.status(409).json({ message: 'Staff code already exists.', status: false });
+            }
+            console.error('Insert Staff Error:', err);
+            return res.status(500).json({ message: 'Database error', status: false });
+          }
+
+          // Commit Transaction
+          db.query('COMMIT', (err) => {
+            if (err) {
+              db.query('ROLLBACK', () => { });
+              console.error('Commit Error:', err);
+              return res.status(500).json({ message: 'Database error', status: false });
+            }
+
+            res.status(201).json({
+              message: 'Staff imported successfully.',
+              status: true,
+              data: {
+                Users_ID: Users_ID,
+                Staff_ID: staffResult.insertId,
+                Staff_Code: Staff_Code,
+                Staff_FirstName: Staff_FirstName,
+                Staff_LastName: Staff_LastName,
+                Users_Email: Users_Email,
+                Users_Username: Users_Username
+              }
+            });
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Import Staff Error:', err);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
   }
 });
@@ -4306,6 +4690,97 @@ app.get('/api/admin/staff', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Websit
   } catch (err) {
     console.error('Get Staff Error:', err);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+// API Get Staff Detail by ID for Website Admin**
+app.get('/api/admin/staff/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const staffId = parseInt(req.params.id);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (!staffId || isNaN(staffId)) {
+    return res.status(400).json({ message: "Invalid staff ID provided.", status: false });
+  }
+
+  try {
+    const staffSql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
+      s.Staff_Phone, s.Staff_RegisTime, s.Staff_IsResign, s.Users_ID, 
+      u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive 
+      FROM staff s INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE s.Staff_ID = ?`;
+
+    db.query(staffSql, [staffId], (err, staffResults) => {
+      if (err) {
+        console.error('Get Staff Detail Error:', err);
+        return res.status(500).json({ message: 'Database error while fetching staff details.', status: false });
+      }
+
+      if (staffResults.length === 0) {
+        return res.status(404).json({ message: 'Staff not found.', status: false });
+      }
+
+      const staff = staffResults[0];
+      const otherPhonesSql = `SELECT OtherPhone_ID, OtherPhone_Name, OtherPhone_Phone FROM otherphone WHERE Users_ID = ? ORDER BY OtherPhone_ID ASC`;
+
+      db.query(otherPhonesSql, [staff.Users_ID], (err, phoneResults) => {
+        if (err) {
+          console.error('Get Other Phones Error:', err);
+          phoneResults = [];
+        }
+
+        const otherPhones = phoneResults.map(phone => ({
+          id: phone.OtherPhone_ID,
+          name: phone.OtherPhone_Name,
+          phone: phone.OtherPhone_Phone
+        }));
+
+        if (otherPhones.length === 0) {
+          otherPhones.push({ name: '', phone: '' });
+        }
+
+        const staffDetail = {
+          id: staff.Staff_ID,
+          email: staff.Users_Email,
+          username: staff.Users_Username,
+          userType: 'staff',
+          Users_ID: staff.Users_ID,
+          isActive: staff.Users_IsActive,
+          regisTime: staff.Users_RegisTime,
+          imageFile: staff.Users_ImageFile,
+          staff: {
+            code: staff.Staff_Code,
+            firstName: staff.Staff_FirstName,
+            lastName: staff.Staff_LastName,
+            phone: staff.Staff_Phone,
+            otherPhones: otherPhones,
+            isResigned: staff.Staff_IsResign,
+            regisTime: staff.Staff_RegisTime
+          }
+        };
+
+        res.status(200).json({
+          message: 'Staff details retrieved successfully.',
+          status: true,
+          data: staffDetail
+        });
+      });
+    });
+
+  } catch (err) {
+    console.error('Get Staff Detail Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching staff details.',
+      status: false
+    });
   }
 });
 
