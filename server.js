@@ -1043,7 +1043,6 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
 
-  // ตรวจสอบว่าเป็น staff เท่านั้น
   if (Users_Type !== 'staff') {
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
@@ -1053,7 +1052,6 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
   const DataEdit_IP_Address = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || null;
   const DataEdit_UserAgent = req.headers['user-agent'] || null;
 
-  // ดึง Staff_ID จาก Users_ID
   const usersID = userData.Users_ID;
 
   if (!DataEdit_ThisId || !DataEditType_ID || !usersID) {
@@ -1067,7 +1065,6 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
   }
 
   try {
-    // หา Staff_ID จาก Users_ID
     const getStaffSql = `SELECT Staff_ID FROM staff WHERE Users_ID = ?`;
     db.query(getStaffSql, [usersID], (err, staffResult) => {
       if (err) {
