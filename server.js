@@ -1038,7 +1038,7 @@ app.get('/api/timestamp/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_
 
 
 //////////////////////////////////Admin DataEdit API///////////////////////////////////////
-//API DataEdit Insert for Website**
+//API DataEdit Insert for Website
 app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
@@ -1048,13 +1048,10 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
   }
 
   const { DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, DataEditType_ID } = req.body || {};
-
   const DataEdit_IP_Address = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || null;
   const DataEdit_UserAgent = req.headers['user-agent'] || null;
-
   const usersID = userData.Users_ID;
 
-  // Validation
   if (!DataEdit_ThisId || !DataEdit_SourceTable || !DataEditType_ID || !usersID) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
   }
@@ -1068,7 +1065,6 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
     return res.status(400).json({ message: "DataEdit_Name must be a string.", status: false });
   }
 
-  // Validate allowed source tables
   const allowedSourceTables = ['Student', 'Teacher', 'Staff', 'Users', 'Activity'];
   if (!allowedSourceTables.includes(DataEdit_SourceTable)) {
     return res.status(400).json({
@@ -1091,10 +1087,8 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
 
       const staffID = staffResult[0].Staff_ID;
 
-      const sql = `
-        INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `;
+      const sql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, 
+        DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID) VALUES (?, ?, ?, ?, ?, ?, ?)`;
       db.query(sql, [DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, DataEdit_IP_Address, DataEdit_UserAgent, staffID, DataEditType_ID], (err, result) => {
         if (err) {
           console.error('Database error (dataedit)', err);
@@ -1113,7 +1107,7 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
   }
 });
 
-//API DataEdit Get All Data website admin**
+//API DataEdit Get All Data website admin
 app.get('/api/dataedit/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
@@ -1130,14 +1124,9 @@ app.get('/api/dataedit/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Webs
   try {
     const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
       de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
-      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
-      det.DataEditType_Name 
-      FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
-      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID
-      WHERE de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY 
-      ORDER BY de.DataEdit_RegisTime DESC`;
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, det.DataEditType_Name FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY ORDER BY de.DataEdit_RegisTime DESC`;
 
     db.query(sql, (err, result) => {
       if (err) {
@@ -1145,11 +1134,7 @@ app.get('/api/dataedit/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Webs
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
       if (result.length > 0) {
-        return res.status(200).json({
-          message: "Get data edits successfully.",
-          status: true,
-          data: result
-        });
+        return res.status(200).json({ message: "Get data edits successfully.", status: true, data: result });
       } else {
         return res.status(404).json({ message: 'No data edits found.', status: false });
       }
@@ -1160,7 +1145,7 @@ app.get('/api/dataedit/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Webs
   }
 });
 
-//API DataEdit Get by Staff_ID**
+//API DataEdit Get by Staff_ID
 app.get('/api/dataedit/get/staff/:Staff_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const Staff_ID = req.params.Staff_ID;
   const userData = req.user;
@@ -1187,14 +1172,9 @@ app.get('/api/dataedit/get/staff/:Staff_ID', RateLimiter(0.5 * 60 * 1000, 12), V
   try {
     const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
       de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
-      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
-      det.DataEditType_Name 
-      FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
-      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID
-      WHERE de.Staff_ID = ? 
-      ORDER BY de.DataEdit_RegisTime DESC`;
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, det.DataEditType_Name FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE de.Staff_ID = ? ORDER BY de.DataEdit_RegisTime DESC`;
 
     db.query(sql, [Staff_ID], (err, result) => {
       if (err) {
@@ -1202,11 +1182,7 @@ app.get('/api/dataedit/get/staff/:Staff_ID', RateLimiter(0.5 * 60 * 1000, 12), V
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
       if (result.length > 0) {
-        return res.status(200).json({
-          message: "Get data edits successfully.",
-          status: true,
-          data: result
-        });
+        return res.status(200).json({ message: "Get data edits successfully.", status: true, data: result });
       } else {
         return res.status(404).json({ message: 'No data edits found for this staff.', status: false });
       }
@@ -1217,7 +1193,7 @@ app.get('/api/dataedit/get/staff/:Staff_ID', RateLimiter(0.5 * 60 * 1000, 12), V
   }
 });
 
-//API DataEdit Get by DataEditType_ID**
+//API DataEdit Get by DataEditType_ID
 app.get('/api/dataedit/get/type/:DataEditType_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const DataEditType_ID = req.params.DataEditType_ID;
   const userData = req.user;
@@ -1239,14 +1215,9 @@ app.get('/api/dataedit/get/type/:DataEditType_ID', RateLimiter(0.5 * 60 * 1000, 
   try {
     const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
       de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
-      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
-      det.DataEditType_Name 
-      FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
-      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID
-      WHERE det.DataEditType_ID = ? 
-      ORDER BY de.DataEdit_RegisTime DESC`;
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, det.DataEditType_Name FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE det.DataEditType_ID = ? ORDER BY de.DataEdit_RegisTime DESC`;
 
     db.query(sql, [DataEditType_ID], (err, result) => {
       if (err) {
@@ -1254,11 +1225,7 @@ app.get('/api/dataedit/get/type/:DataEditType_ID', RateLimiter(0.5 * 60 * 1000, 
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
       if (result.length > 0) {
-        return res.status(200).json({
-          message: "Get data edits successfully.",
-          status: true,
-          data: result
-        });
+        return res.status(200).json({ message: "Get data edits successfully.", status: true, data: result });
       } else {
         return res.status(404).json({ message: 'No data edits found for this type.', status: false });
       }
@@ -1269,7 +1236,7 @@ app.get('/api/dataedit/get/type/:DataEditType_ID', RateLimiter(0.5 * 60 * 1000, 
   }
 });
 
-//API DataEdit Get by SourceTable**
+//API DataEdit Get by SourceTable
 app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const SourceTable = req.params.SourceTable;
   const userData = req.user;
@@ -1288,7 +1255,6 @@ app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12
     return res.status(400).json({ message: "Please provide SourceTable parameter.", status: false });
   }
 
-  // Validate allowed source tables
   const allowedSourceTables = ['Student', 'Teacher', 'Staff', 'Users', 'Activity'];
   if (!allowedSourceTables.includes(SourceTable)) {
     return res.status(400).json({
@@ -1300,14 +1266,9 @@ app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12
   try {
     const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
       de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
-      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
-      det.DataEditType_Name 
-      FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
-      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID
-      WHERE de.DataEdit_SourceTable = ? 
-      AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, det.DataEditType_Name FROM 
+      dataedit de INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE de.DataEdit_SourceTable = ? AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY
       ORDER BY de.DataEdit_RegisTime DESC`;
 
     db.query(sql, [SourceTable], (err, result) => {
@@ -1332,7 +1293,7 @@ app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12
   }
 });
 
-//API DataEdit Search **
+//API DataEdit Search
 app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
   res.set({
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -1354,7 +1315,6 @@ app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_W
 
   const { email, ip, staff_code, edit_type, source_table, date_from, date_to, limit = 100 } = req.query;
 
-  // Validate source_table if provided
   if (source_table) {
     const allowedSourceTables = ['Student', 'Teacher', 'Staff', 'Users', 'Activity'];
     if (!allowedSourceTables.includes(source_table)) {
@@ -1368,16 +1328,11 @@ app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_W
   try {
     let sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
       de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
-      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
-      det.DataEditType_Name 
-      FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
-      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID 
-      WHERE 1=1`;
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, det.DataEditType_Name FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE 1=1`;
 
     const params = [];
-
     if (email) {
       sql += ' AND u.Users_Email = ?';
       params.push(email);
@@ -1439,7 +1394,7 @@ app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_W
   }
 });
 
-//API Staff Search **
+//API Staff Search
 app.get('/api/staff/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
   res.set({
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -1470,26 +1425,17 @@ app.get('/api/staff/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Webs
     let searchParam;
 
     if (email) {
-      sql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
-        u.Users_ID, u.Users_Email, u.Users_Type 
-        FROM staff s 
-        INNER JOIN users u ON s.Users_ID = u.Users_ID 
-        WHERE u.Users_Email = ?`;
+      sql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_ID, 
+        u.Users_Email, u.Users_Type FROM staff s INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE u.Users_Email = ?`;
       searchParam = email;
     } else if (staff_code) {
       sql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
-        u.Users_ID, u.Users_Email, u.Users_Type 
-        FROM staff s 
-        INNER JOIN users u ON s.Users_ID = u.Users_ID 
-        WHERE s.Staff_Code = ?`;
+        u.Users_ID, u.Users_Email, u.Users_Type FROM staff s INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE s.Staff_Code = ?`;
       searchParam = staff_code;
     } else if (ip) {
       sql = `SELECT DISTINCT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
-        u.Users_ID, u.Users_Email, u.Users_Type 
-        FROM staff s 
-        INNER JOIN users u ON s.Users_ID = u.Users_ID 
-        INNER JOIN dataedit de ON s.Staff_ID = de.Staff_ID 
-        WHERE de.DataEdit_IP_Address = ?`;
+        u.Users_ID, u.Users_Email, u.Users_Type FROM staff s INNER JOIN users u ON s.Users_ID = u.Users_ID 
+        INNER JOIN dataedit de ON s.Staff_ID = de.Staff_ID WHERE de.DataEdit_IP_Address = ?`;
       searchParam = ip;
     }
 
@@ -1519,7 +1465,7 @@ app.get('/api/staff/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Webs
   }
 });
 
-//API Get DataEdit Statistics **
+//API Get DataEdit Statistics
 app.get('/api/dataedit/stats', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
@@ -1535,25 +1481,15 @@ app.get('/api/dataedit/stats', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_We
 
   try {
     const statsQueries = [
-      // Total data edits in last 90 days
       `SELECT COUNT(*) as total FROM dataedit WHERE DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY`,
-
-      // Count by source table
-      `SELECT DataEdit_SourceTable, COUNT(*) as count 
-       FROM dataedit 
+      `SELECT DataEdit_SourceTable, COUNT(*) as count FROM dataedit 
        WHERE DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY 
        GROUP BY DataEdit_SourceTable`,
-
-      // Count by edit type
-      `SELECT det.DataEditType_Name, COUNT(*) as count 
-       FROM dataedit de 
+      `SELECT det.DataEditType_Name, COUNT(*) as count FROM dataedit de 
        INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
        WHERE de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY 
        GROUP BY det.DataEditType_Name`,
-
-      // Unique staff count
-      `SELECT COUNT(DISTINCT Staff_ID) as uniqueStaff 
-       FROM dataedit 
+      `SELECT COUNT(DISTINCT Staff_ID) as uniqueStaff FROM dataedit 
        WHERE DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY`
     ];
 
@@ -3619,7 +3555,7 @@ app.get('/api/admin/users/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens_We
       }
 
       const user = userResults[0];
-      
+
       const userDetail = {
         id: user.Users_ID,
         email: user.Users_Email,
