@@ -2068,6 +2068,281 @@ paths:
                     example: false
       security: []
 
+  /api/dataedit/website/insert:
+    post:
+      summary: Insert a new DataEdit record (Staff only)
+      description: Create a new data edit entry for tracking modifications by staff on Students, Teachers, Staff, Users, or Activity tables.
+      tags:
+        - DataEdit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - DataEdit_ThisId
+                - DataEdit_SourceTable
+                - DataEditType_ID
+              properties:
+                DataEdit_ThisId:
+                  type: integer
+                  example: 101
+                DataEdit_Name:
+                  type: string
+                  example: "Update student profile"
+                DataEdit_SourceTable:
+                  type: string
+                  enum: [Student, Teacher, Staff, Users, Activity]
+                  example: "Student"
+                DataEditType_ID:
+                  type: integer
+                  example: 2
+      responses:
+        "200":
+          description: DataEdit inserted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: DataEdit inserted successfully.
+                  status:
+                    type: boolean
+                    example: true
+        "400":
+          description: Missing or invalid parameters
+        "403":
+          description: Permission denied
+        "404":
+          description: Staff not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/dataedit/get:
+    get:
+      summary: Get all DataEdit records (last 90 days) (Staff only)
+      description: Retrieve all DataEdit records created in the last 90 days with staff and type details.
+      tags:
+        - DataEdit
+      responses:
+        "200":
+          description: Data edits retrieved successfully
+        "403":
+          description: Permission denied
+        "404":
+          description: No data edits found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/dataedit/get/staff/{Staff_ID}:
+    get:
+      summary: Get DataEdit records by Staff ID
+      description: Retrieve all DataEdit records created by a specific staff member.
+      tags:
+        - DataEdit
+      parameters:
+        - name: Staff_ID
+          in: path
+          required: true
+          description: Staff ID
+          schema:
+            type: integer
+            example: 10
+      responses:
+        "200":
+          description: Data edits retrieved successfully
+        "400":
+          description: Invalid or missing Staff ID
+        "403":
+          description: Permission denied
+        "404":
+          description: No data edits found for this staff
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/dataedit/get/type/{DataEditType_ID}:
+    get:
+      summary: Get DataEdit records by Edit Type
+      description: Retrieve all DataEdit records for a specific edit type.
+      tags:
+        - DataEdit
+      parameters:
+        - name: DataEditType_ID
+          in: path
+          required: true
+          description: Data Edit Type ID
+          schema:
+            type: integer
+            example: 2
+      responses:
+        "200":
+          description: Data edits retrieved successfully
+        "400":
+          description: Invalid or missing DataEditType_ID
+        "403":
+          description: Permission denied
+        "404":
+          description: No data edits found for this type
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/dataedit/get/source/{SourceTable}:
+    get:
+      summary: Get DataEdit records by Source Table
+      description: Retrieve DataEdit records filtered by source table within the last 90 days.
+      tags:
+        - DataEdit
+      parameters:
+        - name: SourceTable
+          in: path
+          required: true
+          description: Source table name
+          schema:
+            type: string
+            enum: [Student, Teacher, Staff, Users, Activity]
+            example: "Teacher"
+      responses:
+        "200":
+          description: Data edits retrieved successfully
+        "400":
+          description: Invalid or missing SourceTable
+        "403":
+          description: Permission denied
+        "404":
+          description: No data edits found for this source table
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/dataedit/search:
+    get:
+      summary: Search DataEdit records (Staff only)
+      description: Search data edits with multiple filters such as email, IP, staff code, edit type, source table, and date range (limited to 90 days).
+      tags:
+        - DataEdit
+      parameters:
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "staff01@example.com"
+        - name: ip
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "192.168.1.10"
+        - name: staff_code
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "STF001"
+        - name: edit_type
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "Update"
+        - name: source_table
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Student, Teacher, Staff, Users, Activity]
+            example: "Users"
+        - name: date_from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: date_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2025-03-01"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 50
+      responses:
+        "200":
+          description: Search completed successfully
+        "400":
+          description: Invalid search parameters
+        "403":
+          description: Permission denied
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/staff/search:
+    get:
+      summary: Search staff by email, staff code, or IP address
+      description: Retrieve staff details by searching with email, staff code, or IP address.
+      tags:
+        - DataEdit
+      parameters:
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "staff01@example.com"
+        - name: staff_code
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "STF001"
+        - name: ip
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "192.168.1.10"
+      responses:
+        "200":
+          description: Staff found successfully
+        "400":
+          description: Missing search parameter
+        "403":
+          description: Permission denied
+        "404":
+          description: Staff not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /api/dataedit/stats:
+    get:
+      summary: Get DataEdit statistics (Staff only)
+      description: Retrieve statistics of DataEdit records in the last 90 days including totals, counts by source table, counts by edit type, and unique staff count.
+      tags:
+        - DataEdit
+      responses:
+        "200":
+          description: Statistics retrieved successfully
+        "403":
+          description: Permission denied
+        "500":
+          description: Internal server error
+      security: []
+
   /api/admin/data/get:
     get:
       summary: Get Admin Data by Verified Token of Website

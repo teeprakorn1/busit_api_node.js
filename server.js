@@ -1047,21 +1047,34 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
-  const { DataEdit_ThisId, DataEdit_Name, DataEditType_ID } = req.body || {};
+  const { DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, DataEditType_ID } = req.body || {};
 
   const DataEdit_IP_Address = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || null;
   const DataEdit_UserAgent = req.headers['user-agent'] || null;
 
   const usersID = userData.Users_ID;
 
-  if (!DataEdit_ThisId || !DataEditType_ID || !usersID) {
+  // Validation
+  if (!DataEdit_ThisId || !DataEdit_SourceTable || !DataEditType_ID || !usersID) {
     return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
   }
   if (typeof DataEdit_ThisId !== 'number' || typeof DataEditType_ID !== 'number' || typeof usersID !== 'number') {
     return res.status(400).json({ message: "DataEdit_ThisId, DataEditType_ID and Users_ID must be numbers.", status: false });
   }
+  if (typeof DataEdit_SourceTable !== 'string') {
+    return res.status(400).json({ message: "DataEdit_SourceTable must be a string.", status: false });
+  }
   if (DataEdit_Name && typeof DataEdit_Name !== 'string') {
     return res.status(400).json({ message: "DataEdit_Name must be a string.", status: false });
+  }
+
+  // Validate allowed source tables
+  const allowedSourceTables = ['Student', 'Teacher', 'Staff', 'Users', 'Activity'];
+  if (!allowedSourceTables.includes(DataEdit_SourceTable)) {
+    return res.status(400).json({
+      message: `Invalid DataEdit_SourceTable. Allowed values: ${allowedSourceTables.join(', ')}`,
+      status: false
+    });
   }
 
   try {
@@ -1071,7 +1084,7 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
         console.error('Database error (get staff)', err);
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
-      
+
       if (staffResult.length === 0) {
         return res.status(404).json({ message: 'Staff not found.', status: false });
       }
@@ -1079,10 +1092,10 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
       const staffID = staffResult[0].Staff_ID;
 
       const sql = `
-        INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
-      db.query(sql, [DataEdit_ThisId, DataEdit_Name, DataEdit_IP_Address, DataEdit_UserAgent, staffID, DataEditType_ID], (err, result) => {
+      db.query(sql, [DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, DataEdit_IP_Address, DataEdit_UserAgent, staffID, DataEditType_ID], (err, result) => {
         if (err) {
           console.error('Database error (dataedit)', err);
           return res.status(500).json({ message: 'An error occurred on the server.', status: false });
@@ -1116,7 +1129,7 @@ app.get('/api/dataedit/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Webs
 
   try {
     const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
-      de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
+      de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
       s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
       det.DataEditType_Name 
       FROM dataedit de 
@@ -1125,7 +1138,7 @@ app.get('/api/dataedit/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Webs
       INNER JOIN users u ON s.Users_ID = u.Users_ID
       WHERE de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY 
       ORDER BY de.DataEdit_RegisTime DESC`;
-      
+
     db.query(sql, (err, result) => {
       if (err) {
         console.error('Database error (dataedit)', err);
@@ -1141,6 +1154,431 @@ app.get('/api/dataedit/get', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Webs
         return res.status(404).json({ message: 'No data edits found.', status: false });
       }
     });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API DataEdit Get by Staff_ID**
+app.get('/api/dataedit/get/staff/:Staff_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
+  const Staff_ID = req.params.Staff_ID;
+  const userData = req.user;
+  const AdminID = userData.Users_ID;
+  const Login_Type = userData?.Login_Type;
+  const Users_Type = userData?.Users_Type;
+
+  if (!AdminID || typeof AdminID !== 'number') {
+    return res.status(400).json({ message: "Missing or invalid Parameter.", status: false });
+  }
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed for staff users.", status: false });
+  }
+
+  if (!Staff_ID) {
+    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  }
+
+  try {
+    const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
+      de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
+      det.DataEditType_Name 
+      FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID
+      WHERE de.Staff_ID = ? 
+      ORDER BY de.DataEdit_RegisTime DESC`;
+
+    db.query(sql, [Staff_ID], (err, result) => {
+      if (err) {
+        console.error('Database error (dataedit)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length > 0) {
+        return res.status(200).json({
+          message: "Get data edits successfully.",
+          status: true,
+          data: result
+        });
+      } else {
+        return res.status(404).json({ message: 'No data edits found for this staff.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API DataEdit Get by DataEditType_ID**
+app.get('/api/dataedit/get/type/:DataEditType_ID', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
+  const DataEditType_ID = req.params.DataEditType_ID;
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (!DataEditType_ID) {
+    return res.status(400).json({ message: "Please fill in the correct parameters as required.", status: false });
+  }
+
+  try {
+    const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
+      de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
+      det.DataEditType_Name 
+      FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID
+      WHERE det.DataEditType_ID = ? 
+      ORDER BY de.DataEdit_RegisTime DESC`;
+
+    db.query(sql, [DataEditType_ID], (err, result) => {
+      if (err) {
+        console.error('Database error (dataedit)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length > 0) {
+        return res.status(200).json({
+          message: "Get data edits successfully.",
+          status: true,
+          data: result
+        });
+      } else {
+        return res.status(404).json({ message: 'No data edits found for this type.', status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API DataEdit Get by SourceTable**
+app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
+  const SourceTable = req.params.SourceTable;
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (!SourceTable) {
+    return res.status(400).json({ message: "Please provide SourceTable parameter.", status: false });
+  }
+
+  // Validate allowed source tables
+  const allowedSourceTables = ['Student', 'Teacher', 'Staff', 'Users', 'Activity'];
+  if (!allowedSourceTables.includes(SourceTable)) {
+    return res.status(400).json({
+      message: `Invalid SourceTable. Allowed values: ${allowedSourceTables.join(', ')}`,
+      status: false
+    });
+  }
+
+  try {
+    const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
+      de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
+      det.DataEditType_Name 
+      FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID
+      WHERE de.DataEdit_SourceTable = ? 
+      AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY
+      ORDER BY de.DataEdit_RegisTime DESC`;
+
+    db.query(sql, [SourceTable], (err, result) => {
+      if (err) {
+        console.error('Database error (dataedit)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+      if (result.length > 0) {
+        return res.status(200).json({
+          message: `Get data edits for ${SourceTable} successfully.`,
+          status: true,
+          data: result,
+          sourceTable: SourceTable
+        });
+      } else {
+        return res.status(404).json({ message: `No data edits found for ${SourceTable}.`, status: false });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API DataEdit Search **
+app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const { email, ip, staff_code, edit_type, source_table, date_from, date_to, limit = 100 } = req.query;
+
+  // Validate source_table if provided
+  if (source_table) {
+    const allowedSourceTables = ['Student', 'Teacher', 'Staff', 'Users', 'Activity'];
+    if (!allowedSourceTables.includes(source_table)) {
+      return res.status(400).json({
+        message: `Invalid source_table. Allowed values: ${allowedSourceTables.join(', ')}`,
+        status: false
+      });
+    }
+  }
+
+  try {
+    let sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
+      de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
+      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, 
+      det.DataEditType_Name 
+      FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID 
+      WHERE 1=1`;
+
+    const params = [];
+
+    if (email) {
+      sql += ' AND u.Users_Email = ?';
+      params.push(email);
+    }
+
+    if (ip) {
+      sql += ' AND de.DataEdit_IP_Address = ?';
+      params.push(ip);
+    }
+
+    if (staff_code) {
+      sql += ' AND s.Staff_Code = ?';
+      params.push(staff_code);
+    }
+
+    if (edit_type) {
+      sql += ' AND det.DataEditType_Name = ?';
+      params.push(edit_type);
+    }
+
+    if (source_table) {
+      sql += ' AND de.DataEdit_SourceTable = ?';
+      params.push(source_table);
+    }
+
+    if (date_from) {
+      sql += ' AND DATE(de.DataEdit_RegisTime) >= ?';
+      params.push(date_from);
+    }
+
+    if (date_to) {
+      sql += ' AND DATE(de.DataEdit_RegisTime) <= ?';
+      params.push(date_to);
+    }
+
+    sql += ' AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY';
+    sql += ' ORDER BY de.DataEdit_RegisTime DESC LIMIT ?';
+    params.push(parseInt(limit));
+
+    db.query(sql, params, (err, result) => {
+      if (err) {
+        console.error('Database error (dataedit search)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      return res.status(200).json({
+        message: "Search completed successfully.",
+        status: true,
+        data: result,
+        total: result.length,
+        searchCriteria: {
+          email, ip, staff_code, edit_type, source_table, date_from, date_to, limit
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API Staff Search **
+app.get('/api/staff/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  const { email, staff_code, ip } = req.query;
+
+  if (!email && !staff_code && !ip) {
+    return res.status(400).json({ message: "Please provide either email, staff_code, or ip parameter.", status: false });
+  }
+
+  try {
+    let sql;
+    let searchParam;
+
+    if (email) {
+      sql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
+        u.Users_ID, u.Users_Email, u.Users_Type 
+        FROM staff s 
+        INNER JOIN users u ON s.Users_ID = u.Users_ID 
+        WHERE u.Users_Email = ?`;
+      searchParam = email;
+    } else if (staff_code) {
+      sql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
+        u.Users_ID, u.Users_Email, u.Users_Type 
+        FROM staff s 
+        INNER JOIN users u ON s.Users_ID = u.Users_ID 
+        WHERE s.Staff_Code = ?`;
+      searchParam = staff_code;
+    } else if (ip) {
+      sql = `SELECT DISTINCT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
+        u.Users_ID, u.Users_Email, u.Users_Type 
+        FROM staff s 
+        INNER JOIN users u ON s.Users_ID = u.Users_ID 
+        INNER JOIN dataedit de ON s.Staff_ID = de.Staff_ID 
+        WHERE de.DataEdit_IP_Address = ?`;
+      searchParam = ip;
+    }
+
+    db.query(sql, [searchParam], (err, result) => {
+      if (err) {
+        console.error('Database error (staff search)', err);
+        return res.status(500).json({ message: 'An error occurred on the server.', status: false });
+      }
+
+      if (result.length > 0) {
+        return res.status(200).json({
+          message: "Staff found successfully.",
+          status: true,
+          staff: result[0],
+          totalStaff: result.length
+        });
+      } else {
+        return res.status(404).json({
+          message: `No staff found for this ${email ? 'email' : staff_code ? 'staff code' : 'IP address'}.`,
+          status: false
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Catch error', error);
+    res.status(500).json({ message: 'An unexpected error occurred.', status: false });
+  }
+});
+
+//API Get DataEdit Statistics **
+app.get('/api/dataedit/stats', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  try {
+    const statsQueries = [
+      // Total data edits in last 90 days
+      `SELECT COUNT(*) as total FROM dataedit WHERE DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY`,
+
+      // Count by source table
+      `SELECT DataEdit_SourceTable, COUNT(*) as count 
+       FROM dataedit 
+       WHERE DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY 
+       GROUP BY DataEdit_SourceTable`,
+
+      // Count by edit type
+      `SELECT det.DataEditType_Name, COUNT(*) as count 
+       FROM dataedit de 
+       INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+       WHERE de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY 
+       GROUP BY det.DataEditType_Name`,
+
+      // Unique staff count
+      `SELECT COUNT(DISTINCT Staff_ID) as uniqueStaff 
+       FROM dataedit 
+       WHERE DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY`
+    ];
+
+    const promises = statsQueries.map(query => {
+      return new Promise((resolve, reject) => {
+        db.query(query, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+    });
+
+    const [totalResult, sourceTableResult, editTypeResult, uniqueStaffResult] = await Promise.all(promises);
+
+    return res.status(200).json({
+      message: "Statistics retrieved successfully.",
+      status: true,
+      stats: {
+        total: totalResult[0].total,
+        uniqueStaff: uniqueStaffResult[0].uniqueStaff,
+        bySourceTable: sourceTableResult,
+        byEditType: editTypeResult
+      }
+    });
+
   } catch (error) {
     console.error('Catch error', error);
     res.status(500).json({ message: 'An unexpected error occurred.', status: false });
@@ -3146,6 +3584,68 @@ app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 300), Ver
   }
 });
 
+// API Get User Detail by ID for Website Admin**
+app.get('/api/admin/users/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const userId = parseInt(req.params.id);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
+  }
+
+  if (Requester_Users_Type !== 'staff') {
+    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+  }
+
+  if (!userId || isNaN(userId)) {
+    return res.status(400).json({ message: "Invalid user ID provided.", status: false });
+  }
+
+  try {
+    const userSql = `SELECT u.Users_ID, u.Users_Email, u.Users_Username, u.Users_RegisTime, 
+      u.Users_ImageFile, u.Users_Type, u.Users_IsActive 
+      FROM users u WHERE u.Users_ID = ?`;
+
+    db.query(userSql, [userId], (err, userResults) => {
+      if (err) {
+        console.error('Get User Detail Error:', err);
+        return res.status(500).json({ message: 'Database error while fetching user details.', status: false });
+      }
+
+      if (userResults.length === 0) {
+        return res.status(404).json({ message: 'User not found.', status: false });
+      }
+
+      const user = userResults[0];
+      
+      const userDetail = {
+        id: user.Users_ID,
+        email: user.Users_Email,
+        username: user.Users_Username,
+        userType: user.Users_Type,
+        isActive: user.Users_IsActive,
+        regisTime: user.Users_RegisTime,
+        imageFile: user.Users_ImageFile
+      };
+
+      res.status(200).json({
+        message: 'User details retrieved successfully.',
+        status: true,
+        data: userDetail
+      });
+    });
+
+  } catch (err) {
+    console.error('Get User Detail Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching user details.',
+      status: false
+    });
+  }
+});
+
 // API Get All Teachers with Pagination, Filtering, and Search of Website Admin
 app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
@@ -3814,7 +4314,7 @@ app.put('/api/admin/students/:id/assignment', RateLimiter(1 * 60 * 1000, 50), Ve
   }
 });
 
-// API Update Teacher Status for Website Admin (Active/Inactive)
+// API Update Teacher Status for Website Admin (Active/Inactive)**
 app.patch('/api/admin/teachers/:id/status', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -3868,40 +4368,6 @@ app.patch('/api/admin/teachers/:id/status', RateLimiter(1 * 60 * 1000, 300), Ver
           return res.status(500).json({ message: 'Failed to update user status.', status: false });
         }
 
-        const logAction = () => {
-          const getEditTypeSql = `SELECT DataEditType_ID FROM dataedittype WHERE DataEditType_Name = 'dataedit_users_status_change' LIMIT 1`;
-          db.query(getEditTypeSql, [], (err, editTypeResults) => {
-            if (err || editTypeResults.length === 0) {
-              console.warn('Could not find DataEditType_ID for dataedit_users_status_change:', err);
-              return;
-            }
-
-            const dataEditTypeId = editTypeResults[0].DataEditType_ID;
-            const getStaffSql = `SELECT Staff_ID FROM staff WHERE Users_ID = ?`;
-            db.query(getStaffSql, [userData.Users_ID], (err, staffResults) => {
-              if (err || staffResults.length === 0) {
-                console.warn('Could not log action - staff not found:', err);
-                return;
-              }
-
-              const staffId = staffResults[0].Staff_ID;
-              const actionName = `${isActive ? 'Activated' : 'Deactivated'} teacher: ${teacher.Teacher_FirstName} ${teacher.Teacher_LastName}`;
-              const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
-                DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID) VALUES (?, ?, ?, ?, ?, ?)`;
-
-              db.query(logSql, [teacherId, actionName, req.ip || 'unknown', req.get('User-Agent') || 'unknown',
-                staffId, dataEditTypeId], (logErr) => {
-                  if (logErr) {
-                    console.warn('Action logging failed:', logErr);
-                  } else {
-                    console.log('Action logged successfully:', actionName);
-                  }
-                });
-            });
-          });
-        };
-
-        logAction();
         res.status(200).json({
           message: `Teacher status updated successfully to ${isActive ? 'active' : 'inactive'}.`,
           status: true,
@@ -4341,7 +4807,7 @@ app.put('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
   }
 });
 
-// API Update Student Status for Website Admin (Active/Inactive)
+// API Update Student Status for Website Admin (Active/Inactive)**
 app.patch('/api/admin/students/:id/status', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -4395,39 +4861,6 @@ app.patch('/api/admin/students/:id/status', RateLimiter(1 * 60 * 1000, 30), Veri
           return res.status(500).json({ message: 'Failed to update user status.', status: false });
         }
 
-        const logAction = () => {
-          const getEditTypeSql = `SELECT DataEditType_ID FROM dataedittype WHERE DataEditType_Name = 'User Status Change' LIMIT 1`;
-          db.query(getEditTypeSql, [], (err, editTypeResults) => {
-            if (err || editTypeResults.length === 0) {
-              console.warn('Could not find DataEditType_ID for dataedit_users_status_change:', err);
-              return;
-            }
-
-            const dataEditTypeId = editTypeResults[0].DataEditType_ID;
-            const getStaffSql = `SELECT Staff_ID FROM staff WHERE Users_ID = ?`;
-            db.query(getStaffSql, [userData.Users_ID], (err, staffResults) => {
-              if (err || staffResults.length === 0) {
-                console.warn('Could not log action - staff not found:', err);
-                return;
-              }
-
-              const staffId = staffResults[0].Staff_ID;
-              const actionName = `${isActive ? 'Activated' : 'Deactivated'} student: ${student.Student_FirstName} ${student.Student_LastName}`;
-              const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
-                DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID) VALUES (?, ?, ?, ?, ?, ?)`;
-
-              db.query(logSql, [studentId, actionName, req.ip || 'unknown', req.get('User-Agent') || 'unknown',
-                staffId, dataEditTypeId], (logErr) => {
-                  if (logErr) {
-                    console.warn('Action logging failed:', logErr);
-                  } else {
-                    console.log('Action logged successfully:', actionName);
-                  }
-                });
-            });
-          });
-        };
-        logAction();
         res.status(200).json({
           message: `Student status updated successfully to ${isActive ? 'active' : 'inactive'}.`,
           status: true,
@@ -4957,7 +5390,7 @@ app.put('/api/admin/staff/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_We
   }
 });
 
-// API Update Staff Status for Website Admin (Active/Inactive)
+// API Update Staff Status for Website Admin (Active/Inactive)**
 app.patch('/api/admin/staff/:id/status', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -5011,40 +5444,6 @@ app.patch('/api/admin/staff/:id/status', RateLimiter(1 * 60 * 1000, 300), Verify
           return res.status(500).json({ message: 'Failed to update user status.', status: false });
         }
 
-        const logAction = () => {
-          const getEditTypeSql = `SELECT DataEditType_ID FROM dataedittype WHERE DataEditType_Name = 'dataedit_users_status_change' LIMIT 1`;
-          db.query(getEditTypeSql, [], (err, editTypeResults) => {
-            if (err || editTypeResults.length === 0) {
-              console.warn('Could not find DataEditType_ID for dataedit_users_status_change:', err);
-              return;
-            }
-
-            const dataEditTypeId = editTypeResults[0].DataEditType_ID;
-            const getStaffSql = `SELECT Staff_ID FROM staff WHERE Users_ID = ?`;
-            db.query(getStaffSql, [userData.Users_ID], (err, staffResults) => {
-              if (err || staffResults.length === 0) {
-                console.warn('Could not log action - staff not found:', err);
-                return;
-              }
-
-              const requesterStaffId = staffResults[0].Staff_ID;
-              const actionName = `${isActive ? 'Activated' : 'Deactivated'} staff: ${staff.Staff_FirstName} ${staff.Staff_LastName}`;
-              const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
-                DataEdit_IP_Address, DataEdit_UserAgent, Staff_ID, DataEditType_ID) VALUES (?, ?, ?, ?, ?, ?)`;
-
-              db.query(logSql, [staffId, actionName, req.ip || 'unknown', req.get('User-Agent') || 'unknown',
-                requesterStaffId, dataEditTypeId], (logErr) => {
-                  if (logErr) {
-                    console.warn('Action logging failed:', logErr);
-                  } else {
-                    console.log('Action logged successfully:', actionName);
-                  }
-                });
-            });
-          });
-        };
-
-        logAction();
         res.status(200).json({
           message: `Staff status updated successfully to ${isActive ? 'active' : 'inactive'}.`,
           status: true,

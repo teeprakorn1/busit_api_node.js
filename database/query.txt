@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS DataEdit(
     DataEdit_ThisId INT(13) NOT NULL,
     DataEdit_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     DataEdit_Name VARCHAR(511),
+    DataEdit_SourceTable VARCHAR(63) NOT NULL,
     DataEdit_IP_Address VARCHAR(45),
     DataEdit_UserAgent VARCHAR(1023),
     Staff_ID INT(13) NOT NULL,
@@ -277,7 +278,16 @@ VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_application_request_otp'),('timestamp_application_resetpassword_otp'),
 ('timestamp_application_verify_otp'),('timestamp_website_add_student'),('timestamp_website_add_teacher'),
 ('timestamp_website_add_csv_student'),('timestamp_website_add_csv_teacher'),
-('timestamp_website_add_staff'),('timestamp_website_add_csv_staff');
+('timestamp_website_add_staff'),('timestamp_website_add_csv_staff'),
+('timestamp_student_status_change'),('timestamp_student_view'),
+('timestamp_student_edit'),('timestamp_student_export'),
+('timestamp_student_search'),('timestamp_student_filter'),
+('timestamp_teacher_status_change'),('timestamp_teacher_view'),
+('timestamp_teacher_edit'),('timestamp_teacher_export'),
+('timestamp_teacher_search'),('timestamp_teacher_filter'),
+('timestamp_staff_status_change'),('timestamp_staff_view'),
+('timestamp_staff_edit'),('timestamp_staff_export'),
+('timestamp_staff_search'),('timestamp_staff_filter');
 
 INSERT INTO dataedittype (DataEditType_Name) VALUES 
 ('dataedit_users_status_change'),('dataedit_student_data_update'),
