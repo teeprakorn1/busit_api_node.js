@@ -2328,6 +2328,913 @@ paths:
           description: Internal server error
       security: []
 
+  /api/images/certificate-files/{filename}:
+    get:
+      summary: Serve certificate image files
+      description: Retrieve a certificate image file by filename (only accessible by staff via website login).
+      tags:
+        - Images
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "certificate_001.png"
+      responses:
+        "200":
+          description: Certificate image file served successfully
+          content:
+            image/png: {}
+            image/jpeg: {}
+        "400":
+          description: Invalid filename or file type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid filename"
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (only staff with website login can access)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can access certificate files."
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: Certificate image not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Image not found"
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Internal server error"
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/admin/signatures:
+    get:
+      summary: Get all signatures
+      description: Retrieve all signature records (only accessible by staff via website login).
+      tags:
+        - Signatures
+      responses:
+        "200":
+          description: Signatures retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signatures retrieved successfully."
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Signature_ID:
+                          type: integer
+                          example: 1
+                        Signature_Name:
+                          type: string
+                          example: "Director's Signature"
+                        Signature_ImageFile:
+                          type: string
+                          example: "signature_123.png"
+                        Signature_RegisTime:
+                          type: string
+                          format: date-time
+                          example: "2025-09-29T12:34:56Z"
+        "403":
+          description: Permission denied (only staff with website login can access)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can access signatures."
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while fetching signatures."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+    post:
+      summary: Add a new signature
+      description: Upload a new signature with name and image file (only accessible by staff via website login).
+      tags:
+        - Signatures
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                signatureName:
+                  type: string
+                  example: "Principal's Signature"
+                signatureFile:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Signature added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "เพิ่มลายเซ็นสำเร็จ"
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Signature_ID:
+                        type: integer
+                        example: 10
+                      Signature_Name:
+                        type: string
+                        example: "Principal's Signature"
+                      Signature_ImageFile:
+                        type: string
+                        example: "signature_abc.png"
+        "400":
+          description: Invalid input or missing data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "กรุณาระบุชื่อลายเซ็น"
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (only staff can add signatures)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can add signatures."
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while adding signature."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/admin/signatures/{id}:
+    put:
+      summary: Update a signature
+      description: Update signature name and/or file by ID (only accessible by staff via website login).
+      tags:
+        - Signatures
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 5
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                signatureName:
+                  type: string
+                  example: "Updated Signature Name"
+                signatureFile:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Signature updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "แก้ไขลายเซ็นสำเร็จ"
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Signature_ID:
+                        type: integer
+                        example: 5
+                      Signature_Name:
+                        type: string
+                        example: "Updated Signature Name"
+                      Signature_ImageFile:
+                        type: string
+                        example: "signature_new.png"
+        "400":
+          description: Invalid input or ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid signature ID provided."
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (only staff can update signatures)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can update signatures."
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: Signature not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ไม่พบลายเซ็นที่ต้องการแก้ไข"
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while updating signature."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+    delete:
+      summary: Delete a signature
+      description: Delete a signature by ID (only accessible by staff via website login).
+      tags:
+        - Signatures
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 3
+      responses:
+        "200":
+          description: Signature deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ลบลายเซ็นสำเร็จ"
+                  status:
+                    type: boolean
+                    example: true
+        "400":
+          description: Invalid ID or signature is in use
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ไม่สามารถลบลายเซ็นนี้ได้ เนื่องจากมีแม่แบบที่ใช้งานอยู่"
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (only staff can delete signatures)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can delete signatures."
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: Signature not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ไม่พบลายเซ็นที่ต้องการลบ"
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while deleting signature."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/admin/templates:
+    get:
+      summary: Get all templates
+      description: Retrieve all templates with optional signature information (only accessible by staff via website login).
+      tags:
+        - Templates
+      responses:
+        "200":
+          description: Templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Templates retrieved successfully."
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Template_ID:
+                          type: integer
+                          example: 1
+                        Template_Name:
+                          type: string
+                          example: "Certificate Template 1"
+                        Template_ImageFile:
+                          type: string
+                          example: "template_123.png"
+                        Template_PositionX:
+                          type: integer
+                          example: 100
+                        Template_PositionY:
+                          type: integer
+                          example: 200
+                        Template_RegisTime:
+                          type: string
+                          format: date-time
+                          example: "2025-09-29T12:34:56Z"
+                        Signature_ID:
+                          type: integer
+                          example: 5
+                        Signature_Name:
+                          type: string
+                          example: "Director's Signature"
+                        Signature_ImageFile:
+                          type: string
+                          example: "signature_123.png"
+        "403":
+          description: Permission denied (only staff can access templates)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can access templates."
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while fetching templates."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+    post:
+      summary: Add a new template
+      description: Upload a new template with name, positions, and optional signature (only accessible by staff via website login).
+      tags:
+        - Templates
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                templateName:
+                  type: string
+                  example: "Certificate Template 1"
+                positionX:
+                  type: integer
+                  example: 100
+                positionY:
+                  type: integer
+                  example: 200
+                signatureId:
+                  type: integer
+                  example: 5
+                templateFile:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Template added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "เพิ่มแม่แบบสำเร็จ"
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Template_ID:
+                        type: integer
+                        example: 10
+                      Template_Name:
+                        type: string
+                        example: "Certificate Template 1"
+                      Template_ImageFile:
+                        type: string
+                        example: "template_abc.png"
+                      Template_PositionX:
+                        type: integer
+                        example: 100
+                      Template_PositionY:
+                        type: integer
+                        example: 200
+                      Signature_ID:
+                        type: integer
+                        example: 5
+        "400":
+          description: Invalid input or missing data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "กรุณาอัปโลดไฟล์แม่แบบ"
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (only staff can add templates)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can add templates."
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while adding template."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/admin/templates/{id}:
+    put:
+      summary: Update a template
+      description: Update template name, positions, signature, and/or file by ID (only accessible by staff via website login).
+      tags:
+        - Templates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 5
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                templateName:
+                  type: string
+                  example: "Updated Template Name"
+                positionX:
+                  type: integer
+                  example: 150
+                positionY:
+                  type: integer
+                  example: 250
+                signatureId:
+                  type: integer
+                  example: 7
+                templateFile:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Template updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "แก้ไขแม่แบบสำเร็จ"
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Template_ID:
+                        type: integer
+                        example: 5
+                      Template_Name:
+                        type: string
+                        example: "Updated Template Name"
+                      Template_ImageFile:
+                        type: string
+                        example: "template_new.png"
+                      Template_PositionX:
+                        type: integer
+                        example: 150
+                      Template_PositionY:
+                        type: integer
+                        example: 250
+                      Signature_ID:
+                        type: integer
+                        example: 7
+        "400":
+          description: Invalid input or ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid template ID provided."
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (only staff can update templates)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can update templates."
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ไม่พบแม่แบบที่ต้องการแก้ไข"
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while updating template."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+    delete:
+      summary: Delete a template
+      description: Delete a template by ID (only accessible by staff via website login).
+      tags:
+        - Templates
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 3
+      responses:
+        "200":
+          description: Template deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ลบแม่แบบสำเร็จ"
+                  status:
+                    type: boolean
+                    example: true
+        "400":
+          description: Invalid ID or template is in use
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ไม่สามารถลบแม่แบบนี้ได้ เนื่องจากมีกิจกรรมที่ใช้งานอยู่"
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (only staff can delete templates)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can delete templates."
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ไม่พบแม่แบบที่ต้องการลบ"
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while deleting template."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
+  /api/certificates/generate:
+    post:
+      summary: Generate a certificate
+      description: Generate a certificate for a user based on activity and template (only accessible by staff via website login).
+      tags:
+        - Certificates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                activityId:
+                  type: integer
+                  example: 12
+                userId:
+                  type: integer
+                  example: 34
+                templateId:
+                  type: integer
+                  example: 5
+      responses:
+        "201":
+          description: Certificate generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "สร้างเกียรติบัตรสำเร็จ"
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      Certificate_ID:
+                        type: integer
+                        example: 101
+                      Certificate_ImageFile:
+                        type: string
+                        example: "certificate_abc123.png"
+                      recipientName:
+                        type: string
+                        example: "สมชาย ใจดี"
+                      activityTitle:
+                        type: string
+                        example: "อบรมเทคนิคการสอน"
+                      endDate:
+                        type: string
+                        format: date-time
+                        example: "2025-09-30T15:00:00Z"
+        "400":
+          description: Invalid input or certificate already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "เกียรติบัตรนี้ถูกสร้างแล้ว"
+                  status:
+                    type: boolean
+                    example: false
+        "403":
+          description: Permission denied (only staff can generate certificates)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Permission denied. Only staff can generate certificates."
+                  status:
+                    type: boolean
+                    example: false
+        "404":
+          description: User or activity not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ไม่พบข้อมูลผู้ใช้หรือกิจกรรม"
+                  status:
+                    type: boolean
+                    example: false
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Database error while generating certificate."
+                  status:
+                    type: boolean
+                    example: false
+      security: []
+
   /api/dataedit/stats:
     get:
       summary: Get DataEdit statistics (Staff only)

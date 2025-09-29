@@ -40,6 +40,7 @@ const allowedOrigins = [
 
 const uploadDir = path.join(__dirname, 'images');
 const uploadDir_Profile = path.join(__dirname, 'images/users-profile-images');
+const uploadDir_Certificate = path.join(__dirname, 'images/certificate-files');
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
@@ -47,6 +48,10 @@ if (!fs.existsSync(uploadDir)) {
 
 if (!fs.existsSync(uploadDir_Profile)) {
   fs.mkdirSync(uploadDir_Profile, { recursive: true });
+}
+
+if (!fs.existsSync(uploadDir_Certificate)) {
+  fs.mkdirSync(uploadDir_Certificate, { recursive: true });
 }
 
 // Multer configuration
@@ -58,6 +63,18 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     if (!allowedTypes.includes(file.mimetype)) {
       return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง'), false);
+    }
+    cb(null, true);
+  }
+});
+
+const certificateUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง กรุณาอัปโลดไฟล์ JPG หรือ PNG'), false);
     }
     cb(null, true);
   }
@@ -91,7 +108,11 @@ app.use(requestLogger);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.use(
+
+const skipHelmetForImages = (req, res, next) => {
+  if (req.path.startsWith('/api/images/')) {
+    return next();
+  }
   helmet({
     contentSecurityPolicy: {
       useDefaults: true,
@@ -99,7 +120,7 @@ app.use(
         "default-src": ["'self'"],
         "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
         "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-        "img-src": ["'self'", "data:", "blob:"],
+        "img-src": ["'self'", "data:", "blob:", "http://localhost:3000"],
         "font-src": ["'self'", "https://fonts.gstatic.com"],
         "connect-src": [
           "'self'",
@@ -111,8 +132,10 @@ app.use(
       },
     },
     crossOriginEmbedderPolicy: false,
-  })
-);
+  })(req, res, next);
+};
+
+app.use(skipHelmetForImages);
 
 // CORS Configuration
 app.use(cors({
@@ -5626,6 +5649,55 @@ app.get('/api/images/profile-images/:filename', VerifyTokens, (req, res) => {
   }
 });
 
+// API get certificate image files
+app.get('/api/images/certificate-files/:filename', VerifyTokens_Website, (req, res) => {
+  try {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({ 
+        message: "Permission denied. This action is only allowed on the website.", 
+        status: false 
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({ 
+        message: "Permission denied. Only staff can access certificate files.", 
+        status: false 
+      });
+    }
+
+    const filename = path.basename(req.params.filename);
+    if (!filename.match(/^[a-zA-Z0-9._-]+$/)) {
+      return res.status(400).json({ message: 'Invalid filename', status: false });
+    }
+
+    const allowedExt = ['.jpg', '.jpeg', '.png'];
+    const ext = path.extname(filename).toLowerCase();
+    if (!allowedExt.includes(ext)) {
+      return res.status(400).json({ message: 'Invalid file type', status: false });
+    }
+
+    const filePath = path.join(uploadDir_Certificate, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        message: 'Image not found',
+        status: false
+      });
+    }
+
+    res.type(ext);
+    res.sendFile(filePath);
+
+  } catch (err) {
+    console.error('Error serving certificate image:', err);
+    res.status(500).json({ message: 'Internal server error', status: false });
+  }
+});
+
 //API Get Profile Image by Filename (Staff Only)
 app.get('/api/images/profile-images-admin/:filename', VerifyTokens_Website, (req, res) => {
   try {
@@ -5758,6 +5830,857 @@ app.post('/api/profile/upload/image', upload.single('Users_ImageFile'), RateLimi
   }
 });
 
+//////////////////////////////////Signature API///////////////////////////////////////
+//API Get all signatures
+app.get('/api/admin/signatures', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can access signatures.", 
+      status: false 
+    });
+  }
+
+  try {
+    const sql = `SELECT Signature_ID, Signature_Name, Signature_ImageFile, Signature_RegisTime 
+      FROM signature ORDER BY Signature_RegisTime DESC`;
+    
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Get Signatures Error:', err);
+        return res.status(500).json({ 
+          message: 'Database error while fetching signatures.', 
+          status: false 
+        });
+      }
+
+      res.status(200).json({
+        message: 'Signatures retrieved successfully.',
+        status: true,
+        data: results
+      });
+    });
+  } catch (err) {
+    console.error('Get Signatures Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching signatures.',
+      status: false
+    });
+  }
+});
+
+//API Add new signature**
+app.post('/api/admin/signatures', certificateUpload.single('signatureFile'), RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const { signatureName } = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can add signatures.", 
+      status: false 
+    });
+  }
+
+  if (!signatureName || signatureName.trim() === '') {
+    return res.status(400).json({ 
+      message: 'กรุณาระบุชื่อลายเซ็น', 
+      status: false 
+    });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ 
+      message: 'กรุณาอัปโลดไฟล์ลายเซ็น', 
+      status: false 
+    });
+  }
+
+  try {
+    const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+    if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
+      return res.status(400).json({ 
+        message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)', 
+        status: false 
+      });
+    }
+
+    const processedBuffer = await sharp(req.file.buffer)
+      .resize({ width: 800, height: 400, fit: 'inside' })
+      .png({ quality: 90 })
+      .toBuffer();
+
+    const filename = `signature_${uuidv4()}.png`;
+    const savePath = path.join(uploadDir_Certificate, filename);
+    fs.writeFileSync(savePath, processedBuffer);
+
+    const sql = `INSERT INTO signature (Signature_Name, Signature_ImageFile) VALUES (?, ?)`;
+    db.query(sql, [signatureName.trim(), filename], (err, result) => {
+      if (err) {
+        console.error('Add Signature Error:', err);
+        if (fs.existsSync(savePath)) {
+          fs.unlinkSync(savePath);
+        }
+        return res.status(500).json({ 
+          message: 'Database error while adding signature.', 
+          status: false 
+        });
+      }
+
+      res.status(201).json({
+        message: 'เพิ่มลายเซ็นสำเร็จ',
+        status: true,
+        data: {
+          Signature_ID: result.insertId,
+          Signature_Name: signatureName.trim(),
+          Signature_ImageFile: filename
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Add Signature Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while adding signature.',
+      status: false
+    });
+  }
+});
+
+//API Update signature**
+app.put('/api/admin/signatures/:id', certificateUpload.single('signatureFile'), RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const signatureId = parseInt(req.params.id);
+  const { signatureName } = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can update signatures.", 
+      status: false 
+    });
+  }
+
+  if (!signatureId || isNaN(signatureId)) {
+    return res.status(400).json({ 
+      message: "Invalid signature ID provided.", 
+      status: false 
+    });
+  }
+
+  if (!signatureName || signatureName.trim() === '') {
+    return res.status(400).json({ 
+      message: 'กรุณาระบุชื่อลายเซ็น', 
+      status: false 
+    });
+  }
+
+  try {
+    const getCurrentSql = `SELECT Signature_ImageFile FROM signature WHERE Signature_ID = ?`;
+    db.query(getCurrentSql, [signatureId], async (err, currentResult) => {
+      if (err) {
+        console.error('Get Current Signature Error:', err);
+        return res.status(500).json({ 
+          message: 'Database error while fetching current signature.', 
+          status: false 
+        });
+      }
+
+      if (currentResult.length === 0) {
+        return res.status(404).json({ 
+          message: 'ไม่พบลายเซ็นที่ต้องการแก้ไข', 
+          status: false 
+        });
+      }
+
+      let filename = currentResult[0].Signature_ImageFile;
+      let updateSql = `UPDATE signature SET Signature_Name = ? WHERE Signature_ID = ?`;
+      let updateParams = [signatureName.trim(), signatureId];
+
+      if (req.file) {
+        const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+        if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
+          return res.status(400).json({ 
+            message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)', 
+            status: false 
+          });
+        }
+
+        const processedBuffer = await sharp(req.file.buffer)
+          .resize({ width: 800, height: 400, fit: 'inside' })
+          .png({ quality: 90 })
+          .toBuffer();
+
+        const newFilename = `signature_${uuidv4()}.png`;
+        const savePath = path.join(uploadDir_Certificate, newFilename);
+        fs.writeFileSync(savePath, processedBuffer);
+
+        updateSql = `UPDATE signature SET Signature_Name = ?, Signature_ImageFile = ? WHERE Signature_ID = ?`;
+        updateParams = [signatureName.trim(), newFilename, signatureId];
+        filename = newFilename;
+      }
+
+      db.query(updateSql, updateParams, (err, result) => {
+        if (err) {
+          console.error('Update Signature Error:', err);
+          return res.status(500).json({ 
+            message: 'Database error while updating signature.', 
+            status: false 
+          });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ 
+            message: 'ไม่พบลายเซ็นที่ต้องการแก้ไข', 
+            status: false 
+          });
+        }
+
+        if (req.file && currentResult[0].Signature_ImageFile !== filename) {
+          const oldFilePath = path.join(uploadDir_Certificate, currentResult[0].Signature_ImageFile);
+          if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath);
+          }
+        }
+
+        res.status(200).json({
+          message: 'แก้ไขลายเซ็นสำเร็จ',
+          status: true,
+          data: {
+            Signature_ID: signatureId,
+            Signature_Name: signatureName.trim(),
+            Signature_ImageFile: filename
+          }
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Update Signature Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating signature.',
+      status: false
+    });
+  }
+});
+
+//API Delete signature**
+app.delete('/api/admin/signatures/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const signatureId = parseInt(req.params.id);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can delete signatures.", 
+      status: false 
+    });
+  }
+
+  if (!signatureId || isNaN(signatureId)) {
+    return res.status(400).json({ 
+      message: "Invalid signature ID provided.", 
+      status: false 
+    });
+  }
+
+  try {
+    const checkUsageSql = `SELECT COUNT(*) as count FROM template WHERE Signature_ID = ?`;
+    db.query(checkUsageSql, [signatureId], (err, usageResult) => {
+      if (err) {
+        console.error('Check Signature Usage Error:', err);
+        return res.status(500).json({ 
+          message: 'Database error while checking signature usage.', 
+          status: false 
+        });
+      }
+
+      if (usageResult[0].count > 0) {
+        return res.status(400).json({ 
+          message: 'ไม่สามารถลบลายเซ็นนี้ได้ เนื่องจากมีแม่แบบที่ใช้งานอยู่', 
+          status: false 
+        });
+      }
+
+      const getSql = `SELECT Signature_ImageFile FROM signature WHERE Signature_ID = ?`;
+      db.query(getSql, [signatureId], (err, result) => {
+        if (err) {
+          console.error('Get Signature Error:', err);
+          return res.status(500).json({ 
+            message: 'Database error while fetching signature.', 
+            status: false 
+          });
+        }
+
+        if (result.length === 0) {
+          return res.status(404).json({ 
+            message: 'ไม่พบลายเซ็นที่ต้องการลบ', 
+            status: false 
+          });
+        }
+
+        const imageFile = result[0].Signature_ImageFile;
+        const deleteSql = `DELETE FROM signature WHERE Signature_ID = ?`;
+        db.query(deleteSql, [signatureId], (err, deleteResult) => {
+          if (err) {
+            console.error('Delete Signature Error:', err);
+            return res.status(500).json({ 
+              message: 'Database error while deleting signature.', 
+              status: false 
+            });
+          }
+
+          if (deleteResult.affectedRows === 0) {
+            return res.status(404).json({ 
+              message: 'ไม่พบลายเซ็นที่ต้องการลบ', 
+              status: false 
+            });
+          }
+
+          const filePath = path.join(uploadDir_Certificate, imageFile);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+
+          res.status(200).json({
+            message: 'ลบลายเซ็นสำเร็จ',
+            status: true
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Delete Signature Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while deleting signature.',
+      status: false
+    });
+  }
+});
+
+//////////////////////////////////templates API///////////////////////////////////////
+//API Get all templates**
+app.get('/api/admin/templates', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can access templates.", 
+      status: false 
+    });
+  }
+
+  try {
+    const sql = `SELECT t.Template_ID, t.Template_Name, t.Template_ImageFile, t.Template_PositionX, 
+      t.Template_PositionY, t.Template_RegisTime, t.Signature_ID, s.Signature_Name, s.Signature_ImageFile 
+      FROM template t LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID ORDER BY t.Template_RegisTime DESC`;
+    
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Get Templates Error:', err);
+        return res.status(500).json({ 
+          message: 'Database error while fetching templates.', 
+          status: false 
+        });
+      }
+
+      res.status(200).json({
+        message: 'Templates retrieved successfully.',
+        status: true,
+        data: results
+      });
+    });
+  } catch (err) {
+    console.error('Get Templates Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching templates.',
+      status: false
+    });
+  }
+});
+
+//API Add new template**
+app.post('/api/admin/templates', certificateUpload.single('templateFile'), RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const { templateName, positionX, positionY, signatureId } = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can add templates.", 
+      status: false 
+    });
+  }
+
+  if (!templateName || templateName.trim() === '') {
+    return res.status(400).json({ 
+      message: 'กรุณาระบุชื่อแม่แบบ', 
+      status: false 
+    });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ 
+      message: 'กรุณาอัปโลดไฟล์แม่แบบ', 
+      status: false 
+    });
+  }
+
+  const parsedSignatureId = signatureId ? parseInt(signatureId) : null;
+  const parsedPositionX = positionX ? parseInt(positionX) : 0;
+  const parsedPositionY = positionY ? parseInt(positionY) : 0;
+
+  try {
+    const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+    if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
+      return res.status(400).json({ 
+        message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)', 
+        status: false 
+      });
+    }
+
+    const processedBuffer = await sharp(req.file.buffer)
+      .resize({ width: 1200, height: 800, fit: 'inside' })
+      .png({ quality: 90 })
+      .toBuffer();
+
+    const filename = `template_${uuidv4()}.png`;
+    const savePath = path.join(uploadDir_Certificate, filename);
+    fs.writeFileSync(savePath, processedBuffer);
+
+    const sql = `INSERT INTO template (Template_Name, Template_ImageFile, 
+      Template_PositionX, Template_PositionY, Signature_ID) VALUES (?, ?, ?, ?, ?)`;
+    
+    db.query(sql, [templateName.trim(), filename, parsedPositionX, parsedPositionY, parsedSignatureId], (err, result) => {
+      if (err) {
+        console.error('Add Template Error:', err);
+        if (fs.existsSync(savePath)) {
+          fs.unlinkSync(savePath);
+        }
+        return res.status(500).json({ 
+          message: 'Database error while adding template.', 
+          status: false 
+        });
+      }
+
+      res.status(201).json({
+        message: 'เพิ่มแม่แบบสำเร็จ',
+        status: true,
+        data: {
+          Template_ID: result.insertId,
+          Template_Name: templateName.trim(),
+          Template_ImageFile: filename,
+          Template_PositionX: parsedPositionX,
+          Template_PositionY: parsedPositionY,
+          Signature_ID: parsedSignatureId
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Add Template Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while adding template.',
+      status: false
+    });
+  }
+});
+
+//API Update template**
+app.put('/api/admin/templates/:id', certificateUpload.single('templateFile'), RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const templateId = parseInt(req.params.id);
+  const { templateName, positionX, positionY, signatureId } = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can update templates.", 
+      status: false 
+    });
+  }
+
+  if (!templateId || isNaN(templateId)) {
+    return res.status(400).json({ 
+      message: "Invalid template ID provided.", 
+      status: false 
+    });
+  }
+
+  if (!templateName || templateName.trim() === '') {
+    return res.status(400).json({ 
+      message: 'กรุณาระบุชื่อแม่แบบ', 
+      status: false 
+    });
+  }
+
+  const parsedSignatureId = signatureId ? parseInt(signatureId) : null;
+  const parsedPositionX = positionX ? parseInt(positionX) : 0;
+  const parsedPositionY = positionY ? parseInt(positionY) : 0;
+
+  try {
+    const getCurrentSql = `SELECT Template_ImageFile FROM template WHERE Template_ID = ?`;
+    db.query(getCurrentSql, [templateId], async (err, currentResult) => {
+      if (err) {
+        console.error('Get Current Template Error:', err);
+        return res.status(500).json({ 
+          message: 'Database error while fetching current template.', 
+          status: false 
+        });
+      }
+
+      if (currentResult.length === 0) {
+        return res.status(404).json({ 
+          message: 'ไม่พบแม่แบบที่ต้องการแก้ไข', 
+          status: false 
+        });
+      }
+
+      let filename = currentResult[0].Template_ImageFile;
+      let updateSql = `UPDATE template SET Template_Name = ?, Template_PositionX = ?, Template_PositionY = ?, Signature_ID = ? WHERE Template_ID = ?`;
+      let updateParams = [templateName.trim(), parsedPositionX, parsedPositionY, parsedSignatureId, templateId];
+
+      if (req.file) {
+        const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+        if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
+          return res.status(400).json({ 
+            message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)', 
+            status: false 
+          });
+        }
+
+        const processedBuffer = await sharp(req.file.buffer)
+          .resize({ width: 1200, height: 800, fit: 'inside' })
+          .png({ quality: 90 })
+          .toBuffer();
+
+        const newFilename = `template_${uuidv4()}.png`;
+        const savePath = path.join(uploadDir_Certificate, newFilename);
+        fs.writeFileSync(savePath, processedBuffer);
+
+        updateSql = `UPDATE template SET Template_Name = ?, Template_ImageFile = ?, Template_PositionX = ?, Template_PositionY = ?, Signature_ID = ? WHERE Template_ID = ?`;
+        updateParams = [templateName.trim(), newFilename, parsedPositionX, parsedPositionY, parsedSignatureId, templateId];
+        filename = newFilename;
+      }
+
+      db.query(updateSql, updateParams, (err, result) => {
+        if (err) {
+          console.error('Update Template Error:', err);
+          return res.status(500).json({ 
+            message: 'Database error while updating template.', 
+            status: false 
+          });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ 
+            message: 'ไม่พบแม่แบบที่ต้องการแก้ไข', 
+            status: false 
+          });
+        }
+
+        if (req.file && currentResult[0].Template_ImageFile !== filename) {
+          const oldFilePath = path.join(uploadDir_Certificate, currentResult[0].Template_ImageFile);
+          if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath);
+          }
+        }
+
+        res.status(200).json({
+          message: 'แก้ไขแม่แบบสำเร็จ',
+          status: true,
+          data: {
+            Template_ID: templateId,
+            Template_Name: templateName.trim(),
+            Template_ImageFile: filename,
+            Template_PositionX: parsedPositionX,
+            Template_PositionY: parsedPositionY,
+            Signature_ID: parsedSignatureId
+          }
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Update Template Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating template.',
+      status: false
+    });
+  }
+});
+
+//API Delete template
+app.delete('/api/admin/templates/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const templateId = parseInt(req.params.id);
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can delete templates.", 
+      status: false 
+    });
+  }
+
+  if (!templateId || isNaN(templateId)) {
+    return res.status(400).json({ 
+      message: "Invalid template ID provided.", 
+      status: false 
+    });
+  }
+
+  try {
+    const checkUsageSql = `SELECT COUNT(*) as count FROM activity WHERE Template_ID = ?`;
+    db.query(checkUsageSql, [templateId], (err, usageResult) => {
+      if (err) {
+        console.error('Check Template Usage Error:', err);
+        return res.status(500).json({ 
+          message: 'Database error while checking template usage.', 
+          status: false 
+        });
+      }
+
+      if (usageResult[0].count > 0) {
+        return res.status(400).json({ 
+          message: 'ไม่สามารถลบแม่แบบนี้ได้ เนื่องจากมีกิจกรรมที่ใช้งานอยู่', 
+          status: false 
+        });
+      }
+
+      const getSql = `SELECT Template_ImageFile FROM template WHERE Template_ID = ?`;
+      db.query(getSql, [templateId], (err, result) => {
+        if (err) {
+          console.error('Get Template Error:', err);
+          return res.status(500).json({ 
+            message: 'Database error while fetching template.', 
+            status: false 
+          });
+        }
+
+        if (result.length === 0) {
+          return res.status(404).json({ 
+            message: 'ไม่พบแม่แบบที่ต้องการลบ', 
+            status: false 
+          });
+        }
+
+        const imageFile = result[0].Template_ImageFile;
+        const deleteSql = `DELETE FROM template WHERE Template_ID = ?`;
+        db.query(deleteSql, [templateId], (err, deleteResult) => {
+          if (err) {
+            console.error('Delete Template Error:', err);
+            return res.status(500).json({ 
+              message: 'Database error while deleting template.', 
+              status: false 
+            });
+          }
+
+          if (deleteResult.affectedRows === 0) {
+            return res.status(404).json({ 
+              message: 'ไม่พบแม่แบบที่ต้องการลบ', 
+              status: false 
+            });
+          }
+
+          const filePath = path.join(uploadDir_Certificate, imageFile);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+
+          res.status(200).json({
+            message: 'ลบแม่แบบสำเร็จ',
+            status: true
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Delete Template Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while deleting template.',
+      status: false
+    });
+  }
+});
+
+////////////////////////////////Certificate API///////////////////////////////////////
+//API Generate certificate for user**
+app.post('/api/certificates/generate', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const { activityId, userId, templateId } = req.body;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({ 
+      message: "Permission denied. This action is only allowed on the website.", 
+      status: false 
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({ 
+      message: "Permission denied. Only staff can generate certificates.", 
+      status: false 
+    });
+  }
+
+  if (!activityId || !userId || !templateId) {
+    return res.status(400).json({ 
+      message: 'กรุณาระบุข้อมูลให้ครบถ้วน (activityId, userId, templateId)', 
+      status: false 
+    });
+  }
+
+  try {
+    const checkSql = `SELECT Certificate_ID FROM certificate WHERE Activity_ID = ? AND Users_ID = ?`;
+    db.query(checkSql, [activityId, userId], (err, existing) => {
+      if (err) {
+        console.error('Check Certificate Error:', err);
+        return res.status(500).json({ 
+          message: 'Database error while checking existing certificate.', 
+          status: false 
+        });
+      }
+
+      if (existing.length > 0) {
+        return res.status(400).json({ 
+          message: 'เกียรติบัตรนี้ถูกสร้างแล้ว', 
+          status: false 
+        });
+      }
+
+      const getUserActivitySql = `
+        SELECT u.Users_ID, s.Student_FirstName, s.Student_LastName, t.Teacher_FirstName, t.Teacher_LastName,
+               a.Activity_Title, a.Activity_EndTime
+        FROM users u 
+        LEFT JOIN student s ON u.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
+        JOIN activity a ON a.Activity_ID = ?
+        WHERE u.Users_ID = ?`;
+
+      db.query(getUserActivitySql, [activityId, userId], (err, userResult) => {
+        if (err) {
+          console.error('Get User Activity Error:', err);
+          return res.status(500).json({ 
+            message: 'Database error while fetching user data.', 
+            status: false 
+          });
+        }
+
+        if (userResult.length === 0) {
+          return res.status(404).json({ 
+            message: 'ไม่พบข้อมูลผู้ใช้หรือกิจกรรม', 
+            status: false 
+          });
+        }
+
+        const user = userResult[0];
+        const fullName = user.Student_FirstName 
+          ? `${user.Student_FirstName} ${user.Student_LastName}`
+          : `${user.Teacher_FirstName} ${user.Teacher_LastName}`;
+
+        const certificateFilename = `certificate_${uuidv4()}.png`;
+        const insertSql = `INSERT INTO certificate 
+          (Certificate_ImageFile, Activity_ID, Users_ID, Template_ID) VALUES (?, ?, ?, ?)`;
+        
+        db.query(insertSql, [certificateFilename, activityId, userId, templateId], (err, result) => {
+          if (err) {
+            console.error('Insert Certificate Error:', err);
+            return res.status(500).json({ 
+              message: 'Database error while creating certificate.', 
+              status: false 
+            });
+          }
+
+          res.status(201).json({
+            message: 'สร้างเกียรติบัตรสำเร็จ',
+            status: true,
+            data: {
+              Certificate_ID: result.insertId,
+              Certificate_ImageFile: certificateFilename,
+              recipientName: fullName,
+              activityTitle: user.Activity_Title,
+              endDate: user.Activity_EndTime
+            }
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Generate Certificate Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while generating certificate.',
+      status: false
+    });
+  }
+});
+
+////////////////////////////////Other Phone API///////////////////////////////////////
 //API add Other Phone Number
 app.post('/api/profile/otherphone/add', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, (req, res) => {
   const userData = req.user;

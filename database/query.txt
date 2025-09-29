@@ -123,23 +123,55 @@ CREATE TABLE IF NOT EXISTS ActivityStatus(
     ActivityStatus_Name VARCHAR(63) NOT NULL 
 );
 
-CREATE TABLE IF NOT EXISTS Activity(
-	Activity_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS Signature (
+    Signature_ID INT(13) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    Signature_Name VARCHAR(255) NOT NULL,
+    Signature_ImageFile VARCHAR(255) NOT NULL,
+    Signature_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS Template (
+    Template_ID INT(13) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    Template_Name VARCHAR(255) NOT NULL,
+    Template_ImageFile VARCHAR(255) NOT NULL,
+    Template_PositionX INT,
+    Template_PositionY INT,
+    Template_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Template_UpdateTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    Signature_ID INT(13) NOT NULL,
+    FOREIGN KEY (Signature_ID) REFERENCES Signature(Signature_ID)
+);
+
+CREATE TABLE IF NOT EXISTS Activity (
+    Activity_ID INT AUTO_INCREMENT PRIMARY KEY,
     Activity_Title VARCHAR(255) NOT NULL,
     Activity_Description VARCHAR(1023) NOT NULL,
     Activity_LocationGPS POINT,
     Activity_LocationDetail VARCHAR(255),
-    Activity_Total INT(13),
+    Activity_Total INT,
     Activity_StartTime DATETIME NOT NULL,
     Activity_EndTime DATETIME NOT NULL,
     Activity_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Activity_Certificate VARCHAR(255),
     Activity_ImageFile VARCHAR(255),
-    Activity_IsRequire BOOLEAN NOT NULL NOT NULL DEFAULT FALSE,
-    Staff_ID INT(13),
-    ActivityStatus_ID TINYINT(11),
-    FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID),
-    FOREIGN KEY (ActivityStatus_ID) REFERENCES ActivityStatus(ActivityStatus_ID)
+    Activity_IsRequire BOOLEAN NOT NULL DEFAULT FALSE,
+    Staff_ID INT,
+    ActivityStatus_ID TINYINT,
+    Template_ID INT,
+    FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (ActivityStatus_ID) REFERENCES ActivityStatus(ActivityStatus_ID) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (Template_ID) REFERENCES Template(Template_ID) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Certificate (
+    Certificate_ID INT(13) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    Certificate_ImageFile VARCHAR(255),
+    Certificate_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Activity_ID INT(13) NOT NULL,
+    Users_ID INT(13) NOT NULL,
+    Template_ID INT(13) NOT NULL,
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID),
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
+    FOREIGN KEY (Template_ID) REFERENCES Template(Template_ID)
 );
 
 CREATE TABLE IF NOT EXISTS ActivityDetail (
@@ -184,7 +216,7 @@ CREATE TABLE IF NOT EXISTS RegistrationPicture (
 
 CREATE TABLE IF NOT EXISTS UsersForgetPassword(
 	UsersForgetPassword_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
-    RegistrationPicture_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UsersForgetPassword_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Users_ID INT(13),
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
