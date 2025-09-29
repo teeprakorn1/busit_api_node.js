@@ -59,7 +59,7 @@ const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/pjpeg', 'ap
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     if (!allowedTypes.includes(file.mimetype)) {
       return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง'), false);
@@ -69,6 +69,18 @@ const upload = multer({
 });
 
 const certificateUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง กรุณาอัปโลดไฟล์ JPG หรือ PNG'), false);
+    }
+    cb(null, true);
+  }
+});
+
+const activityUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
@@ -5657,16 +5669,16 @@ app.get('/api/images/certificate-files/:filename', VerifyTokens_Website, (req, r
     const Login_Type = userData?.Login_Type;
 
     if (Login_Type !== 'website') {
-      return res.status(403).json({ 
-        message: "Permission denied. This action is only allowed on the website.", 
-        status: false 
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
       });
     }
 
     if (Users_Type !== 'staff') {
-      return res.status(403).json({ 
-        message: "Permission denied. Only staff can access certificate files.", 
-        status: false 
+      return res.status(403).json({
+        message: "Permission denied. Only staff can access certificate files.",
+        status: false
       });
     }
 
@@ -5831,36 +5843,36 @@ app.post('/api/profile/upload/image', upload.single('Users_ImageFile'), RateLimi
 });
 
 //////////////////////////////////Signature API///////////////////////////////////////
-//API Get all signatures
+//API Get all signatures**
 app.get('/api/admin/signatures', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, (req, res) => {
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can access signatures.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can access signatures.",
+      status: false
     });
   }
 
   try {
     const sql = `SELECT Signature_ID, Signature_Name, Signature_ImageFile, Signature_RegisTime 
       FROM signature ORDER BY Signature_RegisTime DESC`;
-    
+
     db.query(sql, (err, results) => {
       if (err) {
         console.error('Get Signatures Error:', err);
-        return res.status(500).json({ 
-          message: 'Database error while fetching signatures.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while fetching signatures.',
+          status: false
         });
       }
 
@@ -5887,39 +5899,39 @@ app.post('/api/admin/signatures', certificateUpload.single('signatureFile'), Rat
   const { signatureName } = req.body;
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can add signatures.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can add signatures.",
+      status: false
     });
   }
 
   if (!signatureName || signatureName.trim() === '') {
-    return res.status(400).json({ 
-      message: 'กรุณาระบุชื่อลายเซ็น', 
-      status: false 
+    return res.status(400).json({
+      message: 'กรุณาระบุชื่อลายเซ็น',
+      status: false
     });
   }
 
   if (!req.file) {
-    return res.status(400).json({ 
-      message: 'กรุณาอัปโลดไฟล์ลายเซ็น', 
-      status: false 
+    return res.status(400).json({
+      message: 'กรุณาอัปโลดไฟล์ลายเซ็น',
+      status: false
     });
   }
 
   try {
     const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
     if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
-      return res.status(400).json({ 
-        message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)', 
-        status: false 
+      return res.status(400).json({
+        message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
+        status: false
       });
     }
 
@@ -5939,9 +5951,9 @@ app.post('/api/admin/signatures', certificateUpload.single('signatureFile'), Rat
         if (fs.existsSync(savePath)) {
           fs.unlinkSync(savePath);
         }
-        return res.status(500).json({ 
-          message: 'Database error while adding signature.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while adding signature.',
+          status: false
         });
       }
 
@@ -5973,30 +5985,30 @@ app.put('/api/admin/signatures/:id', certificateUpload.single('signatureFile'), 
   const { signatureName } = req.body;
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can update signatures.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can update signatures.",
+      status: false
     });
   }
 
   if (!signatureId || isNaN(signatureId)) {
-    return res.status(400).json({ 
-      message: "Invalid signature ID provided.", 
-      status: false 
+    return res.status(400).json({
+      message: "Invalid signature ID provided.",
+      status: false
     });
   }
 
   if (!signatureName || signatureName.trim() === '') {
-    return res.status(400).json({ 
-      message: 'กรุณาระบุชื่อลายเซ็น', 
-      status: false 
+    return res.status(400).json({
+      message: 'กรุณาระบุชื่อลายเซ็น',
+      status: false
     });
   }
 
@@ -6005,16 +6017,16 @@ app.put('/api/admin/signatures/:id', certificateUpload.single('signatureFile'), 
     db.query(getCurrentSql, [signatureId], async (err, currentResult) => {
       if (err) {
         console.error('Get Current Signature Error:', err);
-        return res.status(500).json({ 
-          message: 'Database error while fetching current signature.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while fetching current signature.',
+          status: false
         });
       }
 
       if (currentResult.length === 0) {
-        return res.status(404).json({ 
-          message: 'ไม่พบลายเซ็นที่ต้องการแก้ไข', 
-          status: false 
+        return res.status(404).json({
+          message: 'ไม่พบลายเซ็นที่ต้องการแก้ไข',
+          status: false
         });
       }
 
@@ -6025,9 +6037,9 @@ app.put('/api/admin/signatures/:id', certificateUpload.single('signatureFile'), 
       if (req.file) {
         const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
         if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
-          return res.status(400).json({ 
-            message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)', 
-            status: false 
+          return res.status(400).json({
+            message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
+            status: false
           });
         }
 
@@ -6048,16 +6060,16 @@ app.put('/api/admin/signatures/:id', certificateUpload.single('signatureFile'), 
       db.query(updateSql, updateParams, (err, result) => {
         if (err) {
           console.error('Update Signature Error:', err);
-          return res.status(500).json({ 
-            message: 'Database error while updating signature.', 
-            status: false 
+          return res.status(500).json({
+            message: 'Database error while updating signature.',
+            status: false
           });
         }
 
         if (result.affectedRows === 0) {
-          return res.status(404).json({ 
-            message: 'ไม่พบลายเซ็นที่ต้องการแก้ไข', 
-            status: false 
+          return res.status(404).json({
+            message: 'ไม่พบลายเซ็นที่ต้องการแก้ไข',
+            status: false
           });
         }
 
@@ -6096,23 +6108,23 @@ app.delete('/api/admin/signatures/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTo
   const signatureId = parseInt(req.params.id);
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can delete signatures.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can delete signatures.",
+      status: false
     });
   }
 
   if (!signatureId || isNaN(signatureId)) {
-    return res.status(400).json({ 
-      message: "Invalid signature ID provided.", 
-      status: false 
+    return res.status(400).json({
+      message: "Invalid signature ID provided.",
+      status: false
     });
   }
 
@@ -6121,16 +6133,16 @@ app.delete('/api/admin/signatures/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTo
     db.query(checkUsageSql, [signatureId], (err, usageResult) => {
       if (err) {
         console.error('Check Signature Usage Error:', err);
-        return res.status(500).json({ 
-          message: 'Database error while checking signature usage.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while checking signature usage.',
+          status: false
         });
       }
 
       if (usageResult[0].count > 0) {
-        return res.status(400).json({ 
-          message: 'ไม่สามารถลบลายเซ็นนี้ได้ เนื่องจากมีแม่แบบที่ใช้งานอยู่', 
-          status: false 
+        return res.status(400).json({
+          message: 'ไม่สามารถลบลายเซ็นนี้ได้ เนื่องจากมีแม่แบบที่ใช้งานอยู่',
+          status: false
         });
       }
 
@@ -6138,16 +6150,16 @@ app.delete('/api/admin/signatures/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTo
       db.query(getSql, [signatureId], (err, result) => {
         if (err) {
           console.error('Get Signature Error:', err);
-          return res.status(500).json({ 
-            message: 'Database error while fetching signature.', 
-            status: false 
+          return res.status(500).json({
+            message: 'Database error while fetching signature.',
+            status: false
           });
         }
 
         if (result.length === 0) {
-          return res.status(404).json({ 
-            message: 'ไม่พบลายเซ็นที่ต้องการลบ', 
-            status: false 
+          return res.status(404).json({
+            message: 'ไม่พบลายเซ็นที่ต้องการลบ',
+            status: false
           });
         }
 
@@ -6156,16 +6168,16 @@ app.delete('/api/admin/signatures/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTo
         db.query(deleteSql, [signatureId], (err, deleteResult) => {
           if (err) {
             console.error('Delete Signature Error:', err);
-            return res.status(500).json({ 
-              message: 'Database error while deleting signature.', 
-              status: false 
+            return res.status(500).json({
+              message: 'Database error while deleting signature.',
+              status: false
             });
           }
 
           if (deleteResult.affectedRows === 0) {
-            return res.status(404).json({ 
-              message: 'ไม่พบลายเซ็นที่ต้องการลบ', 
-              status: false 
+            return res.status(404).json({
+              message: 'ไม่พบลายเซ็นที่ต้องการลบ',
+              status: false
             });
           }
 
@@ -6198,16 +6210,16 @@ app.get('/api/admin/templates', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_We
   const Login_Type = userData?.Login_Type;
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can access templates.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can access templates.",
+      status: false
     });
   }
 
@@ -6215,13 +6227,13 @@ app.get('/api/admin/templates', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_We
     const sql = `SELECT t.Template_ID, t.Template_Name, t.Template_ImageFile, t.Template_PositionX, 
       t.Template_PositionY, t.Template_RegisTime, t.Signature_ID, s.Signature_Name, s.Signature_ImageFile 
       FROM template t LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID ORDER BY t.Template_RegisTime DESC`;
-    
+
     db.query(sql, (err, results) => {
       if (err) {
         console.error('Get Templates Error:', err);
-        return res.status(500).json({ 
-          message: 'Database error while fetching templates.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while fetching templates.',
+          status: false
         });
       }
 
@@ -6248,30 +6260,30 @@ app.post('/api/admin/templates', certificateUpload.single('templateFile'), RateL
   const { templateName, positionX, positionY, signatureId } = req.body;
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can add templates.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can add templates.",
+      status: false
     });
   }
 
   if (!templateName || templateName.trim() === '') {
-    return res.status(400).json({ 
-      message: 'กรุณาระบุชื่อแม่แบบ', 
-      status: false 
+    return res.status(400).json({
+      message: 'กรุณาระบุชื่อแม่แบบ',
+      status: false
     });
   }
 
   if (!req.file) {
-    return res.status(400).json({ 
-      message: 'กรุณาอัปโลดไฟล์แม่แบบ', 
-      status: false 
+    return res.status(400).json({
+      message: 'กรุณาอัปโลดไฟล์แม่แบบ',
+      status: false
     });
   }
 
@@ -6282,9 +6294,9 @@ app.post('/api/admin/templates', certificateUpload.single('templateFile'), RateL
   try {
     const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
     if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
-      return res.status(400).json({ 
-        message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)', 
-        status: false 
+      return res.status(400).json({
+        message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
+        status: false
       });
     }
 
@@ -6299,16 +6311,16 @@ app.post('/api/admin/templates', certificateUpload.single('templateFile'), RateL
 
     const sql = `INSERT INTO template (Template_Name, Template_ImageFile, 
       Template_PositionX, Template_PositionY, Signature_ID) VALUES (?, ?, ?, ?, ?)`;
-    
+
     db.query(sql, [templateName.trim(), filename, parsedPositionX, parsedPositionY, parsedSignatureId], (err, result) => {
       if (err) {
         console.error('Add Template Error:', err);
         if (fs.existsSync(savePath)) {
           fs.unlinkSync(savePath);
         }
-        return res.status(500).json({ 
-          message: 'Database error while adding template.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while adding template.',
+          status: false
         });
       }
 
@@ -6343,30 +6355,30 @@ app.put('/api/admin/templates/:id', certificateUpload.single('templateFile'), Ra
   const { templateName, positionX, positionY, signatureId } = req.body;
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can update templates.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can update templates.",
+      status: false
     });
   }
 
   if (!templateId || isNaN(templateId)) {
-    return res.status(400).json({ 
-      message: "Invalid template ID provided.", 
-      status: false 
+    return res.status(400).json({
+      message: "Invalid template ID provided.",
+      status: false
     });
   }
 
   if (!templateName || templateName.trim() === '') {
-    return res.status(400).json({ 
-      message: 'กรุณาระบุชื่อแม่แบบ', 
-      status: false 
+    return res.status(400).json({
+      message: 'กรุณาระบุชื่อแม่แบบ',
+      status: false
     });
   }
 
@@ -6379,16 +6391,16 @@ app.put('/api/admin/templates/:id', certificateUpload.single('templateFile'), Ra
     db.query(getCurrentSql, [templateId], async (err, currentResult) => {
       if (err) {
         console.error('Get Current Template Error:', err);
-        return res.status(500).json({ 
-          message: 'Database error while fetching current template.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while fetching current template.',
+          status: false
         });
       }
 
       if (currentResult.length === 0) {
-        return res.status(404).json({ 
-          message: 'ไม่พบแม่แบบที่ต้องการแก้ไข', 
-          status: false 
+        return res.status(404).json({
+          message: 'ไม่พบแม่แบบที่ต้องการแก้ไข',
+          status: false
         });
       }
 
@@ -6399,9 +6411,9 @@ app.put('/api/admin/templates/:id', certificateUpload.single('templateFile'), Ra
       if (req.file) {
         const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
         if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
-          return res.status(400).json({ 
-            message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)', 
-            status: false 
+          return res.status(400).json({
+            message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
+            status: false
           });
         }
 
@@ -6422,16 +6434,16 @@ app.put('/api/admin/templates/:id', certificateUpload.single('templateFile'), Ra
       db.query(updateSql, updateParams, (err, result) => {
         if (err) {
           console.error('Update Template Error:', err);
-          return res.status(500).json({ 
-            message: 'Database error while updating template.', 
-            status: false 
+          return res.status(500).json({
+            message: 'Database error while updating template.',
+            status: false
           });
         }
 
         if (result.affectedRows === 0) {
-          return res.status(404).json({ 
-            message: 'ไม่พบแม่แบบที่ต้องการแก้ไข', 
-            status: false 
+          return res.status(404).json({
+            message: 'ไม่พบแม่แบบที่ต้องการแก้ไข',
+            status: false
           });
         }
 
@@ -6473,23 +6485,23 @@ app.delete('/api/admin/templates/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTok
   const templateId = parseInt(req.params.id);
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can delete templates.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can delete templates.",
+      status: false
     });
   }
 
   if (!templateId || isNaN(templateId)) {
-    return res.status(400).json({ 
-      message: "Invalid template ID provided.", 
-      status: false 
+    return res.status(400).json({
+      message: "Invalid template ID provided.",
+      status: false
     });
   }
 
@@ -6498,16 +6510,16 @@ app.delete('/api/admin/templates/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTok
     db.query(checkUsageSql, [templateId], (err, usageResult) => {
       if (err) {
         console.error('Check Template Usage Error:', err);
-        return res.status(500).json({ 
-          message: 'Database error while checking template usage.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while checking template usage.',
+          status: false
         });
       }
 
       if (usageResult[0].count > 0) {
-        return res.status(400).json({ 
-          message: 'ไม่สามารถลบแม่แบบนี้ได้ เนื่องจากมีกิจกรรมที่ใช้งานอยู่', 
-          status: false 
+        return res.status(400).json({
+          message: 'ไม่สามารถลบแม่แบบนี้ได้ เนื่องจากมีกิจกรรมที่ใช้งานอยู่',
+          status: false
         });
       }
 
@@ -6515,16 +6527,16 @@ app.delete('/api/admin/templates/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTok
       db.query(getSql, [templateId], (err, result) => {
         if (err) {
           console.error('Get Template Error:', err);
-          return res.status(500).json({ 
-            message: 'Database error while fetching template.', 
-            status: false 
+          return res.status(500).json({
+            message: 'Database error while fetching template.',
+            status: false
           });
         }
 
         if (result.length === 0) {
-          return res.status(404).json({ 
-            message: 'ไม่พบแม่แบบที่ต้องการลบ', 
-            status: false 
+          return res.status(404).json({
+            message: 'ไม่พบแม่แบบที่ต้องการลบ',
+            status: false
           });
         }
 
@@ -6533,16 +6545,16 @@ app.delete('/api/admin/templates/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTok
         db.query(deleteSql, [templateId], (err, deleteResult) => {
           if (err) {
             console.error('Delete Template Error:', err);
-            return res.status(500).json({ 
-              message: 'Database error while deleting template.', 
-              status: false 
+            return res.status(500).json({
+              message: 'Database error while deleting template.',
+              status: false
             });
           }
 
           if (deleteResult.affectedRows === 0) {
-            return res.status(404).json({ 
-              message: 'ไม่พบแม่แบบที่ต้องการลบ', 
-              status: false 
+            return res.status(404).json({
+              message: 'ไม่พบแม่แบบที่ต้องการลบ',
+              status: false
             });
           }
 
@@ -6576,23 +6588,23 @@ app.post('/api/certificates/generate', RateLimiter(1 * 60 * 1000, 10), VerifyTok
   const { activityId, userId, templateId } = req.body;
 
   if (Login_Type !== 'website') {
-    return res.status(403).json({ 
-      message: "Permission denied. This action is only allowed on the website.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
     });
   }
 
   if (Users_Type !== 'staff') {
-    return res.status(403).json({ 
-      message: "Permission denied. Only staff can generate certificates.", 
-      status: false 
+    return res.status(403).json({
+      message: "Permission denied. Only staff can generate certificates.",
+      status: false
     });
   }
 
   if (!activityId || !userId || !templateId) {
-    return res.status(400).json({ 
-      message: 'กรุณาระบุข้อมูลให้ครบถ้วน (activityId, userId, templateId)', 
-      status: false 
+    return res.status(400).json({
+      message: 'กรุณาระบุข้อมูลให้ครบถ้วน (activityId, userId, templateId)',
+      status: false
     });
   }
 
@@ -6601,16 +6613,16 @@ app.post('/api/certificates/generate', RateLimiter(1 * 60 * 1000, 10), VerifyTok
     db.query(checkSql, [activityId, userId], (err, existing) => {
       if (err) {
         console.error('Check Certificate Error:', err);
-        return res.status(500).json({ 
-          message: 'Database error while checking existing certificate.', 
-          status: false 
+        return res.status(500).json({
+          message: 'Database error while checking existing certificate.',
+          status: false
         });
       }
 
       if (existing.length > 0) {
-        return res.status(400).json({ 
-          message: 'เกียรติบัตรนี้ถูกสร้างแล้ว', 
-          status: false 
+        return res.status(400).json({
+          message: 'เกียรติบัตรนี้ถูกสร้างแล้ว',
+          status: false
         });
       }
 
@@ -6626,34 +6638,34 @@ app.post('/api/certificates/generate', RateLimiter(1 * 60 * 1000, 10), VerifyTok
       db.query(getUserActivitySql, [activityId, userId], (err, userResult) => {
         if (err) {
           console.error('Get User Activity Error:', err);
-          return res.status(500).json({ 
-            message: 'Database error while fetching user data.', 
-            status: false 
+          return res.status(500).json({
+            message: 'Database error while fetching user data.',
+            status: false
           });
         }
 
         if (userResult.length === 0) {
-          return res.status(404).json({ 
-            message: 'ไม่พบข้อมูลผู้ใช้หรือกิจกรรม', 
-            status: false 
+          return res.status(404).json({
+            message: 'ไม่พบข้อมูลผู้ใช้หรือกิจกรรม',
+            status: false
           });
         }
 
         const user = userResult[0];
-        const fullName = user.Student_FirstName 
+        const fullName = user.Student_FirstName
           ? `${user.Student_FirstName} ${user.Student_LastName}`
           : `${user.Teacher_FirstName} ${user.Teacher_LastName}`;
 
         const certificateFilename = `certificate_${uuidv4()}.png`;
         const insertSql = `INSERT INTO certificate 
           (Certificate_ImageFile, Activity_ID, Users_ID, Template_ID) VALUES (?, ?, ?, ?)`;
-        
+
         db.query(insertSql, [certificateFilename, activityId, userId, templateId], (err, result) => {
           if (err) {
             console.error('Insert Certificate Error:', err);
-            return res.status(500).json({ 
-              message: 'Database error while creating certificate.', 
-              status: false 
+            return res.status(500).json({
+              message: 'Database error while creating certificate.',
+              status: false
             });
           }
 
@@ -6679,6 +6691,586 @@ app.post('/api/certificates/generate', RateLimiter(1 * 60 * 1000, 10), VerifyTok
     });
   }
 });
+
+////////////////////////////////Activity API///////////////////////////////////////
+// API Get all activity types**
+app.get('/api/admin/activity-types', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff can access activity types.",
+      status: false
+    });
+  }
+
+  try {
+    const sql = `SELECT ActivityType_ID, ActivityType_Name, ActivityType_Description 
+      FROM activitytype ORDER BY ActivityType_Name`;
+
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Get Activity Types Error:', err);
+        return res.status(500).json({
+          message: 'Database error while fetching activity types.',
+          status: false
+        });
+      }
+
+      res.status(200).json({
+        message: 'Activity types retrieved successfully.',
+        status: true,
+        data: results
+      });
+    });
+  } catch (err) {
+    console.error('Get Activity Types Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching activity types.',
+      status: false
+    });
+  }
+});
+
+// API Get all activity statuses**
+app.get('/api/admin/activity-statuses', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff can access activity statuses.",
+      status: false
+    });
+  }
+
+  try {
+    const sql = `SELECT ActivityStatus_ID, ActivityStatus_Name, ActivityStatus_Description 
+      FROM activitystatus ORDER BY ActivityStatus_Name`;
+
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Get Activity Statuses Error:', err);
+        return res.status(500).json({
+          message: 'Database error while fetching activity statuses.',
+          status: false
+        });
+      }
+
+      res.status(200).json({
+        message: 'Activity statuses retrieved successfully.',
+        status: true,
+        data: results
+      });
+    });
+  } catch (err) {
+    console.error('Get Activity Statuses Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching activity statuses.',
+      status: false
+    });
+  }
+});
+
+// API Get all activities**
+app.get('/api/admin/activities', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff can access activities.",
+      status: false
+    });
+  }
+
+  try {
+    const sql = `
+      SELECT a.*, 
+        at.ActivityType_Name, 
+        ast.ActivityStatus_Name,
+        s.Staff_FirstName, s.Staff_LastName,
+        t.Template_Name
+      FROM activity a
+      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
+      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
+      LEFT JOIN staff s ON a.Staff_ID = s.Staff_ID
+      LEFT JOIN template t ON a.Template_ID = t.Template_ID
+      ORDER BY a.Activity_RegisTime DESC`;
+
+    db.query(sql, (err, results) => {
+      if (err) {
+        console.error('Get Activities Error:', err);
+        return res.status(500).json({
+          message: 'Database error while fetching activities.',
+          status: false
+        });
+      }
+
+      res.status(200).json({
+        message: 'Activities retrieved successfully.',
+        status: true,
+        data: results
+      });
+    });
+  } catch (err) {
+    console.error('Get Activities Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching activities.',
+      status: false
+    });
+  }
+});
+
+// API Create new activity**
+app.post('/api/admin/activities', activityUpload.single('activityImage'),
+  RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const Staff_ID = userData?.Staff_ID;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can create activities.",
+        status: false
+      });
+    }
+
+    let {
+      activityTitle,
+      activityDescription,
+      activityLocationDetail,
+      activityLocationGPS,
+      activityStartTime,
+      activityEndTime,
+      activityIsRequire,
+      activityTypeId,
+      activityStatusId,
+      templateId
+    } = req.body;
+
+    // Validate required fields
+    if (!activityTitle || !activityDescription || !activityStartTime || !activityEndTime) {
+      return res.status(400).json({
+        message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
+        status: false
+      });
+    }
+
+    try {
+      // Sanitize inputs
+      activityTitle = xss(activityTitle.trim());
+      activityDescription = xss(activityDescription.trim());
+      activityLocationDetail = activityLocationDetail ? xss(activityLocationDetail.trim()) : null;
+      activityIsRequire = activityIsRequire === 'true' || activityIsRequire === true;
+
+      // Parse dates
+      const startTime = new Date(activityStartTime);
+      const endTime = new Date(activityEndTime);
+
+      if (endTime <= startTime) {
+        return res.status(400).json({
+          message: 'เวลาสิ้นสุดกิจกรรมต้องมากกว่าเวลาเริ่มต้น',
+          status: false
+        });
+      }
+
+      // Handle GPS coordinates if provided
+      let gpsPoint = null;
+      if (activityLocationGPS) {
+        try {
+          const gpsData = JSON.parse(activityLocationGPS);
+          if (gpsData.lat && gpsData.lng) {
+            gpsPoint = `POINT(${gpsData.lng} ${gpsData.lat})`;
+          }
+        } catch (e) {
+          console.warn('Invalid GPS data:', e);
+        }
+      }
+
+      // Handle image upload
+      let imageFilename = null;
+      if (req.file) {
+        const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+        if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
+          return res.status(400).json({
+            message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
+            status: false
+          });
+        }
+
+        const processedBuffer = await sharp(req.file.buffer)
+          .resize({ width: 1200, height: 800, fit: 'inside' })
+          .jpeg({ quality: 85 })
+          .toBuffer();
+
+        imageFilename = `activity_${uuidv4()}.jpg`;
+        const savePath = path.join(uploadDir_Activity, imageFilename);
+        fs.writeFileSync(savePath, processedBuffer);
+      }
+
+      // Insert activity
+      const sql = `
+      INSERT INTO activity (
+        Activity_Title, 
+        Activity_Description, 
+        Activity_LocationDetail,
+        Activity_LocationGPS,
+        Activity_StartTime, 
+        Activity_EndTime,
+        Activity_ImageFile,
+        Activity_IsRequire,
+        Staff_ID,
+        ActivityType_ID,
+        ActivityStatus_ID,
+        Template_ID
+      ) VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+      const params = gpsPoint
+        ? [activityTitle, activityDescription, activityLocationDetail, gpsPoint,
+          startTime, endTime, imageFilename, activityIsRequire, Staff_ID,
+          activityTypeId || null, activityStatusId || null, templateId || null]
+        : [activityTitle, activityDescription, activityLocationDetail,
+          startTime, endTime, imageFilename, activityIsRequire, Staff_ID,
+          activityTypeId || null, activityStatusId || null, templateId || null];
+
+      db.query(sql, params, (err, result) => {
+        if (err) {
+          console.error('Create Activity Error:', err);
+          if (imageFilename) {
+            const filePath = path.join(uploadDir_Activity, imageFilename);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          }
+          return res.status(500).json({
+            message: 'Database error while creating activity.',
+            status: false
+          });
+        }
+
+        res.status(201).json({
+          message: 'สร้างกิจกรรมสำเร็จ',
+          status: true,
+          data: {
+            Activity_ID: result.insertId,
+            Activity_Title: activityTitle,
+            Activity_ImageFile: imageFilename
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error('Create Activity Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred while creating activity.',
+        status: false
+      });
+    }
+  });
+
+// API Update activity**
+app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
+  RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const activityId = parseInt(req.params.id);
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can update activities.",
+        status: false
+      });
+    }
+
+    if (!activityId || isNaN(activityId)) {
+      return res.status(400).json({
+        message: "Invalid activity ID provided.",
+        status: false
+      });
+    }
+
+    let {
+      activityTitle,
+      activityDescription,
+      activityLocationDetail,
+      activityStartTime,
+      activityEndTime,
+      activityIsRequire,
+      activityTypeId,
+      activityStatusId,
+      templateId
+    } = req.body;
+
+    if (!activityTitle || !activityDescription || !activityStartTime || !activityEndTime) {
+      return res.status(400).json({
+        message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
+        status: false
+      });
+    }
+
+    try {
+      // Get current activity
+      const getCurrentSql = `SELECT Activity_ImageFile FROM activity WHERE Activity_ID = ?`;
+      db.query(getCurrentSql, [activityId], async (err, currentResult) => {
+        if (err) {
+          console.error('Get Current Activity Error:', err);
+          return res.status(500).json({
+            message: 'Database error while fetching current activity.',
+            status: false
+          });
+        }
+
+        if (currentResult.length === 0) {
+          return res.status(404).json({
+            message: 'ไม่พบกิจกรรมที่ต้องการแก้ไข',
+            status: false
+          });
+        }
+
+        let imageFilename = currentResult[0].Activity_ImageFile;
+
+        // Handle new image upload
+        if (req.file) {
+          const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+          if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
+            return res.status(400).json({
+              message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
+              status: false
+            });
+          }
+
+          const processedBuffer = await sharp(req.file.buffer)
+            .resize({ width: 1200, height: 800, fit: 'inside' })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+
+          imageFilename = `activity_${uuidv4()}.jpg`;
+          const savePath = path.join(uploadDir_Activity, imageFilename);
+          fs.writeFileSync(savePath, processedBuffer);
+        }
+
+        // Sanitize inputs
+        activityTitle = xss(activityTitle.trim());
+        activityDescription = xss(activityDescription.trim());
+        activityLocationDetail = activityLocationDetail ? xss(activityLocationDetail.trim()) : null;
+        activityIsRequire = activityIsRequire === 'true' || activityIsRequire === true;
+
+        const startTime = new Date(activityStartTime);
+        const endTime = new Date(activityEndTime);
+
+        if (endTime <= startTime) {
+          return res.status(400).json({
+            message: 'เวลาสิ้นสุดกิจกรรมต้องมากกว่าเวลาเริ่มต้น',
+            status: false
+          });
+        }
+
+        // Update activity
+        const updateSql = `
+        UPDATE activity SET
+          Activity_Title = ?,
+          Activity_Description = ?,
+          Activity_LocationDetail = ?,
+          Activity_StartTime = ?,
+          Activity_EndTime = ?,
+          Activity_ImageFile = ?,
+          Activity_IsRequire = ?,
+          ActivityType_ID = ?,
+          ActivityStatus_ID = ?,
+          Template_ID = ?
+        WHERE Activity_ID = ?`;
+
+        db.query(updateSql, [
+          activityTitle, activityDescription, activityLocationDetail,
+          startTime, endTime, imageFilename, activityIsRequire,
+          activityTypeId || null, activityStatusId || null, templateId || null,
+          activityId
+        ], (err, result) => {
+          if (err) {
+            console.error('Update Activity Error:', err);
+            return res.status(500).json({
+              message: 'Database error while updating activity.',
+              status: false
+            });
+          }
+
+          // Delete old image if new one was uploaded
+          if (req.file && currentResult[0].Activity_ImageFile &&
+            currentResult[0].Activity_ImageFile !== imageFilename) {
+            const oldFilePath = path.join(uploadDir_Activity, currentResult[0].Activity_ImageFile);
+            if (fs.existsSync(oldFilePath)) {
+              fs.unlinkSync(oldFilePath);
+            }
+          }
+
+          res.status(200).json({
+            message: 'แก้ไขกิจกรรมสำเร็จ',
+            status: true,
+            data: {
+              Activity_ID: activityId,
+              Activity_Title: activityTitle
+            }
+          });
+        });
+      });
+
+    } catch (err) {
+      console.error('Update Activity Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred while updating activity.',
+        status: false
+      });
+    }
+  });
+
+// API Delete activity**
+app.delete('/api/admin/activities/:id', RateLimiter(1 * 60 * 1000, 30),
+  VerifyTokens_Website, (req, res) => {
+
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const activityId = parseInt(req.params.id);
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can delete activities.",
+        status: false
+      });
+    }
+
+    if (!activityId || isNaN(activityId)) {
+      return res.status(400).json({
+        message: "Invalid activity ID provided.",
+        status: false
+      });
+    }
+
+    try {
+      // Check if activity has registrations
+      const checkRegistrationsSql = `
+      SELECT COUNT(*) as count FROM registration WHERE Activity_ID = ?`;
+
+      db.query(checkRegistrationsSql, [activityId], (err, regResult) => {
+        if (err) {
+          console.error('Check Registrations Error:', err);
+          return res.status(500).json({
+            message: 'Database error while checking registrations.',
+            status: false
+          });
+        }
+
+        if (regResult[0].count > 0) {
+          return res.status(400).json({
+            message: 'ไม่สามารถลบกิจกรรมที่มีผู้ลงทะเบียนแล้วได้',
+            status: false
+          });
+        }
+
+        // Get activity image filename
+        const getSql = `SELECT Activity_ImageFile FROM activity WHERE Activity_ID = ?`;
+        db.query(getSql, [activityId], (err, result) => {
+          if (err) {
+            console.error('Get Activity Error:', err);
+            return res.status(500).json({
+              message: 'Database error while fetching activity.',
+              status: false
+            });
+          }
+
+          if (result.length === 0) {
+            return res.status(404).json({
+              message: 'ไม่พบกิจกรรมที่ต้องการลบ',
+              status: false
+            });
+          }
+
+          const imageFile = result[0].Activity_ImageFile;
+
+          // Delete activity
+          const deleteSql = `DELETE FROM activity WHERE Activity_ID = ?`;
+          db.query(deleteSql, [activityId], (err, deleteResult) => {
+            if (err) {
+              console.error('Delete Activity Error:', err);
+              return res.status(500).json({
+                message: 'Database error while deleting activity.',
+                status: false
+              });
+            }
+
+            // Delete image file if exists
+            if (imageFile) {
+              const filePath = path.join(uploadDir_Activity, imageFile);
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+              }
+            }
+
+            res.status(200).json({
+              message: 'ลบกิจกรรมสำเร็จ',
+              status: true
+            });
+          });
+        });
+      });
+
+    } catch (err) {
+      console.error('Delete Activity Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred while deleting activity.',
+        status: false
+      });
+    }
+  });
 
 ////////////////////////////////Other Phone API///////////////////////////////////////
 //API add Other Phone Number

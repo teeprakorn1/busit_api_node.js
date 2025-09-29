@@ -120,7 +120,14 @@ CREATE TABLE IF NOT EXISTS Timestamp(
 
 CREATE TABLE IF NOT EXISTS ActivityStatus(
 	ActivityStatus_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
-    ActivityStatus_Name VARCHAR(63) NOT NULL 
+    ActivityStatus_Name VARCHAR(63) NOT NULL,
+    ActivityStatus_Description VARCHAR(1023) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ActivityType(
+	ActivityType_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
+    ActivityType_Name VARCHAR(63) NOT NULL,
+    ActivityType_Description VARCHAR(1023) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Signature (
@@ -148,16 +155,18 @@ CREATE TABLE IF NOT EXISTS Activity (
     Activity_Description VARCHAR(1023) NOT NULL,
     Activity_LocationGPS POINT,
     Activity_LocationDetail VARCHAR(255),
-    Activity_Total INT,
     Activity_StartTime DATETIME NOT NULL,
     Activity_EndTime DATETIME NOT NULL,
     Activity_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Activity_UpdateTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     Activity_ImageFile VARCHAR(255),
     Activity_IsRequire BOOLEAN NOT NULL DEFAULT FALSE,
     Staff_ID INT,
+    ActivityType_ID TINYINT,
     ActivityStatus_ID TINYINT,
     Template_ID INT,
     FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (ActivityType_ID) REFERENCES ActivityType(ActivityType_ID) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (ActivityStatus_ID) REFERENCES ActivityStatus(ActivityStatus_ID) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (Template_ID) REFERENCES Template(Template_ID) ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -221,33 +230,6 @@ CREATE TABLE IF NOT EXISTS UsersForgetPassword(
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
 );
 
-CREATE TABLE IF NOT EXISTS Evaluation(
-	Evaluation_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
-    Evaluation_Title VARCHAR(255) NOT NULL,
-	Evaluation_Detail VARCHAR(1023) NOT NULL,
-    Activity_ID INT(13),
-    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID)
-);
-
-CREATE TABLE IF NOT EXISTS Question(
-	Question_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
-    Question_Titile VARCHAR(511) NOT NULL,
-    Question_Detail VARCHAR(1023) NOT NULL,
-    Evaluation_ID INT(13),
-    FOREIGN KEY (Evaluation_ID) REFERENCES Evaluation(Evaluation_ID)
-);
-
-CREATE TABLE IF NOT EXISTS QuestionDetail(
-	QuestionDetail_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
-    QuestionDetail_Rating INT(1) NOT NULL,
-    QuestionDetail_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    QuestionDetail_Suggestion VARCHAR(1023) NOT NULL,
-    Question_ID INT(13),
-    Users_ID INT(13),
-    FOREIGN KEY (Question_ID) REFERENCES Question(Question_ID),
-    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID)
-);
-
 CREATE TABLE IF NOT EXISTS Notification(
 	Notifications_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     Notification_Detail VARCHAR(511) NOT NULL,
@@ -259,33 +241,48 @@ CREATE TABLE IF NOT EXISTS Notification(
 );
 
 INSERT INTO faculty (Faculty_Name) 
-VALUES ('บริหารธุรกิจและเทคโนโลยีสารสนเทศ'),('ศิลปศาสตร์');
+VALUES ('บริหารธุรกิจและเทคโนโลยีสารสนเทศ');
+
+-- INSERT INTO faculty (Faculty_Name) 
+-- VALUES ('ศิลปศาสตร์');
 
 INSERT INTO department (Department_Name, Faculty_ID) VALUES
 ('วิทยาการคอมพิวเตอร์', 1),
 ('เทคโนโลยีสารสนเทศ', 1),
 ('การตลาด', 1),
-('การตลาด (2 ปี ต่อเนื่อง)', 1),
 ('การจัดการ', 1),
-('การจัดการ (2 ปี ต่อเนื่อง)', 1),
 ('เทคโนโลยีโลจิสติกส์และการจัดการระบบขนส่ง', 1),
 ('เศรษฐศาสตร์', 1),
 ('การโฆษณาและประชาสัมพันธ์', 1),
 ('ระบบสารสนเทศทางคอมพิวเตอร์-คอมพิวเตอร์ธุรกิจ', 1),
-('ระบบสารสนเทศทางคอมพิวเตอร์-คอมพิวเตอร์ธุรกิจ (2 ปี ต่อเนื่อง)', 1),
 ('การบัญชี', 1),
-('การบัญชี (2 ปี ต่อเนื่อง)', 1),
 ('เทคโนโลยีคอมพิวเตอร์', 1),
 ('มัลติมีเดีย', 1);
 
-INSERT INTO department (Department_Name, Faculty_ID) VALUES
-('ภาษาอังกฤษเพื่อการสื่อสารสากล', 2),
-('การท่องเที่ยวและการโรงแรม (แขนงการท่องเที่ยว)', 2),
-('การท่องเที่ยวและการโรงแรม (แขนงการโรงแรม)', 2),
-('การจัดการธุรกิจและเทคโนโลยีการกีฬา', 2),
-('คณิตศาสตร์และวิทยาศาสตร์', 2),
-('ภาษาไทย', 2),
-('ภาษาจีน', 2);
+-- INSERT INTO department (Department_Name, Faculty_ID) VALUES
+-- ('ภาษาอังกฤษเพื่อการสื่อสารสากล', 2),
+-- ('การจัดการธุรกิจและเทคโนโลยีการกีฬา', 2),
+-- ('คณิตศาสตร์และวิทยาศาสตร์', 2),
+-- ('ภาษาไทย', 2),
+-- ('ภาษาจีน', 2);
+
+INSERT INTO activitytype (ActivityType_Name, ActivityType_Description) VALUES
+('กิจกรรมวิชาการ', 'กิจกรรมที่เกี่ยวข้องกับการเรียนการสอน การอบรม และการพัฒนาความรู้ทางวิชาการ'),
+('กิจกรรมกีฬา', 'กิจกรรมด้านกีฬาและนันทนาการ เพื่อสุขภาพและความสามัคคี'),
+('กิจกรรมบำเพ็ญประโยชน์', 'กิจกรรมอาสาสมัครและบริการสังคม เพื่อสร้างจิตสำนึกที่ดี'),
+('กิจกรรมศิลปวัฒนธรรม', 'กิจกรรมด้านศิลปะ ดนตรี นาฏศิลป์ และวัฒนธรรมไทย'),
+('กิจกรรมทัศนศึกษา', 'กิจกรรมศึกษาดูงานนอกสถานที่ เพื่อเสริมสร้างประสบการณ์'),
+('กิจกรรมสัมมนา', 'กิจกรรมสัมมนาเชิงปฏิบัติการ การประชุม และการแลกเปลี่ยนเรียนรู้'),
+('กิจกรรมพัฒนาทักษะชีวิต', 'กิจกรรมเพื่อพัฒนาทักษะการดำรงชีวิตและการทำงานร่วมกับผู้อื่น'),
+('กิจกรรมพิเศษ', 'กิจกรรมอื่นๆ ที่ไม่จัดอยู่ในประเภทข้างต้น');
+
+INSERT INTO activitystatus (ActivityStatus_Name, ActivityStatus_Description) VALUES
+('เปิดรับสมัคร', 'กิจกรรมกำลังเปิดรับสมัครผู้เข้าร่วม'),
+('ปิดรับสมัคร', 'กิจกรรมปิดรับสมัครแล้ว กำลังรอวันจัดกิจกรรม'),
+('กำลังดำเนินการ', 'กิจกรรมกำลังดำเนินการอยู่'),
+('เสร็จสิ้น', 'กิจกรรมเสร็จสิ้นแล้ว'),
+('ยกเลิก', 'กิจกรรมถูกยกเลิก'),
+('เลื่อน', 'กิจกรรมถูกเลื่อนไปจัดในวันอื่น');
 
 INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
 ('teacher.admin@rmutto.ac.th', 'teacher.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
