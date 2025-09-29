@@ -319,7 +319,13 @@ VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_teacher_search'),('timestamp_teacher_filter'),
 ('timestamp_staff_status_change'),('timestamp_staff_view'),
 ('timestamp_staff_edit'),('timestamp_staff_export'),
-('timestamp_staff_search'),('timestamp_staff_filter');
+('timestamp_staff_search'),('timestamp_staff_filter'),
+('timestamp_certificate_template_add'),('timestamp_certificate_template_edit'),
+('timestamp_certificate_template_delete'),('timestamp_certificate_template_view'),
+('timestamp_certificate_template_search'),('timestamp_certificate_signature_add'),
+('timestamp_certificate_signature_edit'),('timestamp_certificate_signature_delete'),
+('timestamp_certificate_signature_view'),('timestamp_certificate_signature_search'),
+('timestamp_certificate_generate');
 
 INSERT INTO dataedittype (DataEditType_Name) VALUES 
 ('dataedit_users_status_change'),('dataedit_student_data_update'),
