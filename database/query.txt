@@ -184,9 +184,13 @@ CREATE TABLE IF NOT EXISTS Certificate (
 CREATE TABLE IF NOT EXISTS ActivityDetail (
     ActivityDetail_ID INT(13) NOT NULL,
     Department_ID INT(13) NOT NULL,
-    ActivityDetail_Total INT(13) NOT NULL,
-    PRIMARY KEY (ActivityDetail_ID, Department_ID)
-);
+    ActivityDetail_Total INT(13) NOT NULL DEFAULT 0,
+    PRIMARY KEY (ActivityDetail_ID, Department_ID),
+    CONSTRAINT fk_activitydetail_activity FOREIGN KEY (ActivityDetail_ID) REFERENCES Activity(Activity_ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_activitydetail_department FOREIGN KEY (Department_ID) REFERENCES Department(Department_ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_activity_id (ActivityDetail_ID), 
+    INDEX idx_department_id (Department_ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS RegistrationStatus(
 	RegistrationStatus_ID TINYINT(11) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,

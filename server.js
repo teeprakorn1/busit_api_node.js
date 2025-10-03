@@ -6882,7 +6882,8 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
       activityIsRequire,
       activityTypeId,
       activityStatusId,
-      templateId
+      templateId,
+      selectedDepartments
     } = req.body;
 
     // Validate required fields
@@ -6892,6 +6893,25 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         status: false
       });
     }
+
+    // Parse selectedDepartments if it's a string
+    if (typeof selectedDepartments === 'string') {
+      try {
+        selectedDepartments = JSON.parse(selectedDepartments);
+      } catch (e) {
+        selectedDepartments = [];
+      }
+    }
+
+    // Validate selectedDepartments
+    if (!Array.isArray(selectedDepartments) || selectedDepartments.length === 0) {
+      return res.status(400).json({
+        message: 'กรุณาเลือกอย่างน้อย 1 สาขาที่เข้าร่วมกิจกรรม',
+        status: false
+      });
+    }
+
+    let connection;
 
     try {
       // Sanitize inputs
@@ -6945,22 +6965,39 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         fs.writeFileSync(savePath, processedBuffer);
       }
 
-      const sql = `
-        INSERT INTO activity (
-        Activity_Title, 
-        Activity_Description, 
-        Activity_LocationDetail,
-        Activity_LocationGPS,
-        Activity_StartTime, 
-        Activity_EndTime,
-        Activity_ImageFile,
-        Activity_IsRequire,
-        ActivityType_ID,
-        ActivityStatus_ID,
-        Template_ID
-      ) VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, ?, ?, ?, ?, ?, ?, ?)`;
+      // Get connection from pool
+      connection = await new Promise((resolve, reject) => {
+        db.getConnection((err, conn) => {
+          if (err) reject(err);
+          else resolve(conn);
+        });
+      });
 
-      const params = gpsPoint
+      // Start transaction
+      await new Promise((resolve, reject) => {
+        connection.beginTransaction((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      // Insert activity
+      const activitySql = `
+        INSERT INTO activity (
+          Activity_Title, 
+          Activity_Description, 
+          Activity_LocationDetail,
+          Activity_LocationGPS,
+          Activity_StartTime, 
+          Activity_EndTime,
+          Activity_ImageFile,
+          Activity_IsRequire,
+          ActivityType_ID,
+          ActivityStatus_ID,
+          Template_ID
+        ) VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, ?, ?, ?, ?, ?, ?, ?)`;
+
+      const activityParams = gpsPoint
         ? [activityTitle, activityDescription, activityLocationDetail, gpsPoint,
           startTime, endTime, imageFilename, activityIsRequire,
           activityTypeId || null, activityStatusId || null, templateId || null]
@@ -6968,35 +7005,96 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
           startTime, endTime, imageFilename, activityIsRequire,
           activityTypeId || null, activityStatusId || null, templateId || null];
 
-      db.query(sql, params, (err, result) => {
-        if (err) {
-          console.error('Create Activity Error:', err);
-          if (imageFilename) {
-            const filePath = path.join(uploadDir_Activity, imageFilename);
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-          }
-          return res.status(500).json({
-            message: 'Database error while creating activity.',
-            status: false
-          });
-        }
-
-        res.status(201).json({
-          message: 'สร้างกิจกรรมสำเร็จ',
-          status: true,
-          data: {
-            Activity_ID: result.insertId,
-            Activity_Title: activityTitle,
-            Activity_ImageFile: imageFilename
-          }
+      const activityResult = await new Promise((resolve, reject) => {
+        connection.query(activitySql, activityParams, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
         });
+      });
+
+      const activityId = activityResult.insertId;
+
+      // Count students by department
+      const countSql = `
+        SELECT Department_ID, COUNT(*) as total 
+        FROM student 
+        WHERE Department_ID IN (?) AND Student_IsGraduated = FALSE
+        GROUP BY Department_ID`;
+
+      const countResults = await new Promise((resolve, reject) => {
+        connection.query(countSql, [selectedDepartments], (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      });
+
+      // Insert activity details for each department
+      if (countResults.length > 0) {
+        const detailValues = countResults.map(row =>
+          [activityId, row.Department_ID, row.total]
+        );
+
+        const detailSql = `
+          INSERT INTO activitydetail 
+          (ActivityDetail_ID, Department_ID, ActivityDetail_Total) 
+          VALUES ?`;
+
+        await new Promise((resolve, reject) => {
+          connection.query(detailSql, [detailValues], (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        });
+      }
+
+      // Commit transaction
+      await new Promise((resolve, reject) => {
+        connection.commit((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      // Release connection
+      connection.release();
+
+      res.status(201).json({
+        message: 'สร้างกิจกรรมสำเร็จ',
+        status: true,
+        data: {
+          Activity_ID: activityId,
+          Activity_Title: activityTitle,
+          Activity_ImageFile: imageFilename,
+          departments: countResults.length,
+          totalStudents: countResults.reduce((sum, row) => sum + row.total, 0)
+        }
       });
 
     } catch (err) {
       console.error('Create Activity Error:', err);
+
+      // Rollback if error
+      if (connection) {
+        await new Promise((resolve) => {
+          connection.rollback(() => {
+            connection.release();
+            resolve();
+          });
+        });
+      }
+
+      // Delete uploaded image if exists
+      if (req.file && imageFilename) {
+        const filePath = path.join(uploadDir_Activity, imageFilename);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+
       res.status(500).json({
         message: 'An unexpected error occurred while creating activity.',
-        status: false
+        status: false,
+        error: err.message
       });
     }
   });
@@ -7267,6 +7365,75 @@ app.delete('/api/admin/activities/:id', RateLimiter(1 * 60 * 1000, 30),
       console.error('Delete Activity Error:', err);
       res.status(500).json({
         message: 'An unexpected error occurred while deleting activity.',
+        status: false
+      });
+    }
+  });
+
+// API Get activity details with departments**
+app.get('/api/admin/activities/:id/departments',
+  RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, (req, res) => {
+
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const activityId = parseInt(req.params.id);
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can access this information.",
+        status: false
+      });
+    }
+
+    if (!activityId || isNaN(activityId)) {
+      return res.status(400).json({
+        message: "Invalid activity ID provided.",
+        status: false
+      });
+    }
+
+    try {
+      const sql = `
+      SELECT 
+        ad.ActivityDetail_ID,
+        ad.Department_ID,
+        ad.ActivityDetail_Total,
+        d.Department_Name,
+        f.Faculty_ID,
+        f.Faculty_Name
+      FROM activitydetail ad
+      INNER JOIN department d ON ad.Department_ID = d.Department_ID
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
+      WHERE ad.ActivityDetail_ID = ?
+      ORDER BY f.Faculty_Name, d.Department_Name`;
+
+      db.query(sql, [activityId], (err, results) => {
+        if (err) {
+          console.error('Get Activity Departments Error:', err);
+          return res.status(500).json({
+            message: 'Database error while fetching activity departments.',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'Activity departments retrieved successfully.',
+          status: true,
+          data: results
+        });
+      });
+    } catch (err) {
+      console.error('Get Activity Departments Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
         status: false
       });
     }
