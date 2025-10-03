@@ -6482,7 +6482,7 @@ app.put('/api/admin/templates/:id', certificateUpload.single('templateFile'), Ra
   }
 });
 
-//API Delete template
+//API Delete template**
 app.delete('/api/admin/templates/:id', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, (req, res) => {
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
@@ -6631,14 +6631,9 @@ app.post('/api/certificates/generate', RateLimiter(1 * 60 * 1000, 10), VerifyTok
         });
       }
 
-      const getUserActivitySql = `
-        SELECT u.Users_ID, s.Student_FirstName, s.Student_LastName, t.Teacher_FirstName, t.Teacher_LastName,
-               a.Activity_Title, a.Activity_EndTime
-        FROM users u 
-        LEFT JOIN student s ON u.Users_ID = s.Users_ID
-        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
-        JOIN activity a ON a.Activity_ID = ?
-        WHERE u.Users_ID = ?`;
+      const getUserActivitySql = `SELECT u.Users_ID, s.Student_FirstName, s.Student_LastName, t.Teacher_FirstName, t.Teacher_LastName, 
+        a.Activity_Title, a.Activity_EndTime FROM users u LEFT JOIN student s ON u.Users_ID = s.Users_ID LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
+        JOIN activity a ON a.Activity_ID = ? WHERE u.Users_ID = ?`;
 
       db.query(getUserActivitySql, [activityId, userId], (err, userResult) => {
         if (err) {
@@ -6662,8 +6657,7 @@ app.post('/api/certificates/generate', RateLimiter(1 * 60 * 1000, 10), VerifyTok
           : `${user.Teacher_FirstName} ${user.Teacher_LastName}`;
 
         const certificateFilename = `certificate_${uuidv4()}.png`;
-        const insertSql = `INSERT INTO certificate 
-          (Certificate_ImageFile, Activity_ID, Users_ID, Template_ID) VALUES (?, ?, ?, ?)`;
+        const insertSql = `INSERT INTO certificate (Certificate_ImageFile, Activity_ID, Users_ID, Template_ID) VALUES (?, ?, ?, ?)`;
 
         db.query(insertSql, [certificateFilename, activityId, userId, templateId], (err, result) => {
           if (err) {
@@ -6815,16 +6809,10 @@ app.get('/api/admin/activities', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_W
   }
 
   try {
-    const sql = `
-      SELECT a.*, 
-      at.ActivityType_Name, 
-      ast.ActivityStatus_Name,
-      t.Template_Name
-      FROM activity a
-      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
-      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-      LEFT JOIN template t ON a.Template_ID = t.Template_ID
-      ORDER BY a.Activity_RegisTime DESC`;
+    const sql = `SELECT a.* , at.ActivityType_Name, ast.ActivityStatus_Name, 
+      t.Template_Name FROM activity a LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
+      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN template t ON a.Template_ID 
+      = t.Template_ID ORDER BY a.Activity_RegisTime DESC`;
 
     db.query(sql, (err, results) => {
       if (err) {
@@ -6872,21 +6860,9 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
       });
     }
 
-    let {
-      activityTitle,
-      activityDescription,
-      activityLocationDetail,
-      activityLocationGPS,
-      activityStartTime,
-      activityEndTime,
-      activityIsRequire,
-      activityTypeId,
-      activityStatusId,
-      templateId,
-      selectedDepartments
-    } = req.body;
+    let { activityTitle, activityDescription, activityLocationDetail, activityLocationGPS, activityStartTime, 
+      activityEndTime, activityIsRequire, activityTypeId, activityStatusId, templateId, selectedDepartments } = req.body;
 
-    // Validate required fields
     if (!activityTitle || !activityDescription || !activityStartTime || !activityEndTime) {
       return res.status(400).json({
         message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
@@ -6894,7 +6870,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
       });
     }
 
-    // Parse selectedDepartments if it's a string
     if (typeof selectedDepartments === 'string') {
       try {
         selectedDepartments = JSON.parse(selectedDepartments);
@@ -6903,7 +6878,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
       }
     }
 
-    // Validate selectedDepartments
     if (!Array.isArray(selectedDepartments) || selectedDepartments.length === 0) {
       return res.status(400).json({
         message: 'กรุณาเลือกอย่างน้อย 1 สาขาที่เข้าร่วมกิจกรรม',
@@ -6912,15 +6886,12 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
     }
 
     let connection;
-
     try {
-      // Sanitize inputs
       activityTitle = xss(activityTitle.trim());
       activityDescription = xss(activityDescription.trim());
       activityLocationDetail = activityLocationDetail ? xss(activityLocationDetail.trim()) : null;
       activityIsRequire = activityIsRequire === 'true' || activityIsRequire === true;
 
-      // Parse dates
       const startTime = new Date(activityStartTime);
       const endTime = new Date(activityEndTime);
 
@@ -6931,7 +6902,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         });
       }
 
-      // Handle GPS coordinates if provided
       let gpsPoint = null;
       if (activityLocationGPS) {
         try {
@@ -6944,7 +6914,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         }
       }
 
-      // Handle image upload
       let imageFilename = null;
       if (req.file) {
         const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
@@ -6965,7 +6934,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         fs.writeFileSync(savePath, processedBuffer);
       }
 
-      // Get connection from pool
       connection = await new Promise((resolve, reject) => {
         db.getConnection((err, conn) => {
           if (err) reject(err);
@@ -6973,7 +6941,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         });
       });
 
-      // Start transaction
       await new Promise((resolve, reject) => {
         connection.beginTransaction((err) => {
           if (err) reject(err);
@@ -6981,21 +6948,10 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         });
       });
 
-      // Insert activity
-      const activitySql = `
-        INSERT INTO activity (
-          Activity_Title, 
-          Activity_Description, 
-          Activity_LocationDetail,
-          Activity_LocationGPS,
-          Activity_StartTime, 
-          Activity_EndTime,
-          Activity_ImageFile,
-          Activity_IsRequire,
-          ActivityType_ID,
-          ActivityStatus_ID,
-          Template_ID
-        ) VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, ?, ?, ?, ?, ?, ?, ?)`;
+      const activitySql = `INSERT INTO activity ( Activity_Title, Activity_Description, 
+        Activity_LocationDetail, Activity_LocationGPS, Activity_StartTime, Activity_EndTime, 
+        Activity_ImageFile, Activity_IsRequire, ActivityType_ID, ActivityStatus_ID,Template_ID) 
+        VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, ?, ?, ?, ?, ?, ?, ?)`;
 
       const activityParams = gpsPoint
         ? [activityTitle, activityDescription, activityLocationDetail, gpsPoint,
@@ -7013,13 +6969,8 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
       });
 
       const activityId = activityResult.insertId;
-
-      // Count students by department
-      const countSql = `
-        SELECT Department_ID, COUNT(*) as total 
-        FROM student 
-        WHERE Department_ID IN (?) AND Student_IsGraduated = FALSE
-        GROUP BY Department_ID`;
+      const countSql = `SELECT Department_ID, COUNT(*) as total FROM student 
+        WHERE Department_ID IN (?) AND Student_IsGraduated = FALSE GROUP BY Department_ID`;
 
       const countResults = await new Promise((resolve, reject) => {
         connection.query(countSql, [selectedDepartments], (err, results) => {
@@ -7028,17 +6979,12 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         });
       });
 
-      // Insert activity details for each department
       if (countResults.length > 0) {
         const detailValues = countResults.map(row =>
           [activityId, row.Department_ID, row.total]
         );
 
-        const detailSql = `
-          INSERT INTO activitydetail 
-          (ActivityDetail_ID, Department_ID, ActivityDetail_Total) 
-          VALUES ?`;
-
+        const detailSql = `INSERT INTO activitydetail (ActivityDetail_ID, Department_ID, ActivityDetail_Total) VALUES ?`;
         await new Promise((resolve, reject) => {
           connection.query(detailSql, [detailValues], (err, result) => {
             if (err) reject(err);
@@ -7055,9 +7001,7 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         });
       });
 
-      // Release connection
       connection.release();
-
       res.status(201).json({
         message: 'สร้างกิจกรรมสำเร็จ',
         status: true,
@@ -7072,8 +7016,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
 
     } catch (err) {
       console.error('Create Activity Error:', err);
-
-      // Rollback if error
       if (connection) {
         await new Promise((resolve) => {
           connection.rollback(() => {
@@ -7083,7 +7025,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         });
       }
 
-      // Delete uploaded image if exists
       if (req.file && imageFilename) {
         const filePath = path.join(uploadDir_Activity, imageFilename);
         if (fs.existsSync(filePath)) {
@@ -7129,17 +7070,8 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
       });
     }
 
-    let {
-      activityTitle,
-      activityDescription,
-      activityLocationDetail,
-      activityStartTime,
-      activityEndTime,
-      activityIsRequire,
-      activityTypeId,
-      activityStatusId,
-      templateId
-    } = req.body;
+    let { activityTitle, activityDescription, activityLocationDetail, activityStartTime, 
+      activityEndTime, activityIsRequire, activityTypeId, activityStatusId, templateId } = req.body;
 
     if (!activityTitle || !activityDescription || !activityStartTime || !activityEndTime) {
       return res.status(400).json({
@@ -7149,7 +7081,6 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
     }
 
     try {
-      // Get current activity
       const getCurrentSql = `SELECT Activity_ImageFile FROM activity WHERE Activity_ID = ?`;
       db.query(getCurrentSql, [activityId], async (err, currentResult) => {
         if (err) {
@@ -7168,8 +7099,6 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
         }
 
         let imageFilename = currentResult[0].Activity_ImageFile;
-
-        // Handle new image upload
         if (req.file) {
           const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
           if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
@@ -7189,7 +7118,6 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
           fs.writeFileSync(savePath, processedBuffer);
         }
 
-        // Sanitize inputs
         activityTitle = xss(activityTitle.trim());
         activityDescription = xss(activityDescription.trim());
         activityLocationDetail = activityLocationDetail ? xss(activityLocationDetail.trim()) : null;
@@ -7205,20 +7133,9 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
           });
         }
 
-        // Update activity
-        const updateSql = `
-        UPDATE activity SET
-          Activity_Title = ?,
-          Activity_Description = ?,
-          Activity_LocationDetail = ?,
-          Activity_StartTime = ?,
-          Activity_EndTime = ?,
-          Activity_ImageFile = ?,
-          Activity_IsRequire = ?,
-          ActivityType_ID = ?,
-          ActivityStatus_ID = ?,
-          Template_ID = ?
-        WHERE Activity_ID = ?`;
+        const updateSql = `UPDATE activity SET Activity_Title = ?, Activity_Description = ?, 
+        Activity_LocationDetail = ?, Activity_StartTime = ?, Activity_EndTime = ?, Activity_ImageFile = ?, 
+        Activity_IsRequire = ?, ActivityType_ID = ?, ActivityStatus_ID = ?, Template_ID = ? WHERE Activity_ID = ?`;
 
         db.query(updateSql, [
           activityTitle, activityDescription, activityLocationDetail,
@@ -7234,7 +7151,6 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
             });
           }
 
-          // Delete old image if new one was uploaded
           if (req.file && currentResult[0].Activity_ImageFile &&
             currentResult[0].Activity_ImageFile !== imageFilename) {
             const oldFilePath = path.join(uploadDir_Activity, currentResult[0].Activity_ImageFile);
@@ -7294,7 +7210,6 @@ app.delete('/api/admin/activities/:id', RateLimiter(1 * 60 * 1000, 30),
     }
 
     try {
-      // Check if activity has registrations
       const checkRegistrationsSql = `
       SELECT COUNT(*) as count FROM registration WHERE Activity_ID = ?`;
 
@@ -7314,7 +7229,6 @@ app.delete('/api/admin/activities/:id', RateLimiter(1 * 60 * 1000, 30),
           });
         }
 
-        // Get activity image filename
         const getSql = `SELECT Activity_ImageFile FROM activity WHERE Activity_ID = ?`;
         db.query(getSql, [activityId], (err, result) => {
           if (err) {
@@ -7333,8 +7247,6 @@ app.delete('/api/admin/activities/:id', RateLimiter(1 * 60 * 1000, 30),
           }
 
           const imageFile = result[0].Activity_ImageFile;
-
-          // Delete activity
           const deleteSql = `DELETE FROM activity WHERE Activity_ID = ?`;
           db.query(deleteSql, [activityId], (err, deleteResult) => {
             if (err) {
@@ -7345,7 +7257,6 @@ app.delete('/api/admin/activities/:id', RateLimiter(1 * 60 * 1000, 30),
               });
             }
 
-            // Delete image file if exists
             if (imageFile) {
               const filePath = path.join(uploadDir_Activity, imageFile);
               if (fs.existsSync(filePath)) {
@@ -7401,19 +7312,9 @@ app.get('/api/admin/activities/:id/departments',
     }
 
     try {
-      const sql = `
-      SELECT 
-        ad.ActivityDetail_ID,
-        ad.Department_ID,
-        ad.ActivityDetail_Total,
-        d.Department_Name,
-        f.Faculty_ID,
-        f.Faculty_Name
-      FROM activitydetail ad
-      INNER JOIN department d ON ad.Department_ID = d.Department_ID
-      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
-      WHERE ad.ActivityDetail_ID = ?
-      ORDER BY f.Faculty_Name, d.Department_Name`;
+      const sql = `SELECT ad.ActivityDetail_ID, ad.Department_ID, ad.ActivityDetail_Total, d.Department_Name,
+        f.Faculty_ID, f.Faculty_Name FROM activitydetail ad INNER JOIN department d ON ad.Department_ID = d.Department_ID
+        INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID WHERE ad.ActivityDetail_ID = ? ORDER BY f.Faculty_Name, d.Department_Name`;
 
       db.query(sql, [activityId], (err, results) => {
         if (err) {
@@ -7432,6 +7333,275 @@ app.get('/api/admin/activities/:id/departments',
       });
     } catch (err) {
       console.error('Get Activity Departments Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  });
+
+// API Get Activities with Participants Count**
+app.get('/api/admin/activities/:id/participants',
+  RateLimiter(1 * 60 * 1000, 300),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const activityId = parseInt(req.params.id);
+
+    if (userData?.Login_Type !== 'website' || userData?.Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied.",
+        status: false
+      });
+    }
+
+    try {
+      const sql = `SELECT r.Users_ID, r.Registration_RegisTime, r.Registration_CheckInTime, 
+        r.Registration_CheckOutTime, r.RegistrationStatus_ID, rs.RegistrationStatus_Name, s.Student_FirstName, 
+        s.Student_LastName, s.Student_Code, s.Student_Phone, d.Department_Name, f.Faculty_Name, u.Users_Email FROM registration r 
+        INNER JOIN users u ON r.Users_ID = u.Users_ID LEFT JOIN student s ON u.Users_ID = s.Users_ID LEFT JOIN department d ON s.Department_ID = d.Department_ID 
+        LEFT JOIN faculty f ON d.Faculty_ID = f.Faculty_ID LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID WHERE r.Activity_ID = ? 
+        ORDER BY r.Registration_RegisTime DESC`;
+
+      db.query(sql, [activityId], (err, results) => {
+        if (err) {
+          console.error('Get Participants Error:', err);
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'Participants retrieved successfully.',
+          status: true,
+          data: results,
+          count: results.length
+        });
+      });
+    } catch (err) {
+      console.error('Get Participants Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  });
+
+// API Get Activity by ID**
+app.get('/api/admin/activities/:id',
+  RateLimiter(1 * 60 * 1000, 300),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const activityId = parseInt(req.params.id);
+
+    if (userData?.Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied.",
+        status: false
+      });
+    }
+
+    if (userData?.Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Only staff can access this.",
+        status: false
+      });
+    }
+
+    try {
+      const sql = `SELECT a.*, at.ActivityType_Name, ast.ActivityStatus_Name, t.Template_Name
+        FROM activity a LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN 
+        activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN template t ON a.Template_ID 
+        = t.Template_ID WHERE a.Activity_ID = ?`;
+
+      db.query(sql, [activityId], (err, results) => {
+        if (err) {
+          console.error('Get Activity Error:', err);
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({
+            message: 'Activity not found',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'Activity retrieved successfully.',
+          status: true,
+          data: results[0]
+        });
+      });
+    } catch (err) {
+      console.error('Get Activity Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  });
+
+// API Get Activity Statistics**
+app.get('/api/admin/activities/:id/stats',
+  RateLimiter(1 * 60 * 1000, 300),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const activityId = parseInt(req.params.id);
+
+    if (userData?.Login_Type !== 'website' || userData?.Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied.",
+        status: false
+      });
+    }
+
+    try {
+      const statsSql = `SELECT a.Activity_ID, a.Activity_Title, 
+        COUNT(DISTINCT r.Users_ID) as total_registered, COUNT(DISTINCT CASE WHEN 
+        r.Registration_CheckInTime IS NOT NULL THEN r.Users_ID END) as total_checked_in, 
+        COUNT(DISTINCT CASE WHEN r.Registration_CheckOutTime IS NOT NULL THEN r.Users_ID END) 
+        as total_checked_out, SUM(ad.ActivityDetail_Total) as expected_participants FROM activity a 
+        LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID LEFT JOIN activitydetail ad ON a.Activity_ID 
+        = ad.ActivityDetail_ID WHERE a.Activity_ID = ? GROUP BY a.Activity_ID`;
+
+      db.query(statsSql, [activityId], (err, results) => {
+        if (err) {
+          console.error('Get Activity Stats Error:', err);
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({
+            message: 'Activity not found',
+            status: false
+          });
+        }
+
+        const stats = results[0];
+        const registrationRate = stats.expected_participants > 0
+          ? ((stats.total_registered / stats.expected_participants) * 100).toFixed(1)
+          : 0;
+        const checkInRate = stats.total_registered > 0
+          ? ((stats.total_checked_in / stats.total_registered) * 100).toFixed(1)
+          : 0;
+
+        res.status(200).json({
+          message: 'Activity statistics retrieved successfully.',
+          status: true,
+          data: {
+            ...stats,
+            registration_rate: registrationRate,
+            check_in_rate: checkInRate,
+            attendance_rate: stats.total_registered > 0
+              ? ((stats.total_checked_out / stats.total_registered) * 100).toFixed(1)
+              : 0
+          }
+        });
+      });
+    } catch (err) {
+      console.error('Get Activity Stats Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  });
+
+// API Get Activity Details with Departments**
+app.get('/api/admin/activities/:id/details',
+  RateLimiter(1 * 60 * 1000, 300),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const activityId = parseInt(req.params.id);
+
+    if (userData?.Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied.",
+        status: false
+      });
+    }
+
+    if (userData?.Users_Type !== 'staff' && userData?.Users_Type !== 'teacher') {
+      return res.status(403).json({
+        message: "Only staff and teachers can access this.",
+        status: false
+      });
+    }
+
+    try {
+      const activitySql = `SELECT a.*, ST_X(a.Activity_LocationGPS) as gps_lng, 
+        ST_Y(a.Activity_LocationGPS) as gps_lat, at.ActivityType_Name, at.ActivityType_Description, 
+        ast.ActivityStatus_Name, ast.ActivityStatus_Description, t.Template_Name, s.Signature_Name FROM activity a 
+        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID 
+        = ast.ActivityStatus_ID LEFT JOIN template t ON a.Template_ID = t.Template_ID LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID 
+        WHERE a.Activity_ID = ?`;
+
+      const departmentsSql = `SELECT ad.Department_ID, ad.ActivityDetail_Total, d.Department_Name, 
+        f.Faculty_ID, f.Faculty_Name, COUNT(DISTINCT r.Users_ID) as registered_count, COUNT(DISTINCT CASE WHEN 
+        r.Registration_CheckInTime IS NOT NULL THEN r.Users_ID END) as checked_in_count FROM activitydetail ad INNER JOIN 
+        department d ON ad.Department_ID = d.Department_ID INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID LEFT JOIN student s 
+        ON s.Department_ID = d.Department_ID LEFT JOIN registration r ON r.Users_ID = s.Users_ID AND r.Activity_ID = ? WHERE ad.ActivityDetail_ID = ? 
+        GROUP BY ad.Department_ID, ad.ActivityDetail_Total, d.Department_Name, f.Faculty_ID, f.Faculty_Name ORDER BY f.Faculty_Name, d.Department_Name`;
+
+      db.query(activitySql, [activityId], (err, activityResults) => {
+        if (err) {
+          console.error('Get Activity Error:', err);
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        if (activityResults.length === 0) {
+          return res.status(404).json({
+            message: 'Activity not found',
+            status: false
+          });
+        }
+
+        const activity = activityResults[0];
+        if (activity.gps_lng && activity.gps_lat) {
+          activity.Activity_LocationGPS = {
+            lng: activity.gps_lng,
+            lat: activity.gps_lat
+          };
+          delete activity.gps_lng;
+          delete activity.gps_lat;
+        }
+
+        db.query(departmentsSql, [activityId, activityId], (err, deptResults) => {
+          if (err) {
+            console.error('Get Departments Error:', err);
+            deptResults = [];
+          }
+
+          res.status(200).json({
+            message: 'Activity details retrieved successfully.',
+            status: true,
+            data: {
+              ...activity,
+              departments: deptResults,
+              total_departments: deptResults.length,
+              total_expected: deptResults.reduce((sum, d) => sum + (d.ActivityDetail_Total || 0), 0),
+              total_registered: deptResults.reduce((sum, d) => sum + (d.registered_count || 0), 0),
+              total_checked_in: deptResults.reduce((sum, d) => sum + (d.checked_in_count || 0), 0)
+            }
+          });
+        });
+      });
+    } catch (err) {
+      console.error('Get Activity Details Error:', err);
       res.status(500).json({
         message: 'An unexpected error occurred.',
         status: false
