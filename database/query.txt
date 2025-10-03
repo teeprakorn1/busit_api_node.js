@@ -161,11 +161,9 @@ CREATE TABLE IF NOT EXISTS Activity (
     Activity_UpdateTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     Activity_ImageFile VARCHAR(255),
     Activity_IsRequire BOOLEAN NOT NULL DEFAULT FALSE,
-    Staff_ID INT,
     ActivityType_ID TINYINT,
     ActivityStatus_ID TINYINT,
     Template_ID INT,
-    FOREIGN KEY (Staff_ID) REFERENCES Staff(Staff_ID) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (ActivityType_ID) REFERENCES ActivityType(ActivityType_ID) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (ActivityStatus_ID) REFERENCES ActivityStatus(ActivityStatus_ID) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (Template_ID) REFERENCES Template(Template_ID) ON DELETE SET NULL ON UPDATE CASCADE
@@ -267,22 +265,17 @@ INSERT INTO department (Department_Name, Faculty_ID) VALUES
 -- ('ภาษาจีน', 2);
 
 INSERT INTO activitytype (ActivityType_Name, ActivityType_Description) VALUES
-('กิจกรรมวิชาการ', 'กิจกรรมที่เกี่ยวข้องกับการเรียนการสอน การอบรม และการพัฒนาความรู้ทางวิชาการ'),
-('กิจกรรมกีฬา', 'กิจกรรมด้านกีฬาและนันทนาการ เพื่อสุขภาพและความสามัคคี'),
-('กิจกรรมบำเพ็ญประโยชน์', 'กิจกรรมอาสาสมัครและบริการสังคม เพื่อสร้างจิตสำนึกที่ดี'),
-('กิจกรรมศิลปวัฒนธรรม', 'กิจกรรมด้านศิลปะ ดนตรี นาฏศิลป์ และวัฒนธรรมไทย'),
-('กิจกรรมทัศนศึกษา', 'กิจกรรมศึกษาดูงานนอกสถานที่ เพื่อเสริมสร้างประสบการณ์'),
-('กิจกรรมสัมมนา', 'กิจกรรมสัมมนาเชิงปฏิบัติการ การประชุม และการแลกเปลี่ยนเรียนรู้'),
-('กิจกรรมพัฒนาทักษะชีวิต', 'กิจกรรมเพื่อพัฒนาทักษะการดำรงชีวิตและการทำงานร่วมกับผู้อื่น'),
-('กิจกรรมพิเศษ', 'กิจกรรมอื่นๆ ที่ไม่จัดอยู่ในประเภทข้างต้น');
+('กิจกรรมเสริมสร้างจิตสำนึก', 'กิจกรรมที่เกี่ยวข้องกับการเสริมสร้างจิตสำนึก อาสาสมัครและบริการสังคม เพื่อสร้างจิตสำนึกที่ดี'),
+('กิจกรรมเสริมสร้างทักษะ', 'กิจกรรมที่เกี่ยวข้องกับการเสริมสร้างทักษะ ทางด้านวิชาการ การศึกษา และทักษะในสายวิชาชีพ'),
+('กิจกรรมเสริมสร้างความภาคภูมิใจ', 'กิจกรรมที่เกี่ยวข้องกับการเสริมสร้างความภาคภูมิใจ ทางด้านชาติ ศาสนา พระมหากษัตริย์ และความภาพภูมิใจในตนเอง'),
+('กิจกรรมเสริมสร้างความเข้าใจ', 'กิจกรรมที่เกี่ยวข้องกับการเสริมสร้างความเข้าใจ ในสิ่งแวดล้อมรอบตัว และความเข้าใจในการดำรงชีวิตในปัจุบัน และเท่าทันอนาคต'),
+('กิจกรรมเสริมสร้างและพัฒนาสุขภาพ', 'กิจกรรมที่เกี่ยวข้องกับการเสริมสร้างและพัฒนาสุขภาพ ด้านกีฬาและนันทนาการ เพื่อสุขภาพและความสามัคคีที่ดีที่ยั่งยืน');
 
 INSERT INTO activitystatus (ActivityStatus_Name, ActivityStatus_Description) VALUES
 ('เปิดรับสมัคร', 'กิจกรรมกำลังเปิดรับสมัครผู้เข้าร่วม'),
-('ปิดรับสมัคร', 'กิจกรรมปิดรับสมัครแล้ว กำลังรอวันจัดกิจกรรม'),
 ('กำลังดำเนินการ', 'กิจกรรมกำลังดำเนินการอยู่'),
 ('เสร็จสิ้น', 'กิจกรรมเสร็จสิ้นแล้ว'),
-('ยกเลิก', 'กิจกรรมถูกยกเลิก'),
-('เลื่อน', 'กิจกรรมถูกเลื่อนไปจัดในวันอื่น');
+('ยกเลิก', 'กิจกรรมถูกยกเลิก');
 
 INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
 ('teacher.admin@rmutto.ac.th', 'teacher.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
@@ -322,7 +315,8 @@ VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_certificate_template_search'),('timestamp_certificate_signature_add'),
 ('timestamp_certificate_signature_edit'),('timestamp_certificate_signature_delete'),
 ('timestamp_certificate_signature_view'),('timestamp_certificate_signature_search'),
-('timestamp_certificate_generate');
+('timestamp_certificate_generate'),('timestamp_activity_create_success'),('timestamp_activity_create_fail')
+;
 
 INSERT INTO dataedittype (DataEditType_Name) VALUES 
 ('dataedit_users_status_change'),('dataedit_student_data_update'),

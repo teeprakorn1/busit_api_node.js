@@ -41,6 +41,7 @@ const allowedOrigins = [
 const uploadDir = path.join(__dirname, 'images');
 const uploadDir_Profile = path.join(__dirname, 'images/users-profile-images');
 const uploadDir_Certificate = path.join(__dirname, 'images/certificate-files');
+const uploadDir_Activity = path.join(__dirname, 'images/activities-images');
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
@@ -52,6 +53,10 @@ if (!fs.existsSync(uploadDir_Profile)) {
 
 if (!fs.existsSync(uploadDir_Certificate)) {
   fs.mkdirSync(uploadDir_Certificate, { recursive: true });
+}
+
+if (!fs.existsSync(uploadDir_Activity)) {
+  fs.mkdirSync(uploadDir_Activity, { recursive: true });
 }
 
 // Multer configuration
@@ -6812,14 +6817,12 @@ app.get('/api/admin/activities', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_W
   try {
     const sql = `
       SELECT a.*, 
-        at.ActivityType_Name, 
-        ast.ActivityStatus_Name,
-        s.Staff_FirstName, s.Staff_LastName,
-        t.Template_Name
+      at.ActivityType_Name, 
+      ast.ActivityStatus_Name,
+      t.Template_Name
       FROM activity a
       LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
       LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-      LEFT JOIN staff s ON a.Staff_ID = s.Staff_ID
       LEFT JOIN template t ON a.Template_ID = t.Template_ID
       ORDER BY a.Activity_RegisTime DESC`;
 
@@ -6854,7 +6857,6 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
     const userData = req.user;
     const Users_Type = userData?.Users_Type;
     const Login_Type = userData?.Login_Type;
-    const Staff_ID = userData?.Staff_ID;
 
     if (Login_Type !== 'website') {
       return res.status(403).json({
@@ -6943,9 +6945,8 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         fs.writeFileSync(savePath, processedBuffer);
       }
 
-      // Insert activity
       const sql = `
-      INSERT INTO activity (
+        INSERT INTO activity (
         Activity_Title, 
         Activity_Description, 
         Activity_LocationDetail,
@@ -6954,18 +6955,17 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
         Activity_EndTime,
         Activity_ImageFile,
         Activity_IsRequire,
-        Staff_ID,
         ActivityType_ID,
         ActivityStatus_ID,
         Template_ID
-      ) VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      ) VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, ?, ?, ?, ?, ?, ?, ?)`;
 
       const params = gpsPoint
         ? [activityTitle, activityDescription, activityLocationDetail, gpsPoint,
-          startTime, endTime, imageFilename, activityIsRequire, Staff_ID,
+          startTime, endTime, imageFilename, activityIsRequire,
           activityTypeId || null, activityStatusId || null, templateId || null]
         : [activityTitle, activityDescription, activityLocationDetail,
-          startTime, endTime, imageFilename, activityIsRequire, Staff_ID,
+          startTime, endTime, imageFilename, activityIsRequire,
           activityTypeId || null, activityStatusId || null, templateId || null];
 
       db.query(sql, params, (err, result) => {
