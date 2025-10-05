@@ -5715,6 +5715,55 @@ app.get('/api/images/certificate-files/:filename', VerifyTokens_Website, (req, r
   }
 });
 
+// API get activities image files**
+app.get('/api/images/activities-images/:filename', VerifyTokens_Website, (req, res) => {
+  try {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can access activity image.",
+        status: false
+      });
+    }
+
+    const filename = path.basename(req.params.filename);
+    if (!filename.match(/^[a-zA-Z0-9._-]+$/)) {
+      return res.status(400).json({ message: 'Invalid filename', status: false });
+    }
+
+    const allowedExt = ['.jpg', '.jpeg', '.png'];
+    const ext = path.extname(filename).toLowerCase();
+    if (!allowedExt.includes(ext)) {
+      return res.status(400).json({ message: 'Invalid file type', status: false });
+    }
+
+    const filePath = path.join(uploadDir_Activity, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        message: 'Image not found',
+        status: false
+      });
+    }
+
+    res.type(ext);
+    res.sendFile(filePath);
+
+  } catch (err) {
+    console.error('Error serving activity image:', err);
+    res.status(500).json({ message: 'Internal server error', status: false });
+  }
+});
+
 //API Get Profile Image by Filename (Staff Only)
 app.get('/api/images/profile-images-admin/:filename', VerifyTokens_Website, (req, res) => {
   try {
@@ -6860,7 +6909,7 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
       });
     }
 
-    let { activityTitle, activityDescription, activityLocationDetail, activityLocationGPS, activityStartTime, 
+    let { activityTitle, activityDescription, activityLocationDetail, activityLocationGPS, activityStartTime,
       activityEndTime, activityIsRequire, activityTypeId, activityStatusId, templateId, selectedDepartments } = req.body;
 
     if (!activityTitle || !activityDescription || !activityStartTime || !activityEndTime) {
@@ -7041,6 +7090,7 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
   });
 
 // API Update activity**
+// API Update activity**
 app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
   RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
 
@@ -7070,8 +7120,9 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
       });
     }
 
-    let { activityTitle, activityDescription, activityLocationDetail, activityStartTime, 
-      activityEndTime, activityIsRequire, activityTypeId, activityStatusId, templateId } = req.body;
+    let { activityTitle, activityDescription, activityLocationDetail, activityLocationGPS,
+      activityStartTime, activityEndTime, activityIsRequire, activityTypeId,
+      activityStatusId, templateId } = req.body;
 
     if (!activityTitle || !activityDescription || !activityStartTime || !activityEndTime) {
       return res.status(400).json({
@@ -7133,16 +7184,41 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
           });
         }
 
-        const updateSql = `UPDATE activity SET Activity_Title = ?, Activity_Description = ?, 
-        Activity_LocationDetail = ?, Activity_StartTime = ?, Activity_EndTime = ?, Activity_ImageFile = ?, 
-        Activity_IsRequire = ?, ActivityType_ID = ?, ActivityStatus_ID = ?, Template_ID = ? WHERE Activity_ID = ?`;
+        // จัดการ GPS Point
+        let gpsPoint = null;
+        if (activityLocationGPS) {
+          try {
+            const gpsData = JSON.parse(activityLocationGPS);
+            if (gpsData.lat && gpsData.lng) {
+              gpsPoint = `POINT(${gpsData.lng} ${gpsData.lat})`;
+            }
+          } catch (e) {
+            console.warn('Invalid GPS data:', e);
+          }
+        }
 
-        db.query(updateSql, [
-          activityTitle, activityDescription, activityLocationDetail,
-          startTime, endTime, imageFilename, activityIsRequire,
-          activityTypeId || null, activityStatusId || null, templateId || null,
-          activityId
-        ], (err, result) => {
+        // สร้าง SQL query และ parameters ตามว่ามี GPS หรือไม่
+        const updateSql = gpsPoint
+          ? `UPDATE activity SET Activity_Title = ?, Activity_Description = ?, 
+             Activity_LocationDetail = ?, Activity_LocationGPS = ST_GeomFromText(?), 
+             Activity_StartTime = ?, Activity_EndTime = ?, Activity_ImageFile = ?, 
+             Activity_IsRequire = ?, ActivityType_ID = ?, ActivityStatus_ID = ?, Template_ID = ? 
+             WHERE Activity_ID = ?`
+          : `UPDATE activity SET Activity_Title = ?, Activity_Description = ?, 
+             Activity_LocationDetail = ?, Activity_LocationGPS = NULL, 
+             Activity_StartTime = ?, Activity_EndTime = ?, Activity_ImageFile = ?, 
+             Activity_IsRequire = ?, ActivityType_ID = ?, ActivityStatus_ID = ?, Template_ID = ? 
+             WHERE Activity_ID = ?`;
+
+        const params = gpsPoint
+          ? [activityTitle, activityDescription, activityLocationDetail, gpsPoint,
+            startTime, endTime, imageFilename, activityIsRequire,
+            activityTypeId || null, activityStatusId || null, templateId || null, activityId]
+          : [activityTitle, activityDescription, activityLocationDetail,
+            startTime, endTime, imageFilename, activityIsRequire,
+            activityTypeId || null, activityStatusId || null, templateId || null, activityId];
+
+        db.query(updateSql, params, (err, result) => {
           if (err) {
             console.error('Update Activity Error:', err);
             return res.status(500).json({
@@ -7604,6 +7680,296 @@ app.get('/api/admin/activities/:id/details',
       console.error('Get Activity Details Error:', err);
       res.status(500).json({
         message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  });
+
+// API Activity Update with Check-in**
+app.patch('/api/admin/activities/:id/participants/:userId/checkin',
+  RateLimiter(1 * 60 * 1000, 100),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const { id: activityId, userId } = req.params;
+
+    if (userData?.Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Only staff can check-in participants.",
+        status: false
+      });
+    }
+
+    try {
+      const sql = `UPDATE registration 
+        SET Registration_CheckInTime = CURRENT_TIMESTAMP 
+        WHERE Activity_ID = ? AND Users_ID = ?`;
+
+      db.query(sql, [activityId, userId], (err, result) => {
+        if (err) {
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'Check-in successful',
+          status: true
+        });
+      });
+    } catch (err) {
+      res.status(500).json({
+        message: 'An unexpected error occurred',
+        status: false
+      });
+    }
+  }
+);
+
+// API Activity Update with Check-out**
+app.patch('/api/admin/activities/:id/participants/:userId/checkout',
+  RateLimiter(1 * 60 * 1000, 100),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const { id: activityId, userId } = req.params;
+
+    if (userData?.Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Only staff can check-out participants.",
+        status: false
+      });
+    }
+
+    try {
+      const sql = `UPDATE registration 
+        SET Registration_CheckOutTime = CURRENT_TIMESTAMP 
+        WHERE Activity_ID = ? AND Users_ID = ?`;
+
+      db.query(sql, [activityId, userId], (err, result) => {
+        if (err) {
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'Check-out successful',
+          status: true
+        });
+      });
+    } catch (err) {
+      res.status(500).json({
+        message: 'An unexpected error occurred',
+        status: false
+      });
+    }
+  }
+);
+
+// API Update Activity Departments**
+app.put('/api/admin/activities/:id/departments',
+  RateLimiter(1 * 60 * 1000, 30),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const activityId = parseInt(req.params.id);
+    const { departments } = req.body;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can update activity departments.",
+        status: false
+      });
+    }
+
+    if (!activityId || isNaN(activityId)) {
+      return res.status(400).json({
+        message: "Invalid activity ID provided.",
+        status: false
+      });
+    }
+
+    if (!Array.isArray(departments) || departments.length === 0) {
+      return res.status(400).json({
+        message: "กรุณาระบุสาขาอย่างน้อย 1 สาขา",
+        status: false
+      });
+    }
+
+    let connection;
+    try {
+      connection = await new Promise((resolve, reject) => {
+        db.getConnection((err, conn) => {
+          if (err) reject(err);
+          else resolve(conn);
+        });
+      });
+
+      await new Promise((resolve, reject) => {
+        connection.beginTransaction((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      // ลบข้อมูลเก่า
+      await new Promise((resolve, reject) => {
+        const deleteSql = `DELETE FROM activitydetail WHERE ActivityDetail_ID = ?`;
+        connection.query(deleteSql, [activityId], (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+
+      // เพิ่มข้อมูลใหม่
+      if (departments.length > 0) {
+        const detailValues = departments.map(dept => [
+          activityId,
+          dept.Department_ID,
+          dept.ActivityDetail_Total || 0
+        ]);
+
+        await new Promise((resolve, reject) => {
+          const insertSql = `INSERT INTO activitydetail (ActivityDetail_ID, Department_ID, ActivityDetail_Total) VALUES ?`;
+          connection.query(insertSql, [detailValues], (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        });
+      }
+
+      await new Promise((resolve, reject) => {
+        connection.commit((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      connection.release();
+
+      res.status(200).json({
+        message: 'อัปเดตสาขาที่เข้าร่วมสำเร็จ',
+        status: true,
+        data: {
+          Activity_ID: activityId,
+          totalDepartments: departments.length,
+          totalExpected: departments.reduce((sum, d) => sum + (d.ActivityDetail_Total || 0), 0)
+        }
+      });
+
+    } catch (err) {
+      console.error('Update Activity Departments Error:', err);
+      if (connection) {
+        await new Promise((resolve) => {
+          connection.rollback(() => {
+            connection.release();
+            resolve();
+          });
+        });
+      }
+
+      res.status(500).json({
+        message: 'เกิดข้อผิดพลาดในการอัปเดตสาขา',
+        status: false,
+        error: err.message
+      });
+    }
+  });
+
+// API Update Activity GPS and Status Only**
+app.patch('/api/admin/activities/:id/location-status',
+  RateLimiter(1 * 60 * 1000, 30),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const activityId = parseInt(req.params.id);
+    const { activityLocationGPS, activityStatusId } = req.body;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can update activities.",
+        status: false
+      });
+    }
+
+    if (!activityId || isNaN(activityId)) {
+      return res.status(400).json({
+        message: "Invalid activity ID provided.",
+        status: false
+      });
+    }
+
+    try {
+      let gpsPoint = null;
+      if (activityLocationGPS) {
+        try {
+          const gpsData = JSON.parse(activityLocationGPS);
+          if (gpsData.lat && gpsData.lng) {
+            gpsPoint = `POINT(${gpsData.lng} ${gpsData.lat})`;
+          }
+        } catch (e) {
+          console.warn('Invalid GPS data:', e);
+        }
+      }
+
+      const updateSql = gpsPoint
+        ? `UPDATE activity SET Activity_LocationGPS = ST_GeomFromText(?), ActivityStatus_ID = ? WHERE Activity_ID = ?`
+        : `UPDATE activity SET Activity_LocationGPS = NULL, ActivityStatus_ID = ? WHERE Activity_ID = ?`;
+
+      const params = gpsPoint
+        ? [gpsPoint, activityStatusId || null, activityId]
+        : [activityStatusId || null, activityId];
+
+      db.query(updateSql, params, (err, result) => {
+        if (err) {
+          console.error('Update Activity Location/Status Error:', err);
+          return res.status(500).json({
+            message: 'Database error while updating activity.',
+            status: false
+          });
+        }
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({
+            message: 'ไม่พบกิจกรรมที่ต้องการแก้ไข',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'อัพเดทตำแหน่งและสถานะสำเร็จ',
+          status: true,
+          data: {
+            Activity_ID: activityId
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error('Update Activity Location/Status Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred while updating activity.',
         status: false
       });
     }
