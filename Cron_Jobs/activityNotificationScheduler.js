@@ -5,7 +5,7 @@ const { sendNotificationToMultipleUsers, saveNotificationForUsers } = require('.
 const checkAndSendActivityNotifications = async () => {
   try {
     const now = new Date();
-    
+
     const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
     const in1Day = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
@@ -14,69 +14,39 @@ const checkAndSendActivityNotifications = async () => {
       {
         type: '7days',
         sql: `SELECT a.Activity_ID, a.Activity_Title, a.Activity_StartTime, a.Activity_Description 
-              FROM activity a 
-              WHERE DATE(a.Activity_StartTime) = DATE(?) 
-              AND a.ActivityStatus_ID = (SELECT ActivityStatus_ID FROM activitystatus WHERE ActivityStatus_Name = 'เปิดรับสมัคร')
-              AND NOT EXISTS (
-                SELECT 1 FROM notification n 
-                WHERE n.Activity_ID = a.Activity_ID 
-                AND n.Notification_Type = '7days'
-                AND DATE(n.Notification_RegisTime) = CURDATE()
-              )`,
+          FROM activity a WHERE DATE(a.Activity_StartTime) = DATE(?) AND a.ActivityStatus_ID = (SELECT ActivityStatus_ID 
+          FROM activitystatus WHERE ActivityStatus_Name = 'เปิดรับสมัคร') AND NOT EXISTS ( SELECT 1 FROM notification n WHERE n.Activity_ID 
+          = a.Activity_ID AND n.Notification_Type = '7days' AND DATE(n.Notification_RegisTime) = CURDATE())`,
         date: in7Days,
         message: 'อีก 7 วันจะถึงกิจกรรม'
       },
       {
         type: '3days',
         sql: `SELECT a.Activity_ID, a.Activity_Title, a.Activity_StartTime, a.Activity_Description 
-              FROM activity a 
-              WHERE DATE(a.Activity_StartTime) = DATE(?) 
-              AND a.ActivityStatus_ID IN (
-                SELECT ActivityStatus_ID FROM activitystatus 
-                WHERE ActivityStatus_Name IN ('เปิดรับสมัคร', 'กำลังดำเนินการ')
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM notification n 
-                WHERE n.Activity_ID = a.Activity_ID 
-                AND n.Notification_Type = '3days'
-                AND DATE(n.Notification_RegisTime) = CURDATE()
-              )`,
+          FROM activity a WHERE DATE(a.Activity_StartTime) = DATE(?) AND a.ActivityStatus_ID IN (SELECT 
+          ActivityStatus_ID FROM activitystatus WHERE ActivityStatus_Name IN ('เปิดรับสมัคร', 'กำลังดำเนินการ'))
+          AND NOT EXISTS (SELECT 1 FROM notification n WHERE n.Activity_ID = a.Activity_ID AND n.Notification_Type = '3days'
+          AND DATE(n.Notification_RegisTime) = CURDATE())`,
         date: in3Days,
         message: 'อีก 3 วันจะถึงกิจกรรม'
       },
       {
         type: '1day',
         sql: `SELECT a.Activity_ID, a.Activity_Title, a.Activity_StartTime, a.Activity_Description 
-              FROM activity a 
-              WHERE DATE(a.Activity_StartTime) = DATE(?) 
-              AND a.ActivityStatus_ID IN (
-                SELECT ActivityStatus_ID FROM activitystatus 
-                WHERE ActivityStatus_Name IN ('เปิดรับสมัคร', 'กำลังดำเนินการ')
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM notification n 
-                WHERE n.Activity_ID = a.Activity_ID 
-                AND n.Notification_Type = '1day'
-                AND DATE(n.Notification_RegisTime) = CURDATE()
-              )`,
+          FROM activity a WHERE DATE(a.Activity_StartTime) = DATE(?) AND a.ActivityStatus_ID IN (SELECT 
+          ActivityStatus_ID FROM activitystatus WHERE ActivityStatus_Name IN ('เปิดรับสมัคร', 'กำลังดำเนินการ'))
+          AND NOT EXISTS (SELECT 1 FROM notification n WHERE n.Activity_ID = a.Activity_ID AND n.Notification_Type = '1day'
+          AND DATE(n.Notification_RegisTime) = CURDATE())`,
         date: in1Day,
         message: 'พรุ่งนี้จะมีกิจกรรม'
       },
       {
         type: 'today',
         sql: `SELECT a.Activity_ID, a.Activity_Title, a.Activity_StartTime, a.Activity_Description 
-              FROM activity a 
-              WHERE DATE(a.Activity_StartTime) = CURDATE()
-              AND a.ActivityStatus_ID IN (
-                SELECT ActivityStatus_ID FROM activitystatus 
-                WHERE ActivityStatus_Name IN ('เปิดรับสมัคร', 'กำลังดำเนินการ')
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM notification n 
-                WHERE n.Activity_ID = a.Activity_ID 
-                AND n.Notification_Type = 'today'
-                AND DATE(n.Notification_RegisTime) = CURDATE()
-              )`,
+          FROM activity a WHERE DATE(a.Activity_StartTime) = CURDATE() AND a.ActivityStatus_ID IN (SELECT 
+          ActivityStatus_ID FROM activitystatus WHERE ActivityStatus_Name IN ('เปิดรับสมัคร', 'กำลังดำเนินการ'))
+          AND NOT EXISTS (SELECT 1 FROM notification n WHERE n.Activity_ID = a.Activity_ID AND n.Notification_Type = 'today'
+          AND DATE(n.Notification_RegisTime) = CURDATE())`,
         date: now,
         message: 'วันนี้มีกิจกรรม'
       }
@@ -91,10 +61,7 @@ const checkAndSendActivityNotifications = async () => {
 
         for (const activity of activities) {
           try {
-            const usersSql = `SELECT DISTINCT r.Users_ID 
-                             FROM registration r 
-                             WHERE r.Activity_ID = ?`;
-            
+            const usersSql = `SELECT DISTINCT r.Users_ID FROM registration r WHERE r.Activity_ID = ?`;
             db.query(usersSql, [activity.Activity_ID], async (err, users) => {
               if (err) {
                 console.error('Error fetching users:', err);
@@ -109,7 +76,7 @@ const checkAndSendActivityNotifications = async () => {
               const userIds = users.map(u => u.Users_ID);
               const title = `แจ้งเตือนกิจกรรม: ${activity.Activity_Title}`;
               const body = `${query.message} - ${activity.Activity_Title}`;
-              
+
               const startDate = new Date(activity.Activity_StartTime);
               const formattedDate = startDate.toLocaleDateString('th-TH', {
                 year: 'numeric',
@@ -127,7 +94,7 @@ const checkAndSendActivityNotifications = async () => {
               };
 
               const result = await sendNotificationToMultipleUsers(userIds, title, body, data);
-              
+
               console.log(`[${new Date().toISOString()}] Sent ${query.type} notification for activity ${activity.Activity_ID}:`, result);
 
               const notificationDetail = `${query.message} - ${activity.Activity_Title} (${formattedDate})`;
