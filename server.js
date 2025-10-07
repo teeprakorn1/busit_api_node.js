@@ -26,6 +26,9 @@ const VerifyTokens = require('./Jwt_Tokens/Tokens_Verification');
 const { sendOTP, verifyOTP, sendEmail } = require('./OTP_Services/otpService');
 const { generateResetToken, verifyResetToken, deleteResetToken } = require('./Jwt_Tokens/ResetTokens_Manager');
 const VerifyTokens_Website = require('./Jwt_Tokens/Tokens_Verification_Website');
+const { initializeFirebase } = require('./FCM_Services/firebaseConfig');
+const { sendNotificationToUser } = require('./FCM_Services/notificationService');
+const { initAllCronJobs, updateActivityStatus, checkAndSendActivityNotifications } = require('./Cron_Jobs');
 
 const app = express();
 const saltRounds = 14;
@@ -38,6 +41,8 @@ const allowedOrigins = [
   null
 ];
 
+// Initialize Firebase
+initializeFirebase();
 const uploadDir = path.join(__dirname, 'images');
 const uploadDir_Profile = path.join(__dirname, 'images/users-profile-images');
 const uploadDir_Certificate = path.join(__dirname, 'images/certificate-files');
@@ -336,6 +341,307 @@ app.post('/api/verifyToken-website', RateLimiter(0.5 * 60 * 1000, 15), VerifyTok
     status: true,
   });
 });
+
+////////////////////////////////// FCM Token Management API ///////////////////////////////////////
+// API Insert FCM Register Token for Application**
+app.post('/api/fcm/register-token', RateLimiter(1 * 60 * 1000, 10), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+  const Login_Type = userData?.Login_Type;
+  const { fcmToken, deviceType } = req.body;
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied. This action is only allowed in the application.", status: false });
+  }
+
+  if (!fcmToken || typeof fcmToken !== 'string') {
+    return res.status(400).json({ message: "FCM token is required.", status: false });
+  }
+
+  try {
+    const checkSql = `SELECT FCMToken_ID FROM fcmtokens WHERE FCM_Token = ?`;
+    db.query(checkSql, [fcmToken], (err, result) => {
+      if (err) {
+        console.error('Error checking FCM token:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      if (result.length > 0) {
+        const updateSql = `UPDATE fcmtokens SET Users_ID = ?, Device_Type = ?, FCMToken_IsActive = TRUE WHERE FCM_Token = ?`;
+        db.query(updateSql, [Users_ID, deviceType || 'unknown', fcmToken], (err) => {
+          if (err) {
+            console.error('Error updating FCM token:', err);
+            return res.status(500).json({ message: 'Database error', status: false });
+          }
+
+          res.status(200).json({ message: 'FCM token updated successfully', status: true });
+        });
+      } else {
+        const insertSql = `INSERT INTO fcmtokens (Users_ID, FCM_Token, Device_Type) VALUES (?, ?, ?)`;
+        db.query(insertSql, [Users_ID, fcmToken, deviceType || 'unknown'], (err) => {
+          if (err) {
+            console.error('Error inserting FCM token:', err);
+            return res.status(500).json({ message: 'Database error', status: false });
+          }
+
+          res.status(201).json({ message: 'FCM token registered successfully', status: true });
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error in FCM token registration:', error);
+    res.status(500).json({
+      message: 'An unexpected error occurred', status: false
+    });
+  }
+});
+
+// API Remove FCM Token for Application**
+app.delete('/api/fcm/remove-token', RateLimiter(1 * 60 * 1000, 10), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+  const Login_Type = userData?.Login_Type;
+  const { fcmToken } = req.body;
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied.", status: false });
+  }
+
+  if (!fcmToken) {
+    return res.status(400).json({ message: "FCM token is required.", status: false });
+  }
+
+  try {
+    const sql = `UPDATE fcmtokens SET FCMToken_IsActive = FALSE WHERE Users_ID = ? AND FCM_Token = ?`;
+    db.query(sql, [Users_ID, fcmToken], (err, result) => {
+      if (err) {
+        console.error('Error removing FCM token:', err);
+        return res.status(500).json({ message: 'Database error', status: false });
+      }
+
+      res.status(200).json({ message: 'FCM token removed successfully', status: true });
+    });
+  } catch (error) {
+    console.error('Error in FCM token removal:', error);
+    res.status(500).json({ message: 'An unexpected error occurred', status: false });
+  }
+});
+
+////////////////////////////////// Notification APIs ///////////////////////////////////////
+// API Get My Notifications for Application**
+app.get('/api/notifications/my-notifications', RateLimiter(1 * 60 * 1000, 30), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+  const Login_Type = userData?.Login_Type;
+  const { limit = 50, offset = 0 } = req.query;
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({ message: "Permission denied.", status: false });
+  }
+
+  try {
+    const sql = `SELECT n.*, a.Activity_Title, a.Activity_StartTime FROM notification n LEFT JOIN activity a 
+      ON n.Activity_ID = a.Activity_ID WHERE n.Users_ID = ? ORDER BY n.Notification_RegisTime DESC LIMIT ? OFFSET ?`;
+
+    db.query(sql, [Users_ID, parseInt(limit), parseInt(offset)], (err, results) => {
+      if (err) {
+        console.error('Error fetching notifications:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      const countUnreadSql = `SELECT COUNT(*) as unread_count 
+        FROM notification WHERE Users_ID = ? AND Notification_IsRead = FALSE`;
+
+      db.query(countUnreadSql, [Users_ID], (err, countResult) => {
+        const unreadCount = countResult?.[0]?.unread_count || 0;
+
+        res.status(200).json({
+          message: 'Notifications retrieved successfully',
+          status: true,
+          data: results,
+          unread_count: unreadCount,
+          total: results.length
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Error in notifications fetch:', error);
+    res.status(500).json({
+      message: 'An unexpected error occurred',
+      status: false
+    });
+  }
+}
+);
+
+// API Update Mark Read Notification ID for Application**
+app.patch('/api/notifications/:notificationId/mark-read', RateLimiter(1 * 60 * 1000, 50), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+  const { notificationId } = req.params;
+
+  try {
+    const sql = `UPDATE notification SET Notification_IsRead = TRUE WHERE Notifications_ID = ? AND Users_ID = ?`;
+    db.query(sql, [notificationId, Users_ID], (err, result) => {
+      if (err) {
+        console.error('Error marking notification as read:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      res.status(200).json({
+        message: 'Notification marked as read',
+        status: true
+      });
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'An unexpected error occurred',
+      status: false
+    });
+  }
+}
+);
+
+// API Update Mark All Read Notification for Application**
+app.patch('/api/notifications/mark-all-read', RateLimiter(1 * 60 * 1000, 10), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_ID = userData?.Users_ID;
+
+  try {
+    const sql = `UPDATE notification SET Notification_IsRead = TRUE WHERE Users_ID = ? AND Notification_IsRead = FALSE`;
+    db.query(sql, [Users_ID], (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      res.status(200).json({
+        message: `Marked ${result.affectedRows} notifications as read`,
+        status: true,
+        updated_count: result.affectedRows
+      });
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'An unexpected error occurred',
+      status: false
+    });
+  }
+}
+);
+
+////////////////////////////////// Admin Manual Trigger APIs ///////////////////////////////////////
+// API Test Notification for Website**
+app.post('/api/admin/test-notification', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const { userId, title, body } = req.body;
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Only staff can send test notifications",
+      status: false
+    });
+  }
+
+  try {
+    const result = await sendNotificationToUser(
+      userId,
+      title || 'Test Notification',
+      body || 'This is a test notification'
+    );
+
+    res.status(200).json({
+      message: 'Test notification sent',
+      status: true,
+      result: result
+    });
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+    res.status(500).json({
+      message: 'Failed to send test notification',
+      status: false
+    });
+  }
+}
+);
+
+// API Manual Update Activities Status for Website**
+app.post('/api/admin/activities/update-status-manual', RateLimiter(1 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff can update activity status.",
+      status: false
+    });
+  }
+
+  try {
+    console.log(`[${new Date().toISOString()}] Manual activity status update triggered by ${userData.Users_Email}`);
+    await updateActivityStatus();
+
+    res.status(200).json({
+      message: 'Activity status updated successfully.',
+      status: true,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Manual update error:', err);
+    res.status(500).json({
+      message: 'An error occurred while updating activity status.',
+      status: false,
+      error: err.message
+    });
+  }
+}
+);
+
+// API Manual Update Notifications Status for Website**
+app.post('/api/admin/activities/trigger-notifications', RateLimiter(1 * 60 * 1000, 5), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Only staff can trigger notifications",
+      status: false
+    });
+  }
+
+  try {
+    await checkAndSendActivityNotifications();
+
+    res.status(200).json({
+      message: 'Notification check triggered successfully',
+      status: true
+    });
+  } catch (error) {
+    console.error('Error triggering notifications:', error);
+    res.status(500).json({
+      message: 'Failed to trigger notifications',
+      status: false
+    });
+  }
+}
+);
 
 ////////////////////////////////// System API ///////////////////////////////////////
 //reset password by password API
@@ -1276,7 +1582,7 @@ app.get('/api/dataedit/get/type/:DataEditType_ID', RateLimiter(0.5 * 60 * 1000, 
   }
 });
 
-//API DataEdit Get by SourceTable
+//API DataEdit Get by SourceTable***
 app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens_Website, async (req, res) => {
   const SourceTable = req.params.SourceTable;
   const userData = req.user;
@@ -1304,27 +1610,94 @@ app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12
   }
 
   try {
-    const sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
-      de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
-      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, det.DataEditType_Name FROM 
-      dataedit de INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE de.DataEdit_SourceTable = ? AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY
+    let sql;
+
+    // Special handling for Activity source table
+    if (SourceTable === 'Activity') {
+      sql = `SELECT 
+        de.DataEdit_ID, 
+        de.DataEdit_ThisId, 
+        de.DataEdit_RegisTime, 
+        de.DataEdit_Name, 
+        de.DataEdit_SourceTable, 
+        de.DataEdit_UserAgent, 
+        de.DataEdit_IP_Address, 
+        de.DataEditType_ID, 
+        de.Staff_ID, 
+        s.Staff_Code, 
+        s.Staff_FirstName, 
+        s.Staff_LastName, 
+        s.Staff_Phone,
+        s.Staff_RegisTime as Staff_RegisTime,
+        u.Users_Email, 
+        u.Users_Type,
+        u.Users_ImageFile,
+        det.DataEditType_Name,
+        a.Activity_Title,
+        a.Activity_Description,
+        a.Activity_StartTime,
+        a.Activity_EndTime,
+        a.Activity_LocationDetail,
+        a.Activity_ImageFile,
+        a.Activity_IsRequire,
+        ast.ActivityStatus_Name,
+        at.ActivityType_Name
+      FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID 
+      LEFT JOIN activity a ON de.DataEdit_ThisId = a.Activity_ID
+      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
+      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
+      WHERE de.DataEdit_SourceTable = ? 
+        AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY
       ORDER BY de.DataEdit_RegisTime DESC`;
+    } else {
+      // Original query for other source tables
+      sql = `SELECT 
+        de.DataEdit_ID, 
+        de.DataEdit_ThisId, 
+        de.DataEdit_RegisTime, 
+        de.DataEdit_Name, 
+        de.DataEdit_SourceTable, 
+        de.DataEdit_UserAgent, 
+        de.DataEdit_IP_Address, 
+        de.DataEditType_ID, 
+        de.Staff_ID, 
+        s.Staff_Code, 
+        s.Staff_FirstName, 
+        s.Staff_LastName, 
+        u.Users_Email, 
+        u.Users_Type, 
+        det.DataEditType_Name 
+      FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID 
+      WHERE de.DataEdit_SourceTable = ? 
+        AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY
+      ORDER BY de.DataEdit_RegisTime DESC`;
+    }
 
     db.query(sql, [SourceTable], (err, result) => {
       if (err) {
         console.error('Database error (dataedit)', err);
         return res.status(500).json({ message: 'An error occurred on the server.', status: false });
       }
+
       if (result.length > 0) {
         return res.status(200).json({
           message: `Get data edits for ${SourceTable} successfully.`,
           status: true,
           data: result,
-          sourceTable: SourceTable
+          sourceTable: SourceTable,
+          totalRecords: result.length
         });
       } else {
-        return res.status(404).json({ message: `No data edits found for ${SourceTable}.`, status: false });
+        return res.status(404).json({
+          message: `No data edits found for ${SourceTable}.`,
+          status: false
+        });
       }
     });
   } catch (error) {
@@ -1333,7 +1706,7 @@ app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12
   }
 });
 
-//API DataEdit Search
+//API DataEdit Search***
 app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_Website, async (req, res) => {
   res.set({
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -1353,7 +1726,18 @@ app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_W
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
-  const { email, ip, staff_code, edit_type, source_table, date_from, date_to, limit = 100 } = req.query;
+  const {
+    email,
+    ip,
+    staff_code,
+    edit_type,
+    source_table,
+    date_from,
+    date_to,
+    limit = 100,
+    activity_id,
+    activity_title
+  } = req.query;
 
   if (source_table) {
     const allowedSourceTables = ['Student', 'Teacher', 'Staff', 'Users', 'Activity'];
@@ -1366,13 +1750,57 @@ app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_W
   }
 
   try {
-    let sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, de.DataEdit_Name, 
-      de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, de.DataEditType_ID, de.Staff_ID, 
-      s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, u.Users_Type, det.DataEditType_Name FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE 1=1`;
+    let sql = `SELECT 
+      de.DataEdit_ID, 
+      de.DataEdit_ThisId, 
+      de.DataEdit_RegisTime, 
+      de.DataEdit_Name, 
+      de.DataEdit_SourceTable, 
+      de.DataEdit_UserAgent, 
+      de.DataEdit_IP_Address, 
+      de.DataEditType_ID, 
+      de.Staff_ID, 
+      s.Staff_Code, 
+      s.Staff_FirstName, 
+      s.Staff_LastName,
+      s.Staff_Phone,
+      s.Staff_RegisTime as Staff_RegisTime,
+      u.Users_Email, 
+      u.Users_Type,
+      u.Users_ImageFile,
+      det.DataEditType_Name`;
+
+    // Add Activity-specific fields if searching in Activity table
+    if (source_table === 'Activity' || activity_id || activity_title) {
+      sql += `,
+        a.Activity_Title,
+        a.Activity_Description,
+        a.Activity_StartTime,
+        a.Activity_EndTime,
+        a.Activity_LocationDetail,
+        a.Activity_ImageFile,
+        a.Activity_IsRequire,
+        ast.ActivityStatus_Name,
+        at.ActivityType_Name`;
+    }
+
+    sql += ` FROM dataedit de 
+      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
+      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID`;
+
+    // Add Activity joins if needed
+    if (source_table === 'Activity' || activity_id || activity_title) {
+      sql += ` 
+        LEFT JOIN activity a ON de.DataEdit_ThisId = a.Activity_ID
+        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
+        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID`;
+    }
+
+    sql += ` WHERE 1=1`;
 
     const params = [];
+
     if (email) {
       sql += ' AND u.Users_Email = ?';
       params.push(email);
@@ -1396,6 +1824,16 @@ app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_W
     if (source_table) {
       sql += ' AND de.DataEdit_SourceTable = ?';
       params.push(source_table);
+    }
+
+    if (activity_id) {
+      sql += ' AND de.DataEdit_ThisId = ?';
+      params.push(activity_id);
+    }
+
+    if (activity_title) {
+      sql += ' AND a.Activity_Title LIKE ?';
+      params.push(`%${activity_title}%`);
     }
 
     if (date_from) {
@@ -1424,7 +1862,16 @@ app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_W
         data: result,
         total: result.length,
         searchCriteria: {
-          email, ip, staff_code, edit_type, source_table, date_from, date_to, limit
+          email,
+          ip,
+          staff_code,
+          edit_type,
+          source_table,
+          date_from,
+          date_to,
+          limit,
+          activity_id,
+          activity_title
         }
       });
     });
@@ -7090,170 +7537,165 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'),
   });
 
 // API Update activity**
-// API Update activity**
-app.put('/api/admin/activities/:id', activityUpload.single('activityImage'),
-  RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+app.put('/api/admin/activities/:id', activityUpload.single('activityImage'), RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const activityId = parseInt(req.params.id);
 
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const activityId = parseInt(req.params.id);
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
 
-    if (Login_Type !== 'website') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed on the website.",
-        status: false
-      });
-    }
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff can update activities.",
+      status: false
+    });
+  }
 
-    if (Users_Type !== 'staff') {
-      return res.status(403).json({
-        message: "Permission denied. Only staff can update activities.",
-        status: false
-      });
-    }
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
 
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
+  let { activityTitle, activityDescription, activityLocationDetail, activityLocationGPS,
+    activityStartTime, activityEndTime, activityIsRequire, activityTypeId,
+    activityStatusId, templateId } = req.body;
 
-    let { activityTitle, activityDescription, activityLocationDetail, activityLocationGPS,
-      activityStartTime, activityEndTime, activityIsRequire, activityTypeId,
-      activityStatusId, templateId } = req.body;
+  if (!activityTitle || !activityDescription || !activityStartTime || !activityEndTime) {
+    return res.status(400).json({
+      message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
+      status: false
+    });
+  }
 
-    if (!activityTitle || !activityDescription || !activityStartTime || !activityEndTime) {
-      return res.status(400).json({
-        message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน',
-        status: false
-      });
-    }
+  try {
+    const getCurrentSql = `SELECT Activity_ImageFile FROM activity WHERE Activity_ID = ?`;
+    db.query(getCurrentSql, [activityId], async (err, currentResult) => {
+      if (err) {
+        console.error('Get Current Activity Error:', err);
+        return res.status(500).json({
+          message: 'Database error while fetching current activity.',
+          status: false
+        });
+      }
 
-    try {
-      const getCurrentSql = `SELECT Activity_ImageFile FROM activity WHERE Activity_ID = ?`;
-      db.query(getCurrentSql, [activityId], async (err, currentResult) => {
-        if (err) {
-          console.error('Get Current Activity Error:', err);
-          return res.status(500).json({
-            message: 'Database error while fetching current activity.',
-            status: false
-          });
-        }
+      if (currentResult.length === 0) {
+        return res.status(404).json({
+          message: 'ไม่พบกิจกรรมที่ต้องการแก้ไข',
+          status: false
+        });
+      }
 
-        if (currentResult.length === 0) {
-          return res.status(404).json({
-            message: 'ไม่พบกิจกรรมที่ต้องการแก้ไข',
-            status: false
-          });
-        }
-
-        let imageFilename = currentResult[0].Activity_ImageFile;
-        if (req.file) {
-          const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
-          if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
-            return res.status(400).json({
-              message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
-              status: false
-            });
-          }
-
-          const processedBuffer = await sharp(req.file.buffer)
-            .resize({ width: 1200, height: 800, fit: 'inside' })
-            .jpeg({ quality: 85 })
-            .toBuffer();
-
-          imageFilename = `activity_${uuidv4()}.jpg`;
-          const savePath = path.join(uploadDir_Activity, imageFilename);
-          fs.writeFileSync(savePath, processedBuffer);
-        }
-
-        activityTitle = xss(activityTitle.trim());
-        activityDescription = xss(activityDescription.trim());
-        activityLocationDetail = activityLocationDetail ? xss(activityLocationDetail.trim()) : null;
-        activityIsRequire = activityIsRequire === 'true' || activityIsRequire === true;
-
-        const startTime = new Date(activityStartTime);
-        const endTime = new Date(activityEndTime);
-
-        if (endTime <= startTime) {
+      let imageFilename = currentResult[0].Activity_ImageFile;
+      if (req.file) {
+        const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+        if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
           return res.status(400).json({
-            message: 'เวลาสิ้นสุดกิจกรรมต้องมากกว่าเวลาเริ่มต้น',
+            message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
             status: false
           });
         }
 
-        // จัดการ GPS Point
-        let gpsPoint = null;
-        if (activityLocationGPS) {
-          try {
-            const gpsData = JSON.parse(activityLocationGPS);
-            if (gpsData.lat && gpsData.lng) {
-              gpsPoint = `POINT(${gpsData.lng} ${gpsData.lat})`;
-            }
-          } catch (e) {
-            console.warn('Invalid GPS data:', e);
+        const processedBuffer = await sharp(req.file.buffer)
+          .resize({ width: 1200, height: 800, fit: 'inside' })
+          .jpeg({ quality: 85 })
+          .toBuffer();
+
+        imageFilename = `activity_${uuidv4()}.jpg`;
+        const savePath = path.join(uploadDir_Activity, imageFilename);
+        fs.writeFileSync(savePath, processedBuffer);
+      }
+
+      activityTitle = xss(activityTitle.trim());
+      activityDescription = xss(activityDescription.trim());
+      activityLocationDetail = activityLocationDetail ? xss(activityLocationDetail.trim()) : null;
+      activityIsRequire = activityIsRequire === 'true' || activityIsRequire === true;
+
+      const startTime = new Date(activityStartTime);
+      const endTime = new Date(activityEndTime);
+
+      if (endTime <= startTime) {
+        return res.status(400).json({
+          message: 'เวลาสิ้นสุดกิจกรรมต้องมากกว่าเวลาเริ่มต้น',
+          status: false
+        });
+      }
+
+      let gpsPoint = null;
+      if (activityLocationGPS) {
+        try {
+          const gpsData = JSON.parse(activityLocationGPS);
+          if (gpsData.lat && gpsData.lng) {
+            gpsPoint = `POINT(${gpsData.lng} ${gpsData.lat})`;
+          }
+        } catch (e) {
+          console.warn('Invalid GPS data:', e);
+        }
+      }
+
+      const updateSql = gpsPoint
+        ? `UPDATE activity SET Activity_Title = ?, Activity_Description = ?, 
+         Activity_LocationDetail = ?, Activity_LocationGPS = ST_GeomFromText(?), 
+         Activity_StartTime = ?, Activity_EndTime = ?, Activity_ImageFile = ?, 
+         Activity_IsRequire = ?, ActivityType_ID = ?, ActivityStatus_ID = ?, Template_ID = ? 
+         WHERE Activity_ID = ?`
+        : `UPDATE activity SET Activity_Title = ?, Activity_Description = ?, 
+         Activity_LocationDetail = ?, Activity_LocationGPS = NULL, 
+         Activity_StartTime = ?, Activity_EndTime = ?, Activity_ImageFile = ?, 
+         Activity_IsRequire = ?, ActivityType_ID = ?, ActivityStatus_ID = ?, Template_ID = ? 
+         WHERE Activity_ID = ?`;
+
+      const params = gpsPoint
+        ? [activityTitle, activityDescription, activityLocationDetail, gpsPoint,
+          startTime, endTime, imageFilename, activityIsRequire,
+          activityTypeId || null, activityStatusId || null, templateId || null, activityId]
+        : [activityTitle, activityDescription, activityLocationDetail,
+          startTime, endTime, imageFilename, activityIsRequire,
+          activityTypeId || null, activityStatusId || null, templateId || null, activityId];
+
+      db.query(updateSql, params, (err, result) => {
+        if (err) {
+          console.error('Update Activity Error:', err);
+          return res.status(500).json({
+            message: 'Database error while updating activity.',
+            status: false
+          });
+        }
+
+        if (req.file && currentResult[0].Activity_ImageFile &&
+          currentResult[0].Activity_ImageFile !== imageFilename) {
+          const oldFilePath = path.join(uploadDir_Activity, currentResult[0].Activity_ImageFile);
+          if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath);
           }
         }
 
-        // สร้าง SQL query และ parameters ตามว่ามี GPS หรือไม่
-        const updateSql = gpsPoint
-          ? `UPDATE activity SET Activity_Title = ?, Activity_Description = ?, 
-             Activity_LocationDetail = ?, Activity_LocationGPS = ST_GeomFromText(?), 
-             Activity_StartTime = ?, Activity_EndTime = ?, Activity_ImageFile = ?, 
-             Activity_IsRequire = ?, ActivityType_ID = ?, ActivityStatus_ID = ?, Template_ID = ? 
-             WHERE Activity_ID = ?`
-          : `UPDATE activity SET Activity_Title = ?, Activity_Description = ?, 
-             Activity_LocationDetail = ?, Activity_LocationGPS = NULL, 
-             Activity_StartTime = ?, Activity_EndTime = ?, Activity_ImageFile = ?, 
-             Activity_IsRequire = ?, ActivityType_ID = ?, ActivityStatus_ID = ?, Template_ID = ? 
-             WHERE Activity_ID = ?`;
-
-        const params = gpsPoint
-          ? [activityTitle, activityDescription, activityLocationDetail, gpsPoint,
-            startTime, endTime, imageFilename, activityIsRequire,
-            activityTypeId || null, activityStatusId || null, templateId || null, activityId]
-          : [activityTitle, activityDescription, activityLocationDetail,
-            startTime, endTime, imageFilename, activityIsRequire,
-            activityTypeId || null, activityStatusId || null, templateId || null, activityId];
-
-        db.query(updateSql, params, (err, result) => {
-          if (err) {
-            console.error('Update Activity Error:', err);
-            return res.status(500).json({
-              message: 'Database error while updating activity.',
-              status: false
-            });
+        res.status(200).json({
+          message: 'แก้ไขกิจกรรมสำเร็จ',
+          status: true,
+          data: {
+            Activity_ID: activityId,
+            Activity_Title: activityTitle
           }
-
-          if (req.file && currentResult[0].Activity_ImageFile &&
-            currentResult[0].Activity_ImageFile !== imageFilename) {
-            const oldFilePath = path.join(uploadDir_Activity, currentResult[0].Activity_ImageFile);
-            if (fs.existsSync(oldFilePath)) {
-              fs.unlinkSync(oldFilePath);
-            }
-          }
-
-          res.status(200).json({
-            message: 'แก้ไขกิจกรรมสำเร็จ',
-            status: true,
-            data: {
-              Activity_ID: activityId,
-              Activity_Title: activityTitle
-            }
-          });
         });
       });
+    });
 
-    } catch (err) {
-      console.error('Update Activity Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred while updating activity.',
-        status: false
-      });
-    }
-  });
+  } catch (err) {
+    console.error('Update Activity Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating activity.',
+      status: false
+    });
+  }
+});
 
 // API Delete activity**
 app.delete('/api/admin/activities/:id', RateLimiter(1 * 60 * 1000, 30),
@@ -7618,9 +8060,14 @@ app.get('/api/admin/activities/:id/details',
     try {
       const activitySql = `SELECT a.*, ST_X(a.Activity_LocationGPS) as gps_lng, 
         ST_Y(a.Activity_LocationGPS) as gps_lat, at.ActivityType_Name, at.ActivityType_Description, 
-        ast.ActivityStatus_Name, ast.ActivityStatus_Description, t.Template_Name, s.Signature_Name FROM activity a 
-        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID 
-        = ast.ActivityStatus_ID LEFT JOIN template t ON a.Template_ID = t.Template_ID LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID 
+        ast.ActivityStatus_Name, ast.ActivityStatus_Description, 
+        t.Template_Name, t.Template_ImageFile, t.Template_PositionX, t.Template_PositionY,
+        s.Signature_Name, s.Signature_ImageFile 
+        FROM activity a 
+        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
+        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+        LEFT JOIN template t ON a.Template_ID = t.Template_ID 
+        LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID 
         WHERE a.Activity_ID = ?`;
 
       const departmentsSql = `SELECT ad.Department_ID, ad.ActivityDetail_Total, d.Department_Name, 
@@ -8413,5 +8860,6 @@ app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens,
 /////////////////////////////////////////////////////////////////////////
 
 app.listen(process.env.SERVER_PORT, () => {
-  console.log(`Example app listening on port ${process.env.SERVER_PORT}`)
+  console.log(`Example app listening on port ${process.env.SERVER_PORT}`);
+  initAllCronJobs();
 });

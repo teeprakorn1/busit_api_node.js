@@ -233,13 +233,34 @@ CREATE TABLE IF NOT EXISTS UsersForgetPassword(
 );
 
 CREATE TABLE IF NOT EXISTS Notification(
-	Notifications_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
+    Notifications_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
+    Notification_Title VARCHAR(255) NOT NULL,
     Notification_Detail VARCHAR(511) NOT NULL,
+    Notification_Type VARCHAR(50),
     Notification_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	Users_ID INT(13),
+    Notification_IsRead BOOLEAN NOT NULL DEFAULT FALSE,
+    Notification_IsSent BOOLEAN NOT NULL DEFAULT FALSE,
+    Users_ID INT(13),
     Activity_ID INT(13),
     FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
-    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID)
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID),
+    INDEX idx_notification_user (Users_ID),
+    INDEX idx_notification_activity (Activity_ID),
+    INDEX idx_notification_read (Notification_IsRead),
+    INDEX idx_notification_type (Notification_Type)
+);
+
+CREATE TABLE IF NOT EXISTS FCMTokens(
+    FCMToken_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
+    Users_ID INT(13) NOT NULL,
+    FCM_Token VARCHAR(255) NOT NULL UNIQUE,
+    Device_Type VARCHAR(50),
+    FCMToken_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FCMToken_UpdateTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FCMToken_IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
+    INDEX idx_fcm_users (Users_ID),
+    INDEX idx_fcm_active (FCMToken_IsActive)
 );
 
 INSERT INTO faculty (Faculty_Name) 
@@ -319,10 +340,17 @@ VALUES ('timestamp_application_login'),('timestamp_website_login'),
 ('timestamp_certificate_template_search'),('timestamp_certificate_signature_add'),
 ('timestamp_certificate_signature_edit'),('timestamp_certificate_signature_delete'),
 ('timestamp_certificate_signature_view'),('timestamp_certificate_signature_search'),
-('timestamp_certificate_generate'),('timestamp_activity_create_success'),('timestamp_activity_create_fail')
-;
+('timestamp_certificate_generate'),('timestamp_activity_create_success'),('timestamp_activity_create_fail'),
+('timestamp_activity_view'),('timestamp_activity_edit_start'),('timestamp_activity_edit_save'),('timestamp_activity_edit_cancel'),
+('timestamp_activity_delete_confirm'),('timestamp_activity_export'),('timestamp_activity_participants_view'),('timestamp_activity_participants_checkin'),
+('timestamp_activity_participants_checkout'),('timestamp_activity_departments_view'),('timestamp_activity_stats_view'),
+('timestamp_activity_template_change'),('timestamp_activity_image_upload');
 
 INSERT INTO dataedittype (DataEditType_Name) VALUES 
 ('dataedit_users_status_change'),('dataedit_student_data_update'),
 ('dataedit_teacher_data_update'),('dataedit_staff_data_update'),
-('dataedit_profile_update'),('dataedit_system_action');
+('dataedit_profile_update'),('dataedit_system_action'),
+('dataedit_activity_create'),('dataedit_activity_update'),
+('dataedit_activity_delete'),('dataedit_activity_status_change'),
+('dataedit_activity_department_add'),('dataedit_activity_department_remove'),
+('dataedit_activity_template_change');
