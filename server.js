@@ -9447,7 +9447,6 @@ app.post('/api/activities/:id/checkout',
     }
 
     try {
-      // ตรวจสอบว่าได้เช็คอินแล้วหรือยัง
       const checkRegSql = `
         SELECT Registration_CheckInTime, Registration_CheckOutTime, 
         ast.ActivityStatus_Name
@@ -9474,8 +9473,6 @@ app.post('/api/activities/:id/checkout',
         }
 
         const registration = regResult[0];
-
-        // ตรวจสอบว่าได้เช็คอินหรือยัง
         if (!registration.Registration_CheckInTime) {
           return res.status(400).json({
             message: 'คุณยังไม่ได้เช็คอิน',
@@ -9483,7 +9480,6 @@ app.post('/api/activities/:id/checkout',
           });
         }
 
-        // ตรวจสอบว่าเช็คเอาต์แล้วหรือยัง
         if (registration.Registration_CheckOutTime) {
           return res.status(400).json({
             message: 'คุณได้เช็คเอาต์กิจกรรมนี้แล้ว',
@@ -9491,7 +9487,6 @@ app.post('/api/activities/:id/checkout',
           });
         }
 
-        // ตรวจสอบสถานะกิจกรรม
         if (registration.ActivityStatus_Name !== 'กำลังดำเนินการ') {
           return res.status(400).json({
             message: 'กิจกรรมยังไม่เปิดให้เช็คเอาต์',
@@ -9499,7 +9494,6 @@ app.post('/api/activities/:id/checkout',
           });
         }
 
-        // อัพเดท Registration เป็นเช็คเอาต์
         const updateRegSql = `
           UPDATE registration 
           SET Registration_CheckOutTime = CURRENT_TIMESTAMP
@@ -9603,6 +9597,639 @@ app.get('/api/activities/:id/pictures',
       });
     } catch (err) {
       console.error('Get Pictures Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  }
+);
+
+// API Approve Registration Picture**
+app.patch('/api/registration-pictures/:id/approve',
+  RateLimiter(1 * 60 * 1000, 100),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const Staff_ID = userData?.Staff_ID;
+    const pictureId = parseInt(req.params.id);
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can approve pictures.",
+        status: false
+      });
+    }
+
+    if (!pictureId || isNaN(pictureId)) {
+      return res.status(400).json({
+        message: "Invalid picture ID provided.",
+        status: false
+      });
+    }
+
+    try {
+      // ตรวจสอบว่ารูปภาพมีอยู่จริง
+      const checkSql = `
+        SELECT rp.RegistrationPicture_ID, rp.RegistrationPicture_ImageFile, 
+        rp.Users_ID, rp.Activity_ID, rps.RegistrationPictureStatus_Name,
+        a.Activity_Title,
+        s.Student_FirstName, s.Student_LastName, s.Student_Code,
+        t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code
+        FROM registrationpicture rp
+        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+        LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID
+        LEFT JOIN users u ON rp.Users_ID = u.Users_ID
+        LEFT JOIN student s ON u.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
+        WHERE rp.RegistrationPicture_ID = ?
+      `;
+
+      db.query(checkSql, [pictureId], (err, result) => {
+        if (err) {
+          console.error('Check Picture Error:', err);
+          return res.status(500).json({
+            message: 'Database error while checking picture.',
+            status: false
+          });
+        }
+
+        if (result.length === 0) {
+          return res.status(404).json({
+            message: 'ไม่พบรูปภาพที่ต้องการอนุมัติ',
+            status: false
+          });
+        }
+
+        const picture = result[0];
+
+        // ตรวจสอบว่ารูปภาพถูกอนุมัติหรือปฏิเสธแล้วหรือไม่
+        if (picture.RegistrationPictureStatus_Name === 'อนุมัติแล้ว') {
+          return res.status(400).json({
+            message: 'รูปภาพนี้ได้รับการอนุมัติแล้ว',
+            status: false
+          });
+        }
+
+        if (picture.RegistrationPictureStatus_Name === 'ปฏิเสธ') {
+          return res.status(400).json({
+            message: 'รูปภาพนี้ถูกปฏิเสธแล้ว ไม่สามารถอนุมัติได้',
+            status: false
+          });
+        }
+
+        // อัปเดตสถานะเป็น "อนุมัติแล้ว" (ID = 2)
+        const updateSql = `
+          UPDATE registrationpicture 
+          SET RegistrationPictureStatus_ID = 2,
+              RegistrationPicture_ApprovedBy = ?,
+              RegistrationPicture_ApprovedTime = CURRENT_TIMESTAMP
+          WHERE RegistrationPicture_ID = ?
+        `;
+
+        db.query(updateSql, [Staff_ID, pictureId], (err, updateResult) => {
+          if (err) {
+            console.error('Approve Picture Error:', err);
+            return res.status(500).json({
+              message: 'Database error while approving picture.',
+              status: false
+            });
+          }
+
+          // Log การอนุมัติ
+          const logName = `อนุมัติรูปภาพกิจกรรม: ${picture.Activity_Title} - ${picture.Student_FirstName || picture.Teacher_FirstName} ${picture.Student_LastName || picture.Teacher_LastName}`;
+
+          const logSql = `
+            INSERT INTO dataedit 
+            (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
+            VALUES (?, ?, 'registrationpicture', ?, 6)
+          `;
+
+          db.query(logSql, [pictureId, logName, Staff_ID], (logErr) => {
+            if (logErr) {
+              console.error('Log Error:', logErr);
+            }
+          });
+
+          res.status(200).json({
+            message: 'อนุมัติรูปภาพสำเร็จ',
+            status: true,
+            data: {
+              RegistrationPicture_ID: pictureId,
+              Activity_ID: picture.Activity_ID,
+              Users_ID: picture.Users_ID,
+              approved_time: new Date()
+            }
+          });
+        });
+      });
+
+    } catch (err) {
+      console.error('Approve Picture Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred while approving picture.',
+        status: false
+      });
+    }
+  }
+);
+
+// API Reject Registration Picture**
+app.patch('/api/registration-pictures/:id/reject',
+  RateLimiter(1 * 60 * 1000, 100),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const Staff_ID = userData?.Staff_ID;
+    const pictureId = parseInt(req.params.id);
+    const { reason } = req.body;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can reject pictures.",
+        status: false
+      });
+    }
+
+    if (!pictureId || isNaN(pictureId)) {
+      return res.status(400).json({
+        message: "Invalid picture ID provided.",
+        status: false
+      });
+    }
+
+    try {
+      // ตรวจสอบว่ารูปภาพมีอยู่จริง
+      const checkSql = `
+        SELECT rp.RegistrationPicture_ID, rp.RegistrationPicture_ImageFile, 
+        rp.Users_ID, rp.Activity_ID, rps.RegistrationPictureStatus_Name,
+        a.Activity_Title,
+        s.Student_FirstName, s.Student_LastName, s.Student_Code,
+        t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code
+        FROM registrationpicture rp
+        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+        LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID
+        LEFT JOIN users u ON rp.Users_ID = u.Users_ID
+        LEFT JOIN student s ON u.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
+        WHERE rp.RegistrationPicture_ID = ?
+      `;
+
+      db.query(checkSql, [pictureId], (err, result) => {
+        if (err) {
+          console.error('Check Picture Error:', err);
+          return res.status(500).json({
+            message: 'Database error while checking picture.',
+            status: false
+          });
+        }
+
+        if (result.length === 0) {
+          return res.status(404).json({
+            message: 'ไม่พบรูปภาพที่ต้องการปฏิเสธ',
+            status: false
+          });
+        }
+
+        const picture = result[0];
+
+        // ตรวจสอบว่ารูปภาพถูกอนุมัติหรือปฏิเสธแล้วหรือไม่
+        if (picture.RegistrationPictureStatus_Name === 'อนุมัติแล้ว') {
+          return res.status(400).json({
+            message: 'รูปภาพนี้ได้รับการอนุมัติแล้ว ไม่สามารถปฏิเสธได้',
+            status: false
+          });
+        }
+
+        if (picture.RegistrationPictureStatus_Name === 'ปฏิเสธ') {
+          return res.status(400).json({
+            message: 'รูปภาพนี้ถูกปฏิเสธแล้ว',
+            status: false
+          });
+        }
+
+        // อัปเดตสถานะเป็น "ปฏิเสธ" (ID = 3)
+        const rejectReason = reason ? xss(reason.trim()) : 'ไม่ระบุเหตุผล';
+
+        const updateSql = `
+          UPDATE registrationpicture 
+          SET RegistrationPictureStatus_ID = 3,
+              RegistrationPicture_RejectedBy = ?,
+              RegistrationPicture_RejectedTime = CURRENT_TIMESTAMP,
+              RegistrationPicture_RejectReason = ?
+          WHERE RegistrationPicture_ID = ?
+        `;
+
+        db.query(updateSql, [Staff_ID, rejectReason, pictureId], (err, updateResult) => {
+          if (err) {
+            console.error('Reject Picture Error:', err);
+            return res.status(500).json({
+              message: 'Database error while rejecting picture.',
+              status: false
+            });
+          }
+
+          // Log การปฏิเสธ
+          const logName = `ปฏิเสธรูปภาพกิจกรรม: ${picture.Activity_Title} - ${picture.Student_FirstName || picture.Teacher_FirstName} ${picture.Student_LastName || picture.Teacher_LastName} (เหตุผล: ${rejectReason})`;
+
+          const logSql = `
+            INSERT INTO dataedit 
+            (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
+            VALUES (?, ?, 'registrationpicture', ?, 6)
+          `;
+
+          db.query(logSql, [pictureId, logName, Staff_ID], (logErr) => {
+            if (logErr) {
+              console.error('Log Error:', logErr);
+            }
+          });
+
+          res.status(200).json({
+            message: 'ปฏิเสธรูปภาพสำเร็จ',
+            status: true,
+            data: {
+              RegistrationPicture_ID: pictureId,
+              Activity_ID: picture.Activity_ID,
+              Users_ID: picture.Users_ID,
+              reject_reason: rejectReason,
+              rejected_time: new Date()
+            }
+          });
+        });
+      });
+
+    } catch (err) {
+      console.error('Reject Picture Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred while rejecting picture.',
+        status: false
+      });
+    }
+  }
+);
+
+// API Bulk Approve Registration Pictures**
+app.patch('/api/registration-pictures/bulk-approve',
+  RateLimiter(1 * 60 * 1000, 50),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const Staff_ID = userData?.Staff_ID;
+    const { pictureIds } = req.body;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Only staff can approve pictures.",
+        status: false
+      });
+    }
+
+    if (!Array.isArray(pictureIds) || pictureIds.length === 0) {
+      return res.status(400).json({
+        message: "กรุณาระบุรูปภาพที่ต้องการอนุมัติ",
+        status: false
+      });
+    }
+
+    // Limit bulk operations
+    if (pictureIds.length > 50) {
+      return res.status(400).json({
+        message: "สามารถอนุมัติได้ครั้งละไม่เกิน 50 รูป",
+        status: false
+      });
+    }
+
+    try {
+      const placeholders = pictureIds.map(() => '?').join(',');
+
+      // Check pictures
+      const checkSql = `
+        SELECT RegistrationPicture_ID, RegistrationPictureStatus_ID, 
+        rps.RegistrationPictureStatus_Name
+        FROM registrationpicture rp
+        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+        WHERE RegistrationPicture_ID IN (${placeholders})
+      `;
+
+      db.query(checkSql, pictureIds, (err, results) => {
+        if (err) {
+          console.error('Check Pictures Error:', err);
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        // Filter only pending pictures
+        const pendingIds = results
+          .filter(r => r.RegistrationPictureStatus_ID === 1)
+          .map(r => r.RegistrationPicture_ID);
+
+        if (pendingIds.length === 0) {
+          return res.status(400).json({
+            message: 'ไม่มีรูปภาพที่รออนุมัติ',
+            status: false
+          });
+        }
+
+        // Bulk update
+        const updatePlaceholders = pendingIds.map(() => '?').join(',');
+        const updateSql = `
+          UPDATE registrationpicture 
+          SET RegistrationPictureStatus_ID = 2,
+              RegistrationPicture_ApprovedBy = ?,
+              RegistrationPicture_ApprovedTime = CURRENT_TIMESTAMP
+          WHERE RegistrationPicture_ID IN (${updatePlaceholders})
+        `;
+
+        db.query(updateSql, [Staff_ID, ...pendingIds], (err, updateResult) => {
+          if (err) {
+            console.error('Bulk Approve Error:', err);
+            return res.status(500).json({
+              message: 'Database error',
+              status: false
+            });
+          }
+
+          // Log
+          const logSql = `
+            INSERT INTO dataedit 
+            (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
+            VALUES (0, ?, 'registrationpicture', ?, 6)
+          `;
+          const logName = `อนุมัติรูปภาพจำนวน ${pendingIds.length} รูป`;
+
+          db.query(logSql, [logName, Staff_ID], (logErr) => {
+            if (logErr) console.error('Log Error:', logErr);
+          });
+
+          res.status(200).json({
+            message: `อนุมัติรูปภาพสำเร็จ ${pendingIds.length} รูป`,
+            status: true,
+            data: {
+              approved_count: pendingIds.length,
+              skipped_count: pictureIds.length - pendingIds.length,
+              approved_ids: pendingIds
+            }
+          });
+        });
+      });
+
+    } catch (err) {
+      console.error('Bulk Approve Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  }
+);
+
+// API Get Registration Picture Detail**
+app.get('/api/registration-pictures/:id',
+  RateLimiter(1 * 60 * 1000, 300),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const pictureId = parseInt(req.params.id);
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Only staff can access this.",
+        status: false
+      });
+    }
+
+    try {
+      const sql = `
+        SELECT 
+          rp.*,
+          rps.RegistrationPictureStatus_Name,
+          u.Users_Email,
+          s.Student_FirstName, s.Student_LastName, s.Student_Code,
+          t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
+          a.Activity_Title,
+          approver.Staff_FirstName as Approver_FirstName,
+          approver.Staff_LastName as Approver_LastName,
+          rejecter.Staff_FirstName as Rejecter_FirstName,
+          rejecter.Staff_LastName as Rejecter_LastName
+        FROM registrationpicture rp
+        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+        LEFT JOIN users u ON rp.Users_ID = u.Users_ID
+        LEFT JOIN student s ON u.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
+        LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID
+        LEFT JOIN staff approver ON rp.RegistrationPicture_ApprovedBy = approver.Staff_ID
+        LEFT JOIN staff rejecter ON rp.RegistrationPicture_RejectedBy = rejecter.Staff_ID
+        WHERE rp.RegistrationPicture_ID = ?
+      `;
+
+      db.query(sql, [pictureId], (err, results) => {
+        if (err) {
+          console.error('Get Picture Detail Error:', err);
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({
+            message: 'Picture not found',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'Picture detail retrieved successfully.',
+          status: true,
+          data: results[0]
+        });
+      });
+    } catch (err) {
+      console.error('Get Picture Detail Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  }
+);
+
+// API Get All Registration Pictures with Approval Info**
+app.get('/api/admin/activities/:id/pictures/all',
+  RateLimiter(1 * 60 * 1000, 300),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const activityId = parseInt(req.params.id);
+    const { status } = req.query; // pending, approved, rejected
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Only staff can access this.",
+        status: false
+      });
+    }
+
+    try {
+      let sql = `
+        SELECT 
+          rp.*,
+          rps.RegistrationPictureStatus_Name,
+          u.Users_Email,
+          s.Student_FirstName, s.Student_LastName, s.Student_Code,
+          t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
+          approver.Staff_FirstName as Approver_FirstName,
+          approver.Staff_LastName as Approver_LastName,
+          rejecter.Staff_FirstName as Rejecter_FirstName,
+          rejecter.Staff_LastName as Rejecter_LastName
+        FROM registrationpicture rp
+        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+        LEFT JOIN users u ON rp.Users_ID = u.Users_ID
+        LEFT JOIN student s ON u.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
+        LEFT JOIN staff approver ON rp.RegistrationPicture_ApprovedBy = approver.Staff_ID
+        LEFT JOIN staff rejecter ON rp.RegistrationPicture_RejectedBy = rejecter.Staff_ID
+        WHERE rp.Activity_ID = ?
+      `;
+
+      const params = [activityId];
+
+      // Filter by status if provided
+      if (status === 'pending') {
+        sql += ` AND rp.RegistrationPictureStatus_ID = 1`;
+      } else if (status === 'approved') {
+        sql += ` AND rp.RegistrationPictureStatus_ID = 2`;
+      } else if (status === 'rejected') {
+        sql += ` AND rp.RegistrationPictureStatus_ID = 3`;
+      }
+
+      sql += ` ORDER BY rp.RegistrationPicture_RegisTime DESC`;
+
+      db.query(sql, params, (err, results) => {
+        if (err) {
+          console.error('Get Pictures Error:', err);
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'Pictures retrieved successfully.',
+          status: true,
+          data: results,
+          count: results.length
+        });
+      });
+    } catch (err) {
+      console.error('Get Pictures Error:', err);
+      res.status(500).json({
+        message: 'An unexpected error occurred.',
+        status: false
+      });
+    }
+  }
+);
+
+// API Get Registration Picture Statistics by Activity**
+app.get('/api/admin/activities/:id/pictures/stats',
+  RateLimiter(1 * 60 * 1000, 300),
+  VerifyTokens_Website,
+  async (req, res) => {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    const activityId = parseInt(req.params.id);
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Only staff can access this.",
+        status: false
+      });
+    }
+
+    try {
+      const sql = `
+        SELECT 
+          COUNT(*) as total_pictures,
+          SUM(CASE WHEN RegistrationPictureStatus_ID = 1 THEN 1 ELSE 0 END) as pending_pictures,
+          SUM(CASE WHEN RegistrationPictureStatus_ID = 2 THEN 1 ELSE 0 END) as approved_pictures,
+          SUM(CASE WHEN RegistrationPictureStatus_ID = 3 THEN 1 ELSE 0 END) as rejected_pictures
+        FROM registrationpicture
+        WHERE Activity_ID = ?
+      `;
+
+      db.query(sql, [activityId], (err, results) => {
+        if (err) {
+          console.error('Get Picture Stats Error:', err);
+          return res.status(500).json({
+            message: 'Database error',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'Picture statistics retrieved successfully.',
+          status: true,
+          data: results[0]
+        });
+      });
+    } catch (err) {
+      console.error('Get Picture Stats Error:', err);
       res.status(500).json({
         message: 'An unexpected error occurred.',
         status: false

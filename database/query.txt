@@ -220,10 +220,23 @@ CREATE TABLE IF NOT EXISTS RegistrationPicture (
     Users_ID INT(13),
     Activity_ID INT(13),
     RegistrationPictureStatus_ID TINYINT(11),
-    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID),
-    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID),
-    FOREIGN KEY (RegistrationPictureStatus_ID) REFERENCES RegistrationPictureStatus(RegistrationPictureStatus_ID)
-);
+    RegistrationPicture_RejectReason VARCHAR(511) DEFAULT NULL,
+    RegistrationPicture_ApprovedBy INT(13) DEFAULT NULL,
+    RegistrationPicture_ApprovedTime DATETIME DEFAULT NULL,
+    RegistrationPicture_RejectedBy INT(13) DEFAULT NULL,
+    RegistrationPicture_RejectedTime DATETIME DEFAULT NULL,
+    FOREIGN KEY (Users_ID) REFERENCES Users(Users_ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (Activity_ID) REFERENCES Activity(Activity_ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (RegistrationPictureStatus_ID) REFERENCES RegistrationPictureStatus(RegistrationPictureStatus_ID) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (RegistrationPicture_ApprovedBy) REFERENCES Staff(Staff_ID) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (RegistrationPicture_RejectedBy) REFERENCES Staff(Staff_ID) ON DELETE SET NULL ON UPDATE CASCADE,
+    INDEX idx_registrationpicture_user (Users_ID),
+    INDEX idx_registrationpicture_activity (Activity_ID),
+    INDEX idx_registrationpicture_status (RegistrationPictureStatus_ID),
+    INDEX idx_registrationpicture_approved_by (RegistrationPicture_ApprovedBy),
+    INDEX idx_registrationpicture_rejected_by (RegistrationPicture_RejectedBy),
+    INDEX idx_registrationpicture_regis_time (RegistrationPicture_RegisTime)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS UsersForgetPassword(
 	UsersForgetPassword_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
