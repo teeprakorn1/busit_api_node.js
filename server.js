@@ -6361,7 +6361,7 @@ app.get('/api/images/registration-images/:filename', VerifyTokens, (req, res) =>
 
 
 // API Get Registration Picture Image Admin**
-app.get('/api/admin/images/registration-images/:filename', VerifyTokens, (req, res) => {
+app.get('/api/admin/images/registration-images/:filename', VerifyTokens_Website, (req, res) => {
   try {
     const userData = req.user;
     const Users_Type = userData?.Users_Type;
