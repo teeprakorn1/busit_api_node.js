@@ -217,6 +217,7 @@ CREATE TABLE IF NOT EXISTS RegistrationPicture (
     RegistrationPicture_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
     RegistrationPicture_ImageFile VARCHAR(255) NOT NULL,
     RegistrationPicture_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    RegistrationPicture_IsAiSuccess BOOLEAN,
     Users_ID INT(13),
     Activity_ID INT(13),
     RegistrationPictureStatus_ID TINYINT(11),

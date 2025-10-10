@@ -6359,7 +6359,6 @@ app.get('/api/images/registration-images/:filename', VerifyTokens, (req, res) =>
 }
 );
 
-
 // API Get Registration Picture Image Admin**
 app.get('/api/admin/images/registration-images/:filename', VerifyTokens_Website, (req, res) => {
   try {
@@ -6380,6 +6379,7 @@ app.get('/api/admin/images/registration-images/:filename', VerifyTokens_Website,
         status: false
       });
     }
+
     const filename = path.basename(req.params.filename);
 
     if (!filename.match(/^[a-zA-Z0-9._-]+$/)) {
@@ -6408,8 +6408,25 @@ app.get('/api/admin/images/registration-images/:filename', VerifyTokens_Website,
       });
     }
 
-    res.type(ext);
-    res.sendFile(filePath);
+    const sql = `
+      SELECT RegistrationPicture_IsAiSuccess 
+      FROM registrationpicture 
+      WHERE RegistrationPicture_ImageFile = ?
+      LIMIT 1
+    `;
+
+    db.query(sql, [filename], (err, results) => {
+      if (err) {
+        console.error('Error querying AI status:', err);
+        res.type(ext);
+        return res.sendFile(filePath);
+      }
+
+      const isAiSuccess = results.length > 0 ? results[0].RegistrationPicture_IsAiSuccess : null;
+      res.setHeader('X-AI-Success', isAiSuccess !== null ? isAiSuccess.toString() : 'unknown');
+      res.type(ext);
+      res.sendFile(filePath);
+    });
 
   } catch (err) {
     console.error('Error serving registration image:', err);
@@ -6418,8 +6435,7 @@ app.get('/api/admin/images/registration-images/:filename', VerifyTokens_Website,
       status: false
     });
   }
-}
-);
+});
 
 //API add Profile Image in Users of Application
 app.post('/api/profile/upload/image', upload.single('Users_ImageFile'), RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
@@ -9186,14 +9202,14 @@ app.get('/api/activities/my/registered',
   }
 );
 
-// API Check-in with Image and GPS Validation**
+// API Check-in with Image and GPS Validation + AI Verification**
 app.post('/api/activities/:id/checkin', registrationUpload.single('activityImage'), RateLimiter(1 * 60 * 1000, 30), VerifyTokens, async (req, res) => {
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
   const Users_ID = userData?.Users_ID;
   const activityId = parseInt(req.params.id);
-  const { latitude, longitude } = req.body;
+  const { latitude, longitude, aiVerification } = req.body;
 
   if (Login_Type !== 'application') {
     return res.status(403).json({
@@ -9301,10 +9317,10 @@ app.post('/api/activities/:id/checkin', registrationUpload.single('activityImage
               distance: distance
             });
           }
-          saveImageAndCheckIn(req, res, activityId, Users_ID, latitude, longitude);
+          saveImageAndCheckIn(req, res, activityId, Users_ID, latitude, longitude, aiVerification);
         });
       } else {
-        saveImageAndCheckIn(req, res, activityId, Users_ID, null, null);
+        saveImageAndCheckIn(req, res, activityId, Users_ID, null, null, aiVerification);
       }
     });
 
@@ -9317,6 +9333,110 @@ app.post('/api/activities/:id/checkin', registrationUpload.single('activityImage
   }
 }
 );
+
+async function saveImageAndCheckIn(req, res, activityId, userId, latitude, longitude, aiVerificationString) {
+  try {
+    const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
+    if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
+      return res.status(400).json({
+        message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
+        status: false
+      });
+    }
+
+    const processedBuffer = await sharp(req.file.buffer)
+      .resize({ width: 1200, height: 1200, fit: 'inside' })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+
+    const filename = `registration_${uuidv4()}.jpg`;
+    const savePath = path.join(uploadDir_Registration, filename);
+    fs.writeFileSync(savePath, processedBuffer);
+
+    // Parse AI Verification result
+    let aiIsSuccess = null;
+    let aiVerification = null;
+
+    if (aiVerificationString) {
+      try {
+        aiVerification = JSON.parse(aiVerificationString);
+        // AI Success = true if image is REAL (predicted_class == 0 or isReal == true)
+        aiIsSuccess = aiVerification.isReal === true ? 1 : 0;
+
+        console.log('AI Verification Result:', {
+          isReal: aiVerification.isReal,
+          confidence: aiVerification.confidence,
+          aiIsSuccess: aiIsSuccess
+        });
+      } catch (parseErr) {
+        console.error('AI Verification Parse Error:', parseErr);
+      }
+    }
+
+    const insertImageSql = `
+      INSERT INTO registrationpicture 
+      (RegistrationPicture_ImageFile, Users_ID, Activity_ID, RegistrationPictureStatus_ID, RegistrationPicture_IsAiSuccess) 
+      VALUES (?, ?, ?, 1, ?)
+    `;
+
+    db.query(insertImageSql, [filename, userId, activityId, aiIsSuccess], (err, imageResult) => {
+      if (err) {
+        console.error('Insert Image Error:', err);
+        // ลบไฟล์ถ้าบันทึกฐานข้อมูลไม่สำเร็จ
+        if (fs.existsSync(savePath)) {
+          fs.unlinkSync(savePath);
+        }
+        return res.status(500).json({
+          message: 'ไม่สามารถบันทึกรูปภาพได้',
+          status: false
+        });
+      }
+
+      // อัพเดท Registration เป็นเช็คอิน
+      const updateRegSql = `
+        UPDATE registration 
+        SET Registration_CheckInTime = CURRENT_TIMESTAMP,
+            RegistrationStatus_ID = 4
+        WHERE Activity_ID = ? AND Users_ID = ?
+      `;
+
+      db.query(updateRegSql, [activityId, userId], (err, updateResult) => {
+        if (err) {
+          console.error('Update Registration Error:', err);
+          return res.status(500).json({
+            message: 'ไม่สามารถเช็คอินได้',
+            status: false
+          });
+        }
+
+        res.status(200).json({
+          message: 'เช็คอินสำเร็จ',
+          status: true,
+          data: {
+            Activity_ID: activityId,
+            Users_ID: userId,
+            image_file: filename,
+            check_in_time: new Date(),
+            latitude: latitude,
+            longitude: longitude,
+            ai_verification: aiVerification ? {
+              is_real: aiVerification.isReal,
+              confidence: aiVerification.confidence,
+              success: aiIsSuccess === 1
+            } : null
+          }
+        });
+      });
+    });
+
+  } catch (err) {
+    console.error('Save Image Error:', err);
+    res.status(500).json({
+      message: 'เกิดข้อผิดพลาดในการบันทึกรูปภาพ',
+      status: false
+    });
+  }
+}
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
