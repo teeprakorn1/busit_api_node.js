@@ -4,7 +4,7 @@ const db = require('../Server_Services/databaseClient');
 const sendNotificationToUser = async (userId, title, body, data = {}) => {
   try {
     const sql = `SELECT FCM_Token FROM fcmtokens WHERE Users_ID = ? AND FCMToken_IsActive = TRUE`;
-    
+
     return new Promise((resolve, reject) => {
       db.query(sql, [userId], async (err, results) => {
         if (err) {
@@ -17,7 +17,7 @@ const sendNotificationToUser = async (userId, title, body, data = {}) => {
         }
 
         const tokens = results.map(row => row.FCM_Token);
-        
+
         const message = {
           notification: {
             title,
@@ -58,33 +58,33 @@ const sendNotificationToUser = async (userId, title, body, data = {}) => {
         };
 
         try {
-          const response = await admin.messaging().sendMulticast(message);
-          
+          const response = await admin.messaging().sendEachForMulticast(message);
+
           console.log(`✅ Sent notification to user ${userId}:`, {
             successCount: response.successCount,
             failureCount: response.failureCount
           });
-
           if (response.failureCount > 0) {
             const failedTokens = [];
             response.responses.forEach((resp, idx) => {
               if (!resp.success) {
                 failedTokens.push(tokens[idx]);
+                console.error(`Token failed: ${tokens[idx]}, Error:`, resp.error);
               }
             });
-
             if (failedTokens.length > 0) {
               const deactivateSql = `UPDATE fcmtokens SET FCMToken_IsActive = FALSE WHERE FCM_Token IN (?)`;
               db.query(deactivateSql, [failedTokens], (err) => {
                 if (err) console.error('Error deactivating tokens:', err);
+                else console.log(`Deactivated ${failedTokens.length} failed tokens`);
               });
             }
           }
 
-          resolve({ 
-            success: true, 
+          resolve({
+            success: true,
             successCount: response.successCount,
-            failureCount: response.failureCount 
+            failureCount: response.failureCount
           });
         } catch (error) {
           console.error('Error sending FCM notification:', error);
@@ -136,7 +136,7 @@ const saveNotificationForUsers = async (userIds, title, detail, activityId, noti
     const sql = `INSERT INTO notification 
       (Notification_Title, Notification_Detail, Notification_Type, Notification_IsSent, Users_ID, Activity_ID) 
       VALUES ?`;
-    
+
     db.query(sql, [values], (err, result) => {
       if (err) {
         console.error('Error saving notifications to database:', err);

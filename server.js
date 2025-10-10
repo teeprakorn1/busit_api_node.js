@@ -6315,6 +6315,112 @@ app.get('/api/images/profile-images-admin/:filename', VerifyTokens_Website, (req
   }
 });
 
+// API Get Registration Picture Image**
+app.get('/api/images/registration-images/:filename', VerifyTokens, (req, res) => {
+  try {
+    const filename = path.basename(req.params.filename);
+
+    if (!filename.match(/^[a-zA-Z0-9._-]+$/)) {
+      return res.status(400).json({
+        message: 'Invalid filename',
+        status: false
+      });
+    }
+
+    const allowedExt = ['.jpg', '.jpeg', '.png'];
+    const ext = path.extname(filename).toLowerCase();
+
+    if (!allowedExt.includes(ext)) {
+      return res.status(400).json({
+        message: 'Invalid file type',
+        status: false
+      });
+    }
+
+    const filePath = path.join(uploadDir_Registration, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        message: 'Image not found',
+        status: false
+      });
+    }
+
+    res.type(ext);
+    res.sendFile(filePath);
+
+  } catch (err) {
+    console.error('Error serving registration image:', err);
+    res.status(500).json({
+      message: 'Internal server error',
+      status: false
+    });
+  }
+}
+);
+
+
+// API Get Registration Picture Image Admin**
+app.get('/api/admin/images/registration-images/:filename', VerifyTokens, (req, res) => {
+  try {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can access activity image.",
+        status: false
+      });
+    }
+    const filename = path.basename(req.params.filename);
+
+    if (!filename.match(/^[a-zA-Z0-9._-]+$/)) {
+      return res.status(400).json({
+        message: 'Invalid filename',
+        status: false
+      });
+    }
+
+    const allowedExt = ['.jpg', '.jpeg', '.png'];
+    const ext = path.extname(filename).toLowerCase();
+
+    if (!allowedExt.includes(ext)) {
+      return res.status(400).json({
+        message: 'Invalid file type',
+        status: false
+      });
+    }
+
+    const filePath = path.join(uploadDir_Registration, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        message: 'Image not found',
+        status: false
+      });
+    }
+
+    res.type(ext);
+    res.sendFile(filePath);
+
+  } catch (err) {
+    console.error('Error serving registration image:', err);
+    res.status(500).json({
+      message: 'Internal server error',
+      status: false
+    });
+  }
+}
+);
+
 //API add Profile Image in Users of Application
 app.post('/api/profile/upload/image', upload.single('Users_ImageFile'), RateLimiter(0.5 * 60 * 1000, 12), VerifyTokens, async (req, res) => {
   const userData = req.user;
@@ -9082,43 +9188,43 @@ app.get('/api/activities/my/registered',
 
 // API Check-in with Image and GPS Validation**
 app.post('/api/activities/:id/checkin', registrationUpload.single('activityImage'), RateLimiter(1 * 60 * 1000, 30), VerifyTokens, async (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Users_ID = userData?.Users_ID;
-    const activityId = parseInt(req.params.id);
-    const { latitude, longitude } = req.body;
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+  const activityId = parseInt(req.params.id);
+  const { latitude, longitude } = req.body;
 
-    if (Login_Type !== 'application') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed in the application.",
-        status: false
-      });
-    }
+  if (Login_Type !== 'application') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the application.",
+      status: false
+    });
+  }
 
-    if (Users_Type !== 'student' && Users_Type !== 'teacher') {
-      return res.status(403).json({
-        message: "Permission denied.",
-        status: false
-      });
-    }
+  if (Users_Type !== 'student' && Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied.",
+      status: false
+    });
+  }
 
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
 
-    if (!req.file) {
-      return res.status(400).json({
-        message: 'กรุณาแนบรูปภาพกิจกรรม',
-        status: false
-      });
-    }
+  if (!req.file) {
+    return res.status(400).json({
+      message: 'กรุณาแนบรูปภาพกิจกรรม',
+      status: false
+    });
+  }
 
-    try {
-      const checkRegSql = `
+  try {
+    const checkRegSql = `
         SELECT r.Registration_RegisTime, r.Registration_CheckInTime, 
         a.Activity_LocationGPS, ast.ActivityStatus_Name
         FROM registration r
@@ -9127,89 +9233,89 @@ app.post('/api/activities/:id/checkin', registrationUpload.single('activityImage
         WHERE r.Activity_ID = ? AND r.Users_ID = ?
       `;
 
-      db.query(checkRegSql, [activityId, Users_ID], async (err, regResult) => {
-        if (err) {
-          console.error('Check Registration Error:', err);
-          return res.status(500).json({
-            message: 'Database error',
-            status: false
-          });
-        }
+    db.query(checkRegSql, [activityId, Users_ID], async (err, regResult) => {
+      if (err) {
+        console.error('Check Registration Error:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
 
-        if (regResult.length === 0) {
-          return res.status(404).json({
-            message: 'ไม่พบการลงทะเบียนกิจกรรมนี้',
-            status: false
-          });
-        }
+      if (regResult.length === 0) {
+        return res.status(404).json({
+          message: 'ไม่พบการลงทะเบียนกิจกรรมนี้',
+          status: false
+        });
+      }
 
-        const registration = regResult[0];
-        if (registration.Registration_CheckInTime) {
+      const registration = regResult[0];
+      if (registration.Registration_CheckInTime) {
+        return res.status(400).json({
+          message: 'คุณได้เช็คอินกิจกรรมนี้แล้ว',
+          status: false
+        });
+      }
+
+      if (registration.ActivityStatus_Name !== 'กำลังดำเนินการ') {
+        return res.status(400).json({
+          message: 'กิจกรรมยังไม่เปิดให้เช็คอิน',
+          status: false
+        });
+      }
+
+      if (registration.Activity_LocationGPS) {
+        if (!latitude || !longitude) {
           return res.status(400).json({
-            message: 'คุณได้เช็คอินกิจกรรมนี้แล้ว',
+            message: 'กรุณาเปิด GPS เพื่อยืนยันตำแหน่ง',
             status: false
           });
         }
 
-        if (registration.ActivityStatus_Name !== 'กำลังดำเนินการ') {
-          return res.status(400).json({
-            message: 'กิจกรรมยังไม่เปิดให้เช็คอิน',
-            status: false
-          });
-        }
-
-        if (registration.Activity_LocationGPS) {
-          if (!latitude || !longitude) {
-            return res.status(400).json({
-              message: 'กรุณาเปิด GPS เพื่อยืนยันตำแหน่ง',
-              status: false
-            });
-          }
-
-          const getGPSSql = `
+        const getGPSSql = `
             SELECT ST_X(Activity_LocationGPS) as lng, 
                    ST_Y(Activity_LocationGPS) as lat 
             FROM activity 
             WHERE Activity_ID = ?
           `;
 
-          db.query(getGPSSql, [activityId], (err, gpsResult) => {
-            if (err || gpsResult.length === 0) {
-              return res.status(500).json({
-                message: 'ไม่สามารถตรวจสอบตำแหน่งได้',
-                status: false
-              });
-            }
+        db.query(getGPSSql, [activityId], (err, gpsResult) => {
+          if (err || gpsResult.length === 0) {
+            return res.status(500).json({
+              message: 'ไม่สามารถตรวจสอบตำแหน่งได้',
+              status: false
+            });
+          }
 
-            const activityGPS = gpsResult[0];
-            const distance = calculateDistance(
-              parseFloat(latitude),
-              parseFloat(longitude),
-              activityGPS.lat,
-              activityGPS.lng
-            );
-            if (distance > 500) {
-              return res.status(400).json({
-                message: `คุณอยู่นอกพื้นที่กิจกรรม (${distance.toFixed(0)} เมตร)`,
-                status: false,
-                distance: distance
-              });
-            }
-            saveImageAndCheckIn(req, res, activityId, Users_ID, latitude, longitude);
-          });
-        } else {
-          saveImageAndCheckIn(req, res, activityId, Users_ID, null, null);
-        }
-      });
+          const activityGPS = gpsResult[0];
+          const distance = calculateDistance(
+            parseFloat(latitude),
+            parseFloat(longitude),
+            activityGPS.lat,
+            activityGPS.lng
+          );
+          if (distance > 500) {
+            return res.status(400).json({
+              message: `คุณอยู่นอกพื้นที่กิจกรรม (${distance.toFixed(0)} เมตร)`,
+              status: false,
+              distance: distance
+            });
+          }
+          saveImageAndCheckIn(req, res, activityId, Users_ID, latitude, longitude);
+        });
+      } else {
+        saveImageAndCheckIn(req, res, activityId, Users_ID, null, null);
+      }
+    });
 
-    } catch (err) {
-      console.error('Check-in Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred.',
-        status: false
-      });
-    }
+  } catch (err) {
+    console.error('Check-in Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
   }
+}
 );
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -9499,52 +9605,6 @@ app.get('/api/activities/:id/pictures',
       console.error('Get Pictures Error:', err);
       res.status(500).json({
         message: 'An unexpected error occurred.',
-        status: false
-      });
-    }
-  }
-);
-
-// API Get Registration Picture Image**
-app.get('/api/images/registration-images/:filename',
-  VerifyTokens,
-  (req, res) => {
-    try {
-      const filename = path.basename(req.params.filename);
-
-      if (!filename.match(/^[a-zA-Z0-9._-]+$/)) {
-        return res.status(400).json({
-          message: 'Invalid filename',
-          status: false
-        });
-      }
-
-      const allowedExt = ['.jpg', '.jpeg', '.png'];
-      const ext = path.extname(filename).toLowerCase();
-
-      if (!allowedExt.includes(ext)) {
-        return res.status(400).json({
-          message: 'Invalid file type',
-          status: false
-        });
-      }
-
-      const filePath = path.join(uploadDir_Registration, filename);
-
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({
-          message: 'Image not found',
-          status: false
-        });
-      }
-
-      res.type(ext);
-      res.sendFile(filePath);
-
-    } catch (err) {
-      console.error('Error serving registration image:', err);
-      res.status(500).json({
-        message: 'Internal server error',
         status: false
       });
     }
