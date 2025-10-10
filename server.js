@@ -47,6 +47,7 @@ const uploadDir = path.join(__dirname, 'images');
 const uploadDir_Profile = path.join(__dirname, 'images/users-profile-images');
 const uploadDir_Certificate = path.join(__dirname, 'images/certificate-files');
 const uploadDir_Activity = path.join(__dirname, 'images/activities-images');
+const uploadDir_Registration = path.join(__dirname, 'images/registration-images');
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
@@ -62,6 +63,10 @@ if (!fs.existsSync(uploadDir_Certificate)) {
 
 if (!fs.existsSync(uploadDir_Activity)) {
   fs.mkdirSync(uploadDir_Activity, { recursive: true });
+}
+
+if (!fs.existsSync(uploadDir_Registration)) {
+  fs.mkdirSync(uploadDir_Registration, { recursive: true });
 }
 
 // Multer configuration
@@ -82,7 +87,6 @@ const certificateUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
     if (!allowedTypes.includes(file.mimetype)) {
       return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง กรุณาอัปโลดไฟล์ JPG หรือ PNG'), false);
     }
@@ -94,7 +98,17 @@ const activityUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง กรุณาอัปโลดไฟล์ JPG หรือ PNG'), false);
+    }
+    cb(null, true);
+  }
+});
+
+const registrationUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
     if (!allowedTypes.includes(file.mimetype)) {
       return cb(new Error('ประเภทไฟล์ไม่ถูกต้อง กรุณาอัปโลดไฟล์ JPG หรือ PNG'), false);
     }
@@ -9067,11 +9081,7 @@ app.get('/api/activities/my/registered',
 );
 
 // API Check-in with Image and GPS Validation**
-app.post('/api/activities/:id/checkin',
-  activityUpload.single('activityImage'),
-  RateLimiter(1 * 60 * 1000, 30),
-  VerifyTokens,
-  async (req, res) => {
+app.post('/api/activities/:id/checkin', registrationUpload.single('activityImage'), RateLimiter(1 * 60 * 1000, 30), VerifyTokens, async (req, res) => {
     const userData = req.user;
     const Users_Type = userData?.Users_Type;
     const Login_Type = userData?.Login_Type;
@@ -9108,7 +9118,6 @@ app.post('/api/activities/:id/checkin',
     }
 
     try {
-      // ตรวจสอบว่าได้ลงทะเบียนแล้วหรือไม่
       const checkRegSql = `
         SELECT r.Registration_RegisTime, r.Registration_CheckInTime, 
         a.Activity_LocationGPS, ast.ActivityStatus_Name
@@ -9135,8 +9144,6 @@ app.post('/api/activities/:id/checkin',
         }
 
         const registration = regResult[0];
-
-        // ตรวจสอบว่าเช็คอินแล้วหรือยัง
         if (registration.Registration_CheckInTime) {
           return res.status(400).json({
             message: 'คุณได้เช็คอินกิจกรรมนี้แล้ว',
@@ -9144,7 +9151,6 @@ app.post('/api/activities/:id/checkin',
           });
         }
 
-        // ตรวจสอบสถานะกิจกรรม
         if (registration.ActivityStatus_Name !== 'กำลังดำเนินการ') {
           return res.status(400).json({
             message: 'กิจกรรมยังไม่เปิดให้เช็คอิน',
@@ -9152,7 +9158,6 @@ app.post('/api/activities/:id/checkin',
           });
         }
 
-        // ตรวจสอบตำแหน่ง GPS ถ้ามี
         if (registration.Activity_LocationGPS) {
           if (!latitude || !longitude) {
             return res.status(400).json({
@@ -9161,7 +9166,6 @@ app.post('/api/activities/:id/checkin',
             });
           }
 
-          // ดึงพิกัด GPS ของกิจกรรม
           const getGPSSql = `
             SELECT ST_X(Activity_LocationGPS) as lng, 
                    ST_Y(Activity_LocationGPS) as lat 
@@ -9184,8 +9188,6 @@ app.post('/api/activities/:id/checkin',
               activityGPS.lat,
               activityGPS.lng
             );
-
-            // ตรวจสอบว่าอยู่ในรัศมี 500 เมตรหรือไม่
             if (distance > 500) {
               return res.status(400).json({
                 message: `คุณอยู่นอกพื้นที่กิจกรรม (${distance.toFixed(0)} เมตร)`,
@@ -9193,12 +9195,9 @@ app.post('/api/activities/:id/checkin',
                 distance: distance
               });
             }
-
-            // บันทึกรูปภาพและเช็คอิน
             saveImageAndCheckIn(req, res, activityId, Users_ID, latitude, longitude);
           });
         } else {
-          // ถ้าไม่มี GPS กำหนด ให้เช็คอินได้เลย
           saveImageAndCheckIn(req, res, activityId, Users_ID, null, null);
         }
       });
@@ -9213,9 +9212,8 @@ app.post('/api/activities/:id/checkin',
   }
 );
 
-// Helper function: คำนวณระยะทาง (Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // รัศมีโลกเป็นเมตร
+  const R = 6371000;
   const dLat = toRadians(lat2 - lat1);
   const dLon = toRadians(lon2 - lon1);
 
@@ -9225,17 +9223,15 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  return R * c; // ระยะทางเป็นเมตร
+  return R * c;
 }
 
 function toRadians(degrees) {
   return degrees * Math.PI / 180;
 }
 
-// Helper function: บันทึกรูปภาพและเช็คอิน
 async function saveImageAndCheckIn(req, res, activityId, userId, latitude, longitude) {
   try {
-    // ตรวจสอบไฟล์
     const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
     if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
       return res.status(400).json({
@@ -9244,7 +9240,6 @@ async function saveImageAndCheckIn(req, res, activityId, userId, latitude, longi
       });
     }
 
-    // ประมวลผลรูปภาพ
     const processedBuffer = await sharp(req.file.buffer)
       .resize({ width: 1200, height: 1200, fit: 'inside' })
       .jpeg({ quality: 85 })
@@ -9253,8 +9248,6 @@ async function saveImageAndCheckIn(req, res, activityId, userId, latitude, longi
     const filename = `registration_${uuidv4()}.jpg`;
     const savePath = path.join(uploadDir_Registration, filename);
     fs.writeFileSync(savePath, processedBuffer);
-
-    // บันทึกข้อมูลรูปภาพลงฐานข้อมูล
     const insertImageSql = `
       INSERT INTO registrationpicture 
       (RegistrationPicture_ImageFile, Users_ID, Activity_ID, RegistrationPictureStatus_ID) 
@@ -9438,7 +9431,7 @@ app.post('/api/activities/:id/checkout',
   }
 );
 
-// API Get Registration Pictures**
+// API Get Registration Pictures by User**
 app.get('/api/activities/:id/pictures',
   RateLimiter(1 * 60 * 1000, 300),
   VerifyTokens_Website,
@@ -9447,6 +9440,7 @@ app.get('/api/activities/:id/pictures',
     const Users_Type = userData?.Users_Type;
     const Login_Type = userData?.Login_Type;
     const activityId = parseInt(req.params.id);
+    const { userId } = req.query;
 
     if (Login_Type !== 'website') {
       return res.status(403).json({
@@ -9463,7 +9457,7 @@ app.get('/api/activities/:id/pictures',
     }
 
     try {
-      const sql = `
+      let sql = `
         SELECT rp.*, u.Users_Email, 
         s.Student_FirstName, s.Student_LastName, s.Student_Code,
         t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
@@ -9474,10 +9468,18 @@ app.get('/api/activities/:id/pictures',
         LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
         LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
         WHERE rp.Activity_ID = ?
-        ORDER BY rp.RegistrationPicture_RegisTime DESC
       `;
 
-      db.query(sql, [activityId], (err, results) => {
+      const params = [activityId];
+
+      if (userId) {
+        sql += ` AND rp.Users_ID = ?`;
+        params.push(parseInt(userId));
+      }
+
+      sql += ` ORDER BY rp.RegistrationPicture_RegisTime DESC`;
+
+      db.query(sql, params, (err, results) => {
         if (err) {
           console.error('Get Pictures Error:', err);
           return res.status(500).json({
