@@ -263,6 +263,22 @@ CREATE TABLE IF NOT EXISTS FCMTokens(
     INDEX idx_fcm_active (FCMToken_IsActive)
 );
 
+CREATE TABLE IF NOT EXISTS Announcement(
+    Announcement_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
+    Announcement_Title VARCHAR(255) NOT NULL,
+    Announcement_Description TEXT NOT NULL,
+    Announcement_ImageFile VARCHAR(255),
+    Announcement_StartDate DATETIME NOT NULL,
+    Announcement_EndDate DATETIME,
+    Announcement_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Announcement_UpdateTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    Announcement_IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+    Announcement_Priority INT(3) NOT NULL DEFAULT 0,
+    INDEX idx_announcement_active (Announcement_IsActive),
+    INDEX idx_announcement_dates (Announcement_StartDate, Announcement_EndDate),
+    INDEX idx_announcement_priority (Announcement_Priority)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO faculty (Faculty_Name) 
 VALUES ('บริหารธุรกิจและเทคโนโลยีสารสนเทศ');
 
@@ -289,6 +305,11 @@ INSERT INTO department (Department_Name, Faculty_ID) VALUES
 -- ('ภาษาไทย', 2),
 -- ('ภาษาจีน', 2);
 
+INSERT INTO registrationpicturestatus (RegistrationPictureStatus_Name) VALUES
+('รออนุมัติ'),
+('อนุมัติแล้ว'),
+('ปฏิเสธ');
+
 INSERT INTO activitytype (ActivityType_Name, ActivityType_Description) VALUES
 ('กิจกรรมเสริมสร้างจิตสำนึก', 'กิจกรรมที่เกี่ยวข้องกับการเสริมสร้างจิตสำนึก อาสาสมัครและบริการสังคม เพื่อสร้างจิตสำนึกที่ดี'),
 ('กิจกรรมเสริมสร้างทักษะ', 'กิจกรรมที่เกี่ยวข้องกับการเสริมสร้างทักษะ ทางด้านวิชาการ การศึกษา และทักษะในสายวิชาชีพ'),
@@ -301,6 +322,12 @@ INSERT INTO activitystatus (ActivityStatus_Name, ActivityStatus_Description) VAL
 ('กำลังดำเนินการ', 'กิจกรรมกำลังดำเนินการอยู่'),
 ('เสร็จสิ้น', 'กิจกรรมเสร็จสิ้นแล้ว'),
 ('ยกเลิก', 'กิจกรรมถูกยกเลิก');
+
+INSERT INTO registrationstatus (RegistrationStatus_Name) VALUES
+('ลงทะเบียนสำเร็จ'),
+('รอยืนยัน'),
+('ยกเลิก'),
+('เข้าร่วมสำเร็จ');
 
 INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
 ('teacher.admin@rmutto.ac.th', 'teacher.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),

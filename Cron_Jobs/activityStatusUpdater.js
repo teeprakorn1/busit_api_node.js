@@ -40,8 +40,8 @@ const initActivityStatusCron = () => {
   console.log('[Activity Status Updater] Running initial status update...');
   updateActivityStatus();
 
-  cron.schedule('*/5 * * * *', () => {
-    console.log(`[${new Date().toISOString()}] Running scheduled activity status update (every 5 minutes)...`);
+  cron.schedule('*/1 * * * *', () => {
+    console.log(`[${new Date().toISOString()}] Running scheduled activity status update (every 1 minutes)...`);
     updateActivityStatus();
   });
 
@@ -51,7 +51,7 @@ const initActivityStatusCron = () => {
   });
 
   console.log('✓ Activity status cron jobs initialized successfully');
-  console.log('  - Every 5 minutes: */5 * * * *');
+  console.log('  - Every 1 minutes: */1 * * * *');
   console.log('  - Daily at midnight: 0 0 * * *');
 };
 

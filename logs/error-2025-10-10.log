@@ -1,0 +1,9 @@
+[10-10-2025 00:38:03] ERROR: [User: anonymous] ← 500 POST /api/activities/1/register | 548.24 ms from 192.168.1.109
+[10-10-2025 01:09:59] ERROR: [User: anonymous] ← 500 POST /api/activities/1/register | 152.17 ms from 192.168.1.109
+[10-10-2025 04:51:56] ERROR: [User: anonymous] ← 500 GET /api/admin/activity-statuses | 11.83 ms from ::1
+[10-10-2025 04:51:56] ERROR: [User: anonymous] ← 500 GET /api/admin/activities | 8.23 ms from ::1
+[10-10-2025 04:52:09] ERROR: [User: anonymous] ← 500 GET /api/admin/activities/1/stats | 9.92 ms from ::1
+[10-10-2025 04:52:21] ERROR: [User: anonymous] ← 500 GET /api/admin/templates | 13.32 ms from ::1
+[10-10-2025 05:08:36] ERROR: [User: anonymous] ← 500 GET /api/admin/activities | 8.63 ms from ::1
+[10-10-2025 05:08:36] ERROR: [User: anonymous] ← 500 GET /api/admin/activity-statuses | 8.40 ms from ::1
+[10-10-2025 05:08:39] ERROR: [User: anonymous] ← 500 GET /api/admin/activity-statuses | 17.18 ms from ::1

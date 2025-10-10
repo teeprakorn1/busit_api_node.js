@@ -13,18 +13,46 @@ const sendNotificationToUser = async (userId, title, body, data = {}) => {
         }
 
         if (results.length === 0) {
-          console.log(`No active FCM tokens found for user ${userId}`);
           return resolve({ success: false, message: 'No tokens found' });
         }
 
         const tokens = results.map(row => row.FCM_Token);
         
         const message = {
-          notification: { title, body },
+          notification: {
+            title,
+            body,
+          },
           data: {
             ...data,
             click_action: 'FLUTTER_NOTIFICATION_CLICK',
             timestamp: new Date().toISOString()
+          },
+          android: {
+            priority: 'high',
+            notification: {
+              channelId: 'activity_channel',
+              priority: 'high',
+              defaultSound: true,
+              defaultVibrateTimings: true,
+              defaultLightSettings: true,
+              sound: 'notification_sound',
+              color: '#001B3F',
+              visibility: 'public',
+            }
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: 'notification_sound.caf',
+                badge: 1,
+                alert: {
+                  title,
+                  body
+                },
+                'interruption-level': 'time-sensitive'
+              }
+            }
           },
           tokens: tokens
         };
@@ -32,7 +60,7 @@ const sendNotificationToUser = async (userId, title, body, data = {}) => {
         try {
           const response = await admin.messaging().sendMulticast(message);
           
-          console.log(`✓ Sent notification to user ${userId}:`, {
+          console.log(`✅ Sent notification to user ${userId}:`, {
             successCount: response.successCount,
             failureCount: response.failureCount
           });

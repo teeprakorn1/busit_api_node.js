@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 120
+    },
+    "auditLog": "E:\\busit_project\\busit_nodejs\\logs\\.5b3641290826655c8a48ca19d74b2b606ef2d513-audit.json",
+    "files": [
+        {
+            "date": 1760030682496,
+            "name": "E:\\busit_project\\busit_nodejs\\logs\\app-2025-10-10.log",
+            "hash": "25cfcb50f6690fab6dd994f9fe7a5b999cf146eb405d2f6b582cbb7b8532f833"
+        }
+    ],
+    "hashType": "sha256"
+}
