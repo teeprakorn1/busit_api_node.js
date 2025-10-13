@@ -2023,7 +2023,7 @@ app.get('/api/dataedit/stats', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_We
 });
 
 //////////////////////////////////Admin Website API///////////////////////////////////////
-// API Get Data Admin by VerifyTokens of Admin Website
+// API Get Data Admin by VerifyTokens of Admin Website**
 app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const usersTypeID = userData.UsersType_ID;
@@ -2050,7 +2050,8 @@ app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_We
         INNER JOIN department dp ON ty.Department_ID = dp.Department_ID) INNER JOIN faculty f ON dp.Faculty_ID = f.Faculty_ID) 
         INNER JOIN users u ON ty.Users_ID = u.Users_ID) WHERE ${columnName} = ? LIMIT 1`;
     } else if (usersType === 'staff') {
-      sql = `SELECT * FROM ${tableName} WHERE ${columnName} = ? LIMIT 1`;
+      sql = `SELECT ty.*, u.Users_Email, u.Users_ImageFile FROM ${tableName} ty 
+        INNER JOIN users u ON ty.Users_ID = u.Users_ID WHERE ${columnName} = ? LIMIT 1`;
     } else {
       return res.status(400).json({ message: "Invalid user type.", status: false });
     }
@@ -2064,6 +2065,11 @@ app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_We
       if (result.length > 0) {
         const profileData = result[0];
         profileData['Users_Type_Table'] = usersType;
+
+        if (usersType === 'teacher') {
+          profileData['Teacher_IsDean'] = Boolean(profileData.Teacher_IsDean);
+        }
+        
         profileData['message'] = 'Profile data retrieved successfully.';
         profileData['status'] = true;
         res.status(200).json(profileData);
@@ -4374,12 +4380,39 @@ app.get('/api/users/:id/activities', RateLimiter(1 * 60 * 1000, 150), VerifyToke
   }
 
   try {
-    const activitiesSql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description, a.Activity_StartTime, a.Activity_EndTime,
-      TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as Activity_TotalHours, a.Activity_LocationDetail, at.ActivityType_ID,
-      at.ActivityType_Name, ast.ActivityStatus_ID, ast.ActivityStatus_Name, r.Registration_RegisTime, r.Registration_CheckInTime, r.Registration_CheckOutTime,
-      rs.RegistrationStatus_ID, rs.RegistrationStatus_Name FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID INNER JOIN activitytype at 
-      ON a.ActivityType_ID = at.ActivityType_ID INNER JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN registrationstatus rs ON 
-      r.RegistrationStatus_ID = rs.RegistrationStatus_ID WHERE r.Users_ID = ? ORDER BY r.Registration_RegisTime DESC LIMIT 50`;
+    const activitiesSql = `
+      SELECT 
+        a.Activity_ID, 
+        a.Activity_Title, 
+        a.Activity_Description, 
+        a.Activity_StartTime, 
+        a.Activity_EndTime,
+        TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as Activity_TotalHours, 
+        a.Activity_LocationDetail, 
+        at.ActivityType_ID,
+        at.ActivityType_Name, 
+        ast.ActivityStatus_ID, 
+        ast.ActivityStatus_Name, 
+        r.Registration_RegisTime, 
+        r.Registration_CheckInTime, 
+        r.Registration_CheckOutTime,
+        rs.RegistrationStatus_ID, 
+        rs.RegistrationStatus_Name,
+        rp.RegistrationPicture_ApprovedTime,
+        rp.RegistrationPicture_IsAiSuccess,
+        rps.RegistrationPictureStatus_ID,
+        rps.RegistrationPictureStatus_Name
+      FROM registration r 
+      INNER JOIN activity a ON r.Activity_ID = a.Activity_ID 
+      INNER JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
+      INNER JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+      LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID
+      LEFT JOIN registrationpicture rp ON rp.Users_ID = r.Users_ID AND rp.Activity_ID = r.Activity_ID
+      LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+      WHERE r.Users_ID = ? 
+      ORDER BY r.Registration_RegisTime DESC 
+      LIMIT 50
+    `;
 
     db.query(activitiesSql, [userId], (err, results) => {
       if (err) {
@@ -4406,7 +4439,10 @@ app.get('/api/users/:id/activities', RateLimiter(1 * 60 * 1000, 150), VerifyToke
         Registration_CheckInTime: row.Registration_CheckInTime,
         Registration_CheckOutTime: row.Registration_CheckOutTime,
         Registration_IsCancelled: row.RegistrationStatus_ID === 3,
-        Registration_CancelTime: row.RegistrationStatus_ID === 3 ? row.Registration_RegisTime : null
+        Registration_CancelTime: row.RegistrationStatus_ID === 3 ? row.Registration_RegisTime : null,
+        RegistrationPicture_ApprovedTime: row.RegistrationPicture_ApprovedTime,
+        RegistrationPicture_IsAiSuccess: row.RegistrationPicture_IsAiSuccess,
+        RegistrationPicture_Status: row.RegistrationPictureStatus_Name
       }));
 
       res.status(200).json({
@@ -5120,6 +5156,170 @@ app.get('/api/admin/teachers/:id/basic', RateLimiter(1 * 60 * 1000, 300), Verify
   }
 });
 
+//get students incomplete activities for admin**
+app.get('/api/admin/students/incomplete-activities', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Requester_Users_Type = userData?.Users_Type;
+  const Requester_Users_ID = userData?.Users_ID;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
+
+  if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff and teachers can access this.",
+      status: false
+    });
+  }
+
+  const includeGraduated = req.query.includeGraduated === 'true';
+  const departmentId = req.query.departmentId ? parseInt(req.query.departmentId, 10) : null;
+  const facultyId = req.query.facultyId ? parseInt(req.query.facultyId, 10) : null;
+  const academicYear = req.query.academicYear ? parseInt(req.query.academicYear, 10) : null;
+  const search = req.query.search ? req.query.search.trim() : '';
+
+  try {
+    let whereConditions = [];
+    let queryParams = [];
+
+    if (!includeGraduated) {
+      whereConditions.push('s.Student_IsGraduated = FALSE');
+    }
+
+    if (Requester_Users_Type === 'teacher') {
+      const teacherCheckSql = `
+          SELECT t.Department_ID, t.Teacher_IsDean 
+          FROM teacher t 
+          WHERE t.Users_ID = ? 
+          LIMIT 1
+        `;
+
+      const teacherResult = await new Promise((resolve, reject) => {
+        db.query(teacherCheckSql, [Requester_Users_ID], (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      });
+
+      if (teacherResult.length === 0) {
+        return res.status(403).json({
+          message: "Teacher profile not found.",
+          status: false
+        });
+      }
+
+      const teacherInfo = teacherResult[0];
+      const isDean = Boolean(teacherInfo.Teacher_IsDean);
+
+      if (!isDean && teacherInfo.Department_ID) {
+        whereConditions.push('s.Department_ID = ?');
+        queryParams.push(teacherInfo.Department_ID);
+      }
+    }
+
+    if (facultyId && !isNaN(facultyId)) {
+      whereConditions.push('f.Faculty_ID = ?');
+      queryParams.push(facultyId);
+    }
+
+    if (departmentId && !isNaN(departmentId)) {
+      whereConditions.push('s.Department_ID = ?');
+      queryParams.push(departmentId);
+    }
+
+    if (academicYear && !isNaN(academicYear)) {
+      whereConditions.push('s.Student_AcademicYear = ?');
+      queryParams.push(academicYear);
+    }
+
+    if (search && search.length > 0) {
+      whereConditions.push(`(
+          s.Student_FirstName LIKE ? OR 
+          s.Student_LastName LIKE ? OR 
+          s.Student_Code LIKE ? OR 
+          u.Users_Email LIKE ?
+        )`);
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(' AND ')}`
+      : '';
+
+    const sql = `SELECT s.Student_ID, s.Student_Code, s.Student_FirstName, 
+        s.Student_LastName, s.Student_Phone, s.Student_AcademicYear, s.Student_Birthdate, 
+        s.Student_Religion, s.Student_MedicalProblem, s.Student_RegisTime, s.Student_IsGraduated, 
+        s.Users_ID, s.Teacher_ID, s.Department_ID, d.Department_Name, f.Faculty_ID, f.Faculty_Name, 
+        u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive, 
+        ( SELECT COUNT(DISTINCT rp.Activity_ID) FROM registrationpicture rp WHERE rp.Users_ID = s.Users_ID
+        AND rp.RegistrationPictureStatus_ID = 2) as completed_activities FROM student s INNER JOIN users u ON 
+        s.Users_ID = u.Users_ID INNER JOIN department d ON s.Department_ID = d.Department_ID INNER JOIN faculty f 
+        ON d.Faculty_ID = f.Faculty_ID ${whereClause} HAVING completed_activities < 10 ORDER BY completed_activities ASC,
+        f.Faculty_Name ASC, d.Department_Name ASC, s.Student_AcademicYear DESC, s.Student_FirstName ASC, s.Student_LastName ASC`;
+
+    db.query(sql, queryParams, (err, results) => {
+      if (err) {
+        console.error('Database Error:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      const students = results.map(student => ({
+        Student_ID: student.Student_ID,
+        Student_Code: student.Student_Code,
+        Student_FirstName: student.Student_FirstName,
+        Student_LastName: student.Student_LastName,
+        Student_FullName: `${student.Student_FirstName} ${student.Student_LastName}`,
+        Student_Phone: student.Student_Phone,
+        Student_AcademicYear: student.Student_AcademicYear,
+        Student_Birthdate: student.Student_Birthdate,
+        Student_Religion: student.Student_Religion,
+        Student_MedicalProblem: student.Student_MedicalProblem,
+        Student_RegisTime: student.Student_RegisTime,
+        Student_IsGraduated: Boolean(student.Student_IsGraduated),
+        completed_activities: student.completed_activities || 0,
+        Department: {
+          Department_ID: student.Department_ID,
+          Department_Name: student.Department_Name,
+          Faculty_ID: student.Faculty_ID,
+          Faculty_Name: student.Faculty_Name
+        },
+        Users: {
+          Users_ID: student.Users_ID,
+          Users_Email: student.Users_Email,
+          Users_Username: student.Users_Username,
+          Users_RegisTime: student.Users_RegisTime,
+          Users_ImageFile: student.Users_ImageFile,
+          Users_IsActive: Boolean(student.Users_IsActive)
+        }
+      }));
+
+      res.status(200).json({
+        message: 'Students with incomplete activities retrieved successfully.',
+        status: true,
+        data: students,
+        count: students.length,
+        max_activities: 10
+      });
+    });
+  } catch (err) {
+    console.error('Server Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+}
+);
+
 // API Get All Students with Filtering, and Search of Website Admin
 app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
@@ -5225,7 +5425,7 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
   }
 });
 
-// API Get Student Detail by ID for Website Admin
+// API Get Student Detail by ID for Website Admin**
 app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -5245,12 +5445,46 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
   }
 
   try {
-    const studentSql = `SELECT s.Student_ID, s.Student_Code, s.Student_FirstName, s.Student_LastName, 
-      s.Student_Phone, s.Student_AcademicYear, s.Student_Birthdate, s.Student_Religion, s.Student_MedicalProblem, 
-      s.Student_RegisTime, s.Student_IsGraduated, s.Users_ID, s.Teacher_ID, s.Department_ID, d.Department_Name, f.Faculty_ID, 
-      f.Faculty_Name, u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive, t.Teacher_FirstName AS Advisor_FirstName, 
-      t.Teacher_LastName AS Advisor_LastName FROM student s INNER JOIN users u ON s.Users_ID = u.Users_ID INNER JOIN department d ON s.Department_ID = d.Department_ID 
-      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID LEFT JOIN teacher t ON s.Teacher_ID = t.Teacher_ID WHERE s.Student_ID = ?`;
+    const studentSql = `
+      SELECT 
+        s.Student_ID, 
+        s.Student_Code, 
+        s.Student_FirstName, 
+        s.Student_LastName, 
+        s.Student_Phone, 
+        s.Student_AcademicYear, 
+        s.Student_Birthdate, 
+        s.Student_Religion, 
+        s.Student_MedicalProblem, 
+        s.Student_RegisTime, 
+        s.Student_IsGraduated, 
+        s.Users_ID, 
+        s.Teacher_ID, 
+        s.Department_ID, 
+        d.Department_Name, 
+        f.Faculty_ID, 
+        f.Faculty_Name, 
+        u.Users_Email, 
+        u.Users_Username, 
+        u.Users_RegisTime, 
+        u.Users_ImageFile, 
+        u.Users_IsActive, 
+        t.Teacher_FirstName AS Advisor_FirstName, 
+        t.Teacher_LastName AS Advisor_LastName,
+        (
+          SELECT COUNT(DISTINCT rp.Activity_ID)
+          FROM registrationpicture rp
+          WHERE rp.Users_ID = s.Users_ID
+            AND rp.RegistrationPictureStatus_ID = 2
+        ) as completed_activities
+      FROM student s 
+      INNER JOIN users u ON s.Users_ID = u.Users_ID 
+      INNER JOIN department d ON s.Department_ID = d.Department_ID 
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
+      LEFT JOIN teacher t ON s.Teacher_ID = t.Teacher_ID 
+      WHERE s.Student_ID = ?
+    `;
+
     db.query(studentSql, [studentId], (err, studentResults) => {
       if (err) {
         console.error('Get Student Detail Error:', err);
@@ -5262,64 +5496,129 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
       }
 
       const student = studentResults[0];
-      const otherPhonesSql = `SELECT OtherPhone_ID, OtherPhone_Name, OtherPhone_Phone FROM otherphone WHERE Users_ID = ? ORDER BY OtherPhone_ID ASC`;
-      db.query(otherPhonesSql, [student.Users_ID], (err, phoneResults) => {
-        if (err) {
-          console.error('Get Other Phones Error:', err);
-          phoneResults = [];
+      
+      // Get completed activities with full details including Registration data
+      const activitiesSql = `
+        SELECT DISTINCT
+          a.Activity_ID,
+          a.Activity_Title,
+          a.Activity_Description,
+          a.Activity_StartTime,
+          a.Activity_EndTime,
+          a.Activity_LocationDetail,
+          at.ActivityType_Name,
+          rp.RegistrationPicture_ApprovedTime,
+          rp.RegistrationPicture_IsAiSuccess,
+          rps.RegistrationPictureStatus_Name,
+          r.Registration_RegisTime,
+          r.Registration_CheckInTime,
+          r.Registration_CheckOutTime,
+          TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as Activity_Hours
+        FROM registrationpicture rp
+        INNER JOIN activity a ON rp.Activity_ID = a.Activity_ID
+        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
+        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+        LEFT JOIN registration r ON r.Users_ID = rp.Users_ID AND r.Activity_ID = rp.Activity_ID
+        WHERE rp.Users_ID = ?
+          AND rp.RegistrationPictureStatus_ID = 2
+        ORDER BY rp.RegistrationPicture_ApprovedTime DESC
+        LIMIT 10
+      `;
+
+      db.query(activitiesSql, [student.Users_ID], (actErr, activityResults) => {
+        if (actErr) {
+          console.error('Get Activities Error:', actErr);
+          activityResults = [];
         }
 
-        const otherPhones = phoneResults.map(phone => ({
-          id: phone.OtherPhone_ID,
-          name: phone.OtherPhone_Name,
-          phone: phone.OtherPhone_Phone
-        }));
-
-        if (otherPhones.length === 0) {
-          otherPhones.push({ name: '', phone: '' });
-        }
-
-        const studentDetail = {
-          id: student.Student_ID,
-          email: student.Users_Email,
-          username: student.Users_Username,
-          userType: 'student',
-          Users_ID: student.Users_ID,
-          isActive: student.Users_IsActive,
-          regisTime: student.Users_RegisTime,
-          imageFile: student.Users_ImageFile,
-          student: {
-            code: student.Student_Code,
-            firstName: student.Student_FirstName,
-            lastName: student.Student_LastName,
-            phone: student.Student_Phone,
-            otherPhones: otherPhones,
-            academicYear: student.Student_AcademicYear,
-            birthdate: student.Student_Birthdate,
-            religion: student.Student_Religion,
-            medicalProblem: student.Student_MedicalProblem,
-            department: student.Department_Name,
-            faculty: student.Faculty_Name,
-            advisor: student.Advisor_FirstName && student.Advisor_LastName
-              ? `${student.Advisor_FirstName} ${student.Advisor_LastName}`
-              : null,
-            isGraduated: student.Student_IsGraduated,
-            regisTime: student.Student_RegisTime
-          },
-          department: {
-            id: student.Department_ID,
-            name: student.Department_Name,
-            faculty: {
-              id: student.Faculty_ID,
-              name: student.Faculty_Name
-            }
+        const otherPhonesSql = `
+          SELECT OtherPhone_ID, OtherPhone_Name, OtherPhone_Phone 
+          FROM otherphone 
+          WHERE Users_ID = ? 
+          ORDER BY OtherPhone_ID ASC
+        `;
+        
+        db.query(otherPhonesSql, [student.Users_ID], (phoneErr, phoneResults) => {
+          if (phoneErr) {
+            console.error('Get Other Phones Error:', phoneErr);
+            phoneResults = [];
           }
-        };
 
-        res.status(200).json({
-          message: 'Student details retrieved successfully.',
-          status: true,
-          data: studentDetail
+          const otherPhones = phoneResults.map(phone => ({
+            id: phone.OtherPhone_ID,
+            name: phone.OtherPhone_Name,
+            phone: phone.OtherPhone_Phone
+          }));
+
+          if (otherPhones.length === 0) {
+            otherPhones.push({ name: '', phone: '' });
+          }
+
+          const activities = activityResults.map(act => ({
+            id: act.Activity_ID,
+            title: act.Activity_Title,
+            description: act.Activity_Description || '',
+            type: act.ActivityType_Name,
+            date: act.Activity_StartTime,
+            startTime: act.Activity_StartTime,
+            endTime: act.Activity_EndTime,
+            locationDetail: act.Activity_LocationDetail || '',
+            approvedDate: act.RegistrationPicture_ApprovedTime,
+            hours: act.Activity_Hours || 0,
+            // Registration data
+            registrationTime: act.Registration_RegisTime,
+            checkInTime: act.Registration_CheckInTime,
+            checkOutTime: act.Registration_CheckOutTime,
+            // AI verification data
+            isAiSuccess: act.RegistrationPicture_IsAiSuccess,
+            pictureStatus: act.RegistrationPictureStatus_Name
+          }));
+
+          const studentDetail = {
+            id: student.Student_ID,
+            email: student.Users_Email,
+            username: student.Users_Username,
+            userType: 'student',
+            Users_ID: student.Users_ID,
+            isActive: student.Users_IsActive,
+            regisTime: student.Users_RegisTime,
+            imageFile: student.Users_ImageFile,
+            student: {
+              code: student.Student_Code,
+              firstName: student.Student_FirstName,
+              lastName: student.Student_LastName,
+              phone: student.Student_Phone,
+              otherPhones: otherPhones,
+              academicYear: student.Student_AcademicYear,
+              birthdate: student.Student_Birthdate,
+              religion: student.Student_Religion,
+              medicalProblem: student.Student_MedicalProblem,
+              department: student.Department_Name,
+              faculty: student.Faculty_Name,
+              advisor: student.Advisor_FirstName && student.Advisor_LastName
+                ? `${student.Advisor_FirstName} ${student.Advisor_LastName}`
+                : null,
+              isGraduated: student.Student_IsGraduated,
+              regisTime: student.Student_RegisTime,
+              completedActivities: student.completed_activities || 0,
+              completed_activities: student.completed_activities || 0
+            },
+            department: {
+              id: student.Department_ID,
+              name: student.Department_Name,
+              faculty: {
+                id: student.Faculty_ID,
+                name: student.Faculty_Name
+              }
+            },
+            activities: activities
+          };
+
+          res.status(200).json({
+            message: 'Student details retrieved successfully.',
+            status: true,
+            data: studentDetail
+          });
         });
       });
     });
