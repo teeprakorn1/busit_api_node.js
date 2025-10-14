@@ -346,18 +346,22 @@ INSERT INTO registrationstatus (RegistrationStatus_Name) VALUES
 ('เข้าร่วมสำเร็จ');
 
 INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
+('staff.admin@rmutto.ac.th', 'staff.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'staff'),
 ('teacher.admin@rmutto.ac.th', 'teacher.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
-('student.admin@rmutto.ac.th', 'student.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student'),
-('staff.admin@rmutto.ac.th', 'staff.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'staff');
-
-INSERT INTO teacher (Teacher_Code, Teacher_FirstName, Teacher_LastName, Users_ID, Department_ID)
-VALUES ('111111111111-1', 'Teacher', 'Admin', '1', '1');
-
-INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
-VALUES ('222222222222-2', 'Student', 'Admin', '2025', '2', '1', '1');
+('dean.admin@rmutto.ac.th', 'dean.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
+('student.admin@rmutto.ac.th', 'student.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student');
 
 INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Users_ID)
-VALUES ('333333333333-3', 'Staff', 'Admin', '3');
+VALUES ('000000000000-1', 'Staff', 'Admin', '1');
+
+INSERT INTO teacher (Teacher_Code, Teacher_FirstName, Teacher_LastName, Users_ID, Department_ID)
+VALUES ('111111111111-1', 'Teacher', 'Admin', '2', '1');
+
+INSERT INTO teacher (Teacher_Code, Teacher_FirstName, Teacher_LastName, Users_ID, Department_ID, Teacher_IsDean)
+VALUES ('111111111111-2', 'Dean', 'Admin', '3', '2', TRUE);
+
+INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
+VALUES ('222222222222-1', 'Student', 'Admin', '2025', '4', '1', '1');
 
 INSERT INTO timestamptype (TimestampType_Name)
 VALUES ('timestamp_application_login'),('timestamp_website_login'),
