@@ -1,7 +1,7 @@
 const xss = require('xss');
 const cors = require('cors');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 const express = require('express');
 const bcrypt = require('bcrypt');
@@ -46,6 +46,8 @@ initializeFirebase();
 const uploadDir = path.join(__dirname, 'images');
 const uploadDir_Profile = path.join(__dirname, 'images/users-profile-images');
 const uploadDir_Certificate = path.join(__dirname, 'images/certificate-files');
+const uploadDir_Template = path.join(__dirname, 'images/certificate-files');
+const uploadDir_Signature = path.join(__dirname, 'images/certificate-files');
 const uploadDir_Activity = path.join(__dirname, 'images/activities-images');
 const uploadDir_Registration = path.join(__dirname, 'images/registration-images');
 
@@ -201,6 +203,92 @@ if (isProduction) {
   });
 } else {
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, { explorer: true }));
+}
+
+//////////////////////////////// OTHER FUNCTION ///////////////////////////////////////
+
+// Certificate Creation Function
+// เพิ่มฟังก์ชันนี้ก่อน generateCertificateImage
+function escapeXml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+async function generateCertificateImage(certData, fullName, outputPath) {
+  try {
+    const fsPromises = require('fs').promises;
+    
+    const templatePath = path.join(uploadDir_Template, certData.Template_ImageFile);
+    await fsPromises.access(templatePath);
+    const templateBuffer = await fsPromises.readFile(templatePath);
+    const metadata = await sharp(templateBuffer).metadata();
+    const nameX = certData.Template_PositionX || Math.floor(metadata.width / 2);
+    const nameY = certData.Template_PositionY || Math.floor(metadata.height / 2);
+    const escapedFullName = escapeXml(fullName);
+
+    const textSvg = `
+      <svg width="${metadata.width}" height="${metadata.height}">
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&amp;display=swap');
+          .name {
+            font-family: 'Sarabun', 'TH Sarabun New', sans-serif;
+            font-size: 40px;
+            font-weight: 700;
+            fill: #000000;
+            text-anchor: middle;
+          }
+        </style>
+        <text x="${550}" y="${475}" class="name">${escapedFullName}</text>
+      </svg>
+    `;
+
+    const textBuffer = Buffer.from(textSvg);
+    const composites = [
+      {
+        input: textBuffer,
+        top: 0,
+        left: 0
+      }
+    ];
+
+    if (certData.Signature_ImageFile) {
+      const signaturePath = path.join(uploadDir_Signature, certData.Signature_ImageFile);
+
+      try {
+        await fsPromises.access(signaturePath);
+        const signatureBuffer = await sharp(signaturePath)
+          .resize(300, 150, {
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .toBuffer();
+
+        composites.push({
+          input: signatureBuffer,
+          top: metadata.height - 230,
+          left: metadata.width - 680,
+        });
+      } catch (sigErr) {
+        console.warn('Signature file not found, skipping:', sigErr.message);
+      }
+    }
+
+    await sharp(templatePath)
+      .composite(composites)
+      .png()
+      .toFile(outputPath);
+
+    console.log(`Certificate generated successfully: ${outputPath}`);
+
+  } catch (error) {
+    console.error('Generate certificate error:', error);
+    throw new Error(`Failed to generate certificate: ${error.message}`);
+  }
 }
 
 ////////////////////////////////// TEST API ///////////////////////////////////////
@@ -2069,7 +2157,7 @@ app.get('/api/admin/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens_We
         if (usersType === 'teacher') {
           profileData['Teacher_IsDean'] = Boolean(profileData.Teacher_IsDean);
         }
-        
+
         profileData['message'] = 'Profile data retrieved successfully.';
         profileData['status'] = true;
         res.status(200).json(profileData);
@@ -5496,7 +5584,7 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
       }
 
       const student = studentResults[0];
-      
+
       // Get completed activities with full details including Registration data
       const activitiesSql = `
         SELECT DISTINCT
@@ -5537,7 +5625,7 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
           WHERE Users_ID = ? 
           ORDER BY OtherPhone_ID ASC
         `;
-        
+
         db.query(otherPhonesSql, [student.Users_ID], (phoneErr, phoneResults) => {
           if (phoneErr) {
             console.error('Get Other Phones Error:', phoneErr);
@@ -6703,6 +6791,93 @@ app.get('/api/users/images/activities-images/:filename', VerifyTokens, (req, res
   } catch (err) {
     console.error('Error serving activity image:', err);
     res.status(500).json({ message: 'Internal server error', status: false });
+  }
+});
+
+// API get real certificate image files**
+app.get('/api/admin/images/certificate-real-files/:filename', VerifyTokens_Website, async (req, res) => {
+  try {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    if (Login_Type !== 'website') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'staff') {
+      return res.status(403).json({
+        message: "Permission denied. Only staff can access certificate files.",
+        status: false
+      });
+    }
+
+    const filename = path.basename(req.params.filename);
+    if (!filename.match(/^certificate_[a-zA-Z0-9-]+\.png$/)) {
+      return res.status(400).json({
+        message: 'Invalid filename format',
+        status: false
+      });
+    }
+
+    const outputPath = path.join(uploadDir_Certificate, filename);
+    try {
+      await fs.access(outputPath);
+      return res.sendFile(outputPath);
+    } catch (err) {
+      console.log('Certificate not found, generating new one...');
+    }
+
+    const certSql = `SELECT c.Certificate_ID, c.Certificate_ImageFile, c.Template_ID,
+      c.Activity_ID, c.Users_ID, t.Template_ImageFile, t.Template_PositionX, t.Template_PositionY,
+      s.Signature_ImageFile, a.Activity_Title, st.Student_FirstName, st.Student_LastName, te.Teacher_FirstName,
+      te.Teacher_LastName FROM certificate c JOIN template t ON c.Template_ID = t.Template_ID LEFT JOIN signature s ON 
+      t.Signature_ID = s.Signature_ID JOIN activity a ON c.Activity_ID = a.Activity_ID LEFT JOIN student st ON c.Users_ID = 
+      st.Users_ID LEFT JOIN teacher te ON c.Users_ID = te.Users_ID WHERE c.Certificate_ImageFile = ?`;
+
+    db.query(certSql, [filename], async (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          message: 'Certificate not found in database',
+          status: false
+        });
+      }
+
+      const cert = results[0];
+      const fullName = cert.Student_FirstName
+        ? `${cert.Student_FirstName} ${cert.Student_LastName}`
+        : `${cert.Teacher_FirstName} ${cert.Teacher_LastName}`;
+
+      try {
+        await generateCertificateImage(cert, fullName, outputPath);
+        res.sendFile(outputPath);
+
+      } catch (genErr) {
+        console.error('Generate certificate error:', genErr);
+        return res.status(500).json({
+          message: 'Error generating certificate image',
+          status: false,
+          error: genErr.message
+        });
+      }
+    });
+
+  } catch (err) {
+    console.error('Certificate API error:', err);
+    res.status(500).json({
+      message: 'Internal server error',
+      status: false
+    });
   }
 });
 
@@ -10728,7 +10903,7 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
   const Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
   const Staff_ID = userData?.Staff_ID;
-  const { pictureIds } = req.body;
+  const { pictureIds, autoGenerateCertificate = true } = req.body;
 
   if (Login_Type !== 'website') {
     return res.status(403).json({
@@ -10751,7 +10926,6 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
     });
   }
 
-  // Limit bulk operations
   if (pictureIds.length > 50) {
     return res.status(400).json({
       message: "สามารถอนุมัติได้ครั้งละไม่เกิน 50 รูป",
@@ -10762,14 +10936,16 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
   try {
     const placeholders = pictureIds.map(() => '?').join(',');
 
-    // Check pictures - FIX: Specify table alias for ambiguous column
+    // Check pictures and get activity info
     const checkSql = `
-        SELECT rp.RegistrationPicture_ID, rp.RegistrationPictureStatus_ID, 
-        rps.RegistrationPictureStatus_Name
-        FROM registrationpicture rp
-        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-        WHERE rp.RegistrationPicture_ID IN (${placeholders})
-      `;
+      SELECT rp.RegistrationPicture_ID, rp.RegistrationPictureStatus_ID, 
+             rps.RegistrationPictureStatus_Name, rp.Users_ID, rp.Activity_ID,
+             a.Activity_Title, a.Activity_EndTime, a.Template_ID
+      FROM registrationpicture rp
+      LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+      LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID
+      WHERE rp.RegistrationPicture_ID IN (${placeholders})
+    `;
 
     db.query(checkSql, pictureIds, (err, results) => {
       if (err) {
@@ -10781,31 +10957,31 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
       }
 
       // Filter only pending pictures
-      const pendingIds = results
-        .filter(r => r.RegistrationPictureStatus_ID === 1)
-        .map(r => r.RegistrationPicture_ID);
+      const pendingPictures = results.filter(r => r.RegistrationPictureStatus_ID === 1);
 
-      if (pendingIds.length === 0) {
+      if (pendingPictures.length === 0) {
         return res.status(400).json({
           message: 'ไม่มีรูปภาพที่รออนุมัติ',
           status: false
         });
       }
 
-      // Bulk update
+      const pendingIds = pendingPictures.map(r => r.RegistrationPicture_ID);
+
+      // Bulk update approval
       const updatePlaceholders = pendingIds.map(() => '?').join(',');
       const updateSql = `
-          UPDATE registrationpicture 
-          SET RegistrationPictureStatus_ID = 2,
-              RegistrationPicture_ApprovedBy = ?,
-              RegistrationPicture_ApprovedTime = CURRENT_TIMESTAMP,
-              RegistrationPicture_RejectReason = NULL,
-              RegistrationPicture_RejectedBy = NULL,
-              RegistrationPicture_RejectedTime = NULL
-          WHERE RegistrationPicture_ID IN (${updatePlaceholders})
-        `;
+        UPDATE registrationpicture 
+        SET RegistrationPictureStatus_ID = 2,
+            RegistrationPicture_ApprovedBy = ?,
+            RegistrationPicture_ApprovedTime = CURRENT_TIMESTAMP,
+            RegistrationPicture_RejectReason = NULL,
+            RegistrationPicture_RejectedBy = NULL,
+            RegistrationPicture_RejectedTime = NULL
+        WHERE RegistrationPicture_ID IN (${updatePlaceholders})
+      `;
 
-      db.query(updateSql, [Staff_ID, ...pendingIds], (err, updateResult) => {
+      db.query(updateSql, [Staff_ID, ...pendingIds], async (err, updateResult) => {
         if (err) {
           console.error('Bulk Approve Error:', err);
           return res.status(500).json({
@@ -10814,17 +10990,131 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
           });
         }
 
-        // Log
+        // Log approval
         const logSql = `
-            INSERT INTO dataedit 
-            (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
-            VALUES (0, ?, 'registrationpicture', ?, 6)
-          `;
+          INSERT INTO dataedit 
+          (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
+          VALUES (0, ?, 'registrationpicture', ?, 6)
+        `;
         const logName = `อนุมัติรูปภาพจำนวน ${pendingIds.length} รูป`;
 
         db.query(logSql, [logName, Staff_ID], (logErr) => {
           if (logErr) console.error('Log Error:', logErr);
         });
+
+        // Auto-generate certificates if enabled
+        let certificateResults = {
+          generated: 0,
+          skipped: 0,
+          errors: []
+        };
+
+        if (autoGenerateCertificate) {
+          // Group by user and activity to avoid duplicates
+          const userActivityMap = new Map();
+          pendingPictures.forEach(pic => {
+            const key = `${pic.Users_ID}_${pic.Activity_ID}`;
+            if (!userActivityMap.has(key)) {
+              userActivityMap.set(key, pic);
+            }
+          });
+
+          // Generate certificates
+          const certPromises = Array.from(userActivityMap.values()).map(async (pic) => {
+            try {
+              if (!pic.Template_ID) {
+                certificateResults.skipped++;
+                return { success: false, reason: 'No template assigned' };
+              }
+
+              // Check if certificate already exists
+              const checkCertSql = `
+                SELECT Certificate_ID 
+                FROM certificate 
+                WHERE Activity_ID = ? AND Users_ID = ?
+              `;
+
+              return new Promise((resolve) => {
+                db.query(checkCertSql, [pic.Activity_ID, pic.Users_ID], (err, existing) => {
+                  if (err) {
+                    certificateResults.errors.push({ userId: pic.Users_ID, error: err.message });
+                    resolve({ success: false });
+                    return;
+                  }
+
+                  if (existing.length > 0) {
+                    certificateResults.skipped++;
+                    resolve({ success: false, reason: 'Certificate already exists' });
+                    return;
+                  }
+
+                  // Get user details
+                  const getUserSql = `
+                    SELECT u.Users_ID, s.Student_FirstName, s.Student_LastName, 
+                           t.Teacher_FirstName, t.Teacher_LastName
+                    FROM users u 
+                    LEFT JOIN student s ON u.Users_ID = s.Users_ID 
+                    LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
+                    WHERE u.Users_ID = ?
+                  `;
+
+                  db.query(getUserSql, [pic.Users_ID], (err, userResult) => {
+                    if (err || userResult.length === 0) {
+                      certificateResults.errors.push({
+                        userId: pic.Users_ID,
+                        error: 'User not found'
+                      });
+                      resolve({ success: false });
+                      return;
+                    }
+
+                    const user = userResult[0];
+                    const fullName = user.Student_FirstName
+                      ? `${user.Student_FirstName} ${user.Student_LastName}`
+                      : `${user.Teacher_FirstName} ${user.Teacher_LastName}`;
+
+                    const certificateFilename = `certificate_${uuidv4()}.png`;
+                    const insertCertSql = `
+                      INSERT INTO certificate 
+                      (Certificate_ImageFile, Activity_ID, Users_ID, Template_ID) 
+                      VALUES (?, ?, ?, ?)
+                    `;
+
+                    db.query(
+                      insertCertSql,
+                      [certificateFilename, pic.Activity_ID, pic.Users_ID, pic.Template_ID],
+                      (err, result) => {
+                        if (err) {
+                          certificateResults.errors.push({
+                            userId: pic.Users_ID,
+                            error: err.message
+                          });
+                          resolve({ success: false });
+                        } else {
+                          certificateResults.generated++;
+                          resolve({
+                            success: true,
+                            certificateId: result.insertId,
+                            filename: certificateFilename,
+                            userName: fullName
+                          });
+                        }
+                      }
+                    );
+                  });
+                });
+              });
+            } catch (error) {
+              certificateResults.errors.push({
+                userId: pic.Users_ID,
+                error: error.message
+              });
+              return { success: false };
+            }
+          });
+
+          await Promise.all(certPromises);
+        }
 
         res.status(200).json({
           message: `อนุมัติรูปภาพสำเร็จ ${pendingIds.length} รูป`,
@@ -10832,7 +11122,12 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
           data: {
             approved_count: pendingIds.length,
             skipped_count: pictureIds.length - pendingIds.length,
-            approved_ids: pendingIds
+            approved_ids: pendingIds,
+            certificates: autoGenerateCertificate ? {
+              generated: certificateResults.generated,
+              skipped: certificateResults.skipped,
+              errors: certificateResults.errors
+            } : null
           }
         });
       });
@@ -10842,6 +11137,105 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
     console.error('Bulk Approve Error:', err);
     res.status(500).json({
       message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+});
+
+// API Get Activities for Certificate Status**
+app.get('/api/activities/:activityId/users/:userId/certificate-status', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const { activityId, userId } = req.params;
+
+  try {
+    const checkSql = `
+        SELECT c.Certificate_ID, c.Certificate_ImageFile, c.Certificate_RegisTime,
+               a.Activity_Title, t.Template_Name
+        FROM certificate c
+        JOIN activity a ON c.Activity_ID = a.Activity_ID
+        LEFT JOIN template t ON c.Template_ID = t.Template_ID
+        WHERE c.Activity_ID = ? AND c.Users_ID = ?
+      `;
+
+    db.query(checkSql, [activityId, userId], (err, results) => {
+      if (err) {
+        console.error('Certificate Check Error:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      res.status(200).json({
+        message: 'Success',
+        status: true,
+        data: {
+          hasCertificate: results.length > 0,
+          certificate: results.length > 0 ? results[0] : null
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Certificate Status Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred',
+      status: false
+    });
+  }
+});
+
+// API Get Certificates for Activity (Bulk)**
+app.get('/api/admin/activities/:activityId/certificates', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const { activityId } = req.params;
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Only staff can view certificates.",
+      status: false
+    });
+  }
+
+  try {
+    const sql = `
+        SELECT c.Certificate_ID, c.Certificate_ImageFile, c.Certificate_RegisTime,
+               c.Users_ID, s.Student_FirstName, s.Student_LastName, s.Student_Code,
+               t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
+               tmp.Template_Name
+        FROM certificate c
+        LEFT JOIN student s ON c.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON c.Users_ID = t.Users_ID
+        LEFT JOIN template tmp ON c.Template_ID = tmp.Template_ID
+        WHERE c.Activity_ID = ?
+        ORDER BY c.Certificate_RegisTime DESC
+      `;
+
+    db.query(sql, [activityId], (err, results) => {
+      if (err) {
+        console.error('Get Certificates Error:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      const certificates = results.map(cert => ({
+        ...cert,
+        FirstName: cert.Student_FirstName || cert.Teacher_FirstName,
+        LastName: cert.Student_LastName || cert.Teacher_LastName,
+        Code: cert.Student_Code || cert.Teacher_Code
+      }));
+
+      res.status(200).json({
+        message: 'Success',
+        status: true,
+        data: certificates
+      });
+    });
+  } catch (err) {
+    console.error('Get Certificates Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred',
       status: false
     });
   }
