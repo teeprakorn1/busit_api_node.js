@@ -208,7 +208,6 @@ if (isProduction) {
 //////////////////////////////// OTHER FUNCTION ///////////////////////////////////////
 
 // Certificate Creation Function
-// เพิ่มฟังก์ชันนี้ก่อน generateCertificateImage
 function escapeXml(text) {
   if (!text) return '';
   return text
@@ -222,7 +221,7 @@ function escapeXml(text) {
 async function generateCertificateImage(certData, fullName, outputPath) {
   try {
     const fsPromises = require('fs').promises;
-    
+
     const templatePath = path.join(uploadDir_Template, certData.Template_ImageFile);
     await fsPromises.access(templatePath);
     const templateBuffer = await fsPromises.readFile(templatePath);
@@ -6807,7 +6806,7 @@ app.get('/api/admin/images/certificate-real-files/:filename', VerifyTokens_Websi
       });
     }
 
-    if (Users_Type !== 'staff') {
+    if (Users_Type !== 'teacher' && Users_Type !== 'staff') {
       return res.status(403).json({
         message: "Permission denied. Only staff can access certificate files.",
         status: false
@@ -7078,7 +7077,7 @@ app.get('/api/admin/images/registration-images/:filename', VerifyTokens_Website,
       });
     }
 
-    if (Users_Type !== 'staff') {
+    if (Users_Type !== 'teacher' && Users_Type !== 'staff') {
       return res.status(403).json({
         message: "Permission denied. Only staff can access activity image.",
         status: false
@@ -8091,7 +8090,7 @@ app.get('/api/admin/activity-types', RateLimiter(1 * 60 * 1000, 300), VerifyToke
     });
   }
 
-  if (Users_Type !== 'staff') {
+  if (Users_Type !== 'teacher' && Users_Type !== 'staff') {
     return res.status(403).json({
       message: "Permission denied. Only staff can access activity types.",
       status: false
@@ -8139,7 +8138,7 @@ app.get('/api/admin/activity-statuses', RateLimiter(1 * 60 * 1000, 300), VerifyT
     });
   }
 
-  if (Users_Type !== 'staff') {
+  if (Users_Type !== 'teacher' && Users_Type !== 'staff') {
     return res.status(403).json({
       message: "Permission denied. Only staff can access activity statuses.",
       status: false
@@ -11593,6 +11592,601 @@ app.get('/api/admin/activities/:id/pictures/stats',
     }
   }
 );
+
+///////////////////////////Own teacher Activity Website API//////////////////////////
+// API Get teacher's own activities by department (website)**
+app.get('/api/admin/teacher/own-activities', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the website.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied. Only teachers can access this endpoint.",
+      status: false
+    });
+  }
+
+  try {
+    const teacherDeptSql = `SELECT Department_ID FROM teacher WHERE Users_ID = ? LIMIT 1`;
+    db.query(teacherDeptSql, [Users_ID], (deptErr, deptResults) => {
+      if (deptErr) {
+        console.error('Get Teacher Department Error:', deptErr);
+        return res.status(500).json({
+          message: 'Database error while fetching teacher department.',
+          status: false
+        });
+      }
+
+      if (deptResults.length === 0) {
+        return res.status(404).json({
+          message: 'Teacher department not found.',
+          status: false
+        });
+      }
+
+      const teacherDepartmentId = deptResults[0].Department_ID;
+      const sql = `SELECT DISTINCT a.Activity_ID, a.Activity_Title, a.Activity_Description, 
+        a.Activity_LocationDetail, ST_X(a.Activity_LocationGPS) as gps_lng, ST_Y(a.Activity_LocationGPS) as gps_lat, 
+        a.Activity_StartTime, a.Activity_EndTime, a.Activity_ImageFile, a.Activity_IsRequire, a.Activity_RegisTime, 
+        a.Activity_AllowTeachers, at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, ast.ActivityStatus_ID, 
+        ast.ActivityStatus_Name, ast.ActivityStatus_Description, t.Template_ID, t.Template_Name, r.Registration_RegisTime, 
+        r.Registration_CheckInTime, r.Registration_CheckOutTime, r.RegistrationStatus_ID, rs.RegistrationStatus_Name, 
+        CASE WHEN r.Users_ID IS NOT NULL THEN TRUE ELSE FALSE END as is_registered, CASE WHEN r.Registration_CheckInTime 
+        IS NOT NULL AND r.Registration_CheckOutTime IS NOT NULL THEN 'completed' WHEN r.Registration_CheckInTime IS NOT NULL 
+        THEN 'checked_in' WHEN r.Users_ID IS NOT NULL THEN 'registered' ELSE 'not_registered' END as participation_status, ad.Department_ID,
+        d.Department_Name FROM activity a INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID INNER JOIN department d ON 
+        ad.Department_ID = d.Department_ID LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus 
+        ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN template t ON a.Template_ID = t.Template_ID LEFT JOIN registration r 
+        ON a.Activity_ID = r.Activity_ID AND r.Users_ID = ? LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID 
+        WHERE a.Activity_AllowTeachers = TRUE AND ad.Department_ID = ? ORDER BY a.Activity_StartTime DESC`;
+
+      db.query(sql, [Users_ID, teacherDepartmentId], (err, results) => {
+        if (err) {
+          console.error('Get Teacher Activities Error:', err);
+          return res.status(500).json({
+            message: 'Database error while fetching activities.',
+            status: false
+          });
+        }
+
+        const activities = results.map(activity => {
+          const activityData = { ...activity };
+
+          if (activity.gps_lng && activity.gps_lat) {
+            activityData.Activity_LocationGPS = {
+              lng: activity.gps_lng,
+              lat: activity.gps_lat
+            };
+          } else {
+            activityData.Activity_LocationGPS = null;
+          }
+
+          delete activityData.gps_lng;
+          delete activityData.gps_lat;
+
+          return activityData;
+        });
+
+        res.status(200).json({
+          message: 'Activities retrieved successfully.',
+          status: true,
+          data: activities,
+          count: activities.length,
+          department_id: teacherDepartmentId
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Get Teacher Activities Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching activities.',
+      status: false
+    });
+  }
+});
+
+// API Get activity certificate for teacher**
+app.get('/api/admin/teacher/activity-certificate/:activityId', RateLimiter(1 * 60 * 1000, 100), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+  const activityId = req.params.activityId;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the website.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied. Only teachers can access certificates.",
+      status: false
+    });
+  }
+
+  try {
+    const teacherDeptSql = `SELECT Department_ID FROM teacher WHERE Users_ID = ? LIMIT 1`;
+    db.query(teacherDeptSql, [Users_ID], (deptErr, deptResults) => {
+      if (deptErr) {
+        console.error('Get Teacher Department Error:', deptErr);
+        return res.status(500).json({
+          message: 'Database error while fetching teacher department.',
+          status: false
+        });
+      }
+
+      if (deptResults.length === 0) {
+        return res.status(404).json({
+          message: 'Teacher department not found.',
+          status: false
+        });
+      }
+
+      const teacherDepartmentId = deptResults[0].Department_ID;
+      const checkDeptSql = `SELECT ad.Department_ID FROM activitydetail ad WHERE ad.ActivityDetail_ID = ? AND ad.Department_ID = ? LIMIT 1`;
+      db.query(checkDeptSql, [activityId, teacherDepartmentId], (checkErr, checkResults) => {
+        if (checkErr) {
+          console.error('Check Activity Department Error:', checkErr);
+          return res.status(500).json({
+            message: 'Database error while checking activity department.',
+            status: false
+          });
+        }
+
+        if (checkResults.length === 0) {
+          return res.status(403).json({
+            message: 'Permission denied. This activity is not for your department.',
+            status: false
+          });
+        }
+
+        const sql = `SELECT c.Certificate_ID, c.Certificate_ImageFile, 
+          c.Certificate_RegisTime, a.Activity_Title, a.Activity_StartTime, 
+          a.Activity_EndTime FROM certificate c JOIN activity a ON c.Activity_ID = 
+          a.Activity_ID WHERE c.Activity_ID = ? AND c.Users_ID = ? LIMIT 1`;
+
+        db.query(sql, [activityId, Users_ID], (err, results) => {
+          if (err) {
+            console.error('Get Certificate Error:', err);
+            return res.status(500).json({
+              message: 'Database error while fetching certificate.',
+              status: false
+            });
+          }
+
+          if (results.length === 0) {
+            return res.status(404).json({
+              message: 'Certificate not found.',
+              status: false
+            });
+          }
+
+          res.status(200).json({
+            message: 'Certificate retrieved successfully.',
+            status: true,
+            data: results[0]
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Get Certificate Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+});
+
+// API Get teacher's registration image**
+app.get('/api/teacher/activity-registration-image/:activityId', RateLimiter(1 * 60 * 1000, 100), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+  const activityId = req.params.activityId;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the website.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied. Only teachers can access registration images.",
+      status: false
+    });
+  }
+
+  try {
+    const teacherDeptSql = `SELECT Department_ID FROM teacher WHERE Users_ID = ? LIMIT 1`;
+    db.query(teacherDeptSql, [Users_ID], (deptErr, deptResults) => {
+      if (deptErr) {
+        console.error('Get Teacher Department Error:', deptErr);
+        return res.status(500).json({
+          message: 'Database error while fetching teacher department.',
+          status: false
+        });
+      }
+
+      if (deptResults.length === 0) {
+        return res.status(404).json({
+          message: 'Teacher department not found.',
+          status: false
+        });
+      }
+
+      const teacherDepartmentId = deptResults[0].Department_ID;
+      const checkDeptSql = `SELECT ad.Department_ID FROM activitydetail ad WHERE ad.ActivityDetail_ID = ? AND ad.Department_ID = ? LIMIT 1`;
+
+      db.query(checkDeptSql, [activityId, teacherDepartmentId], (checkErr, checkResults) => {
+        if (checkErr) {
+          console.error('Check Activity Department Error:', checkErr);
+          return res.status(500).json({
+            message: 'Database error while checking activity department.',
+            status: false
+          });
+        }
+
+        if (checkResults.length === 0) {
+          return res.status(403).json({
+            message: 'Permission denied. This activity is not for your department.',
+            status: false
+          });
+        }
+
+        const sql = `SELECT rp.RegistrationPicture_ID, rp.RegistrationPicture_ImageFile as imageFile,
+          rp.RegistrationPicture_RegisTime as registrationTime, rp.RegistrationPictureStatus_ID, rps.RegistrationPictureStatus_Name as statusName,
+          a.Activity_Title FROM registrationpicture rp JOIN activity a ON rp.Activity_ID = a.Activity_ID LEFT JOIN registrationpicturestatus rps ON 
+          rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID WHERE rp.Activity_ID = ? AND rp.Users_ID = ? AND rp.RegistrationPictureStatus_ID = 2
+          ORDER BY rp.RegistrationPicture_RegisTime DESC LIMIT 1`;
+
+        db.query(sql, [activityId, Users_ID], (err, results) => {
+          if (err) {
+            console.error('Get Registration Image Error:', err);
+            return res.status(500).json({
+              message: 'Database error while fetching registration image.',
+              status: false
+            });
+          }
+
+          if (results.length === 0) {
+            return res.status(404).json({
+              message: 'ไม่พบรูปภาพการเข้าร่วมที่ได้รับการอนุมัติ',
+              status: false
+            });
+          }
+
+          res.status(200).json({
+            message: 'Registration image retrieved successfully.',
+            status: true,
+            data: results[0]
+          });
+        });
+      });
+    });
+  } catch (err) {
+    console.error('Get Registration Image Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+});
+
+///////////////////////////////Dashboard Admin API////////////////////////////////////
+// API Get dashboard statistics**
+app.get('/api/admin/dashboard-stats', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the website.",
+      status: false
+    });
+  }
+
+  if (!['staff', 'teacher'].includes(Users_Type)) {
+    return res.status(403).json({
+      message: "Permission denied. Only staff and teachers can access this endpoint.",
+      status: false
+    });
+  }
+
+  try {
+    const studentCountSql = `SELECT COUNT(*) as total FROM student WHERE Student_IsGraduated = FALSE`;
+    const teacherCountSql = `SELECT COUNT(*) as total FROM teacher WHERE Teacher_IsResign = FALSE`;
+    const activeActivitiesSql = ` SELECT COUNT(*) as total FROM activity WHERE ActivityStatus_ID IN (1, 2)`;
+
+    const participationSql = `SELECT COUNT(DISTINCT r.Users_ID) as participated_users,
+      (SELECT COUNT(*) FROM student WHERE Student_IsGraduated = FALSE) as total_students,
+      COUNT(*) as total_registrations, SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
+      AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_registrations
+      FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID WHERE a.ActivityStatus_ID IN (2, 3)`;
+
+    const [studentResult, teacherResult, activeActivitiesResult, participationResult] = await Promise.all([
+      new Promise((resolve, reject) => {
+        db.query(studentCountSql, (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      }),
+      new Promise((resolve, reject) => {
+        db.query(teacherCountSql, (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      }),
+      new Promise((resolve, reject) => {
+        db.query(activeActivitiesSql, (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      }),
+      new Promise((resolve, reject) => {
+        db.query(participationSql, (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      })
+    ]);
+
+    let participationRate = 0;
+    if (participationResult.total_registrations > 0) {
+      participationRate = Math.round(
+        (participationResult.completed_registrations / participationResult.total_registrations) * 100
+      );
+    }
+
+    const stats = {
+      totalStudents: studentResult.total || 0,
+      totalTeachers: teacherResult.total || 0,
+      activeActivities: activeActivitiesResult.total || 0,
+      participationRate: participationRate,
+      participationDetails: {
+        participatedUsers: participationResult.participated_users || 0,
+        totalStudents: participationResult.total_students || 0,
+        totalRegistrations: participationResult.total_registrations || 0,
+        completedRegistrations: participationResult.completed_registrations || 0
+      }
+    };
+
+    res.status(200).json({
+      message: 'Dashboard statistics retrieved successfully.',
+      status: true,
+      data: stats
+    });
+
+  } catch (err) {
+    console.error('Get Dashboard Stats Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching dashboard statistics.',
+      status: false
+    });
+  }
+});
+
+// API Get comprehensive dashboard data**
+app.get('/api/admin/dashboard', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the website.",
+      status: false
+    });
+  }
+
+  if (!['staff', 'teacher'].includes(Users_Type)) {
+    return res.status(403).json({
+      message: "Permission denied. Only staff and teachers can access this endpoint.",
+      status: false
+    });
+  }
+
+  try {
+    const studentCountSql = `SELECT COUNT(*) as total FROM student WHERE Student_IsGraduated = FALSE`;
+    const teacherCountSql = `SELECT COUNT(*) as total FROM teacher WHERE Teacher_IsResign = FALSE`;
+    const totalActivitiesSql = `SELECT COUNT(*) as total FROM activity`;
+    const activeActivitiesSql = `SELECT COUNT(*) as total FROM activity WHERE ActivityStatus_ID IN (1, 2)`;
+    const completedActivitiesSql = `SELECT COUNT(*) as total FROM activity WHERE ActivityStatus_ID = 3`;
+
+    const participationSql = `SELECT COUNT(DISTINCT r.Users_ID) as participated_users,
+      (SELECT COUNT(*) FROM student WHERE Student_IsGraduated = FALSE) as total_students,
+      COUNT(*) as total_registrations, SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
+      AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_registrations
+      FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID WHERE a.ActivityStatus_ID IN (2, 3)`;
+
+    const recentActivitiesSql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_StartTime, 
+      a.Activity_EndTime, a.Activity_LocationDetail, ast.ActivityStatus_ID, ast.ActivityStatus_Name, 
+      at.ActivityType_ID, at.ActivityType_Name, COUNT(DISTINCT r.Users_ID) as participant_count, SUM(CASE 
+      WHEN r.Registration_CheckInTime IS NOT NULL AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 
+      END) as completed_count, TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as duration_hours, 
+      GROUP_CONCAT(DISTINCT d.Department_Name SEPARATOR ', ') as departments FROM activity a LEFT JOIN activitystatus ast 
+      ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
+      LEFT JOIN department d ON ad.Department_ID = d.Department_ID GROUP BY a.Activity_ID, a.Activity_Title, a.Activity_StartTime, 
+      a.Activity_EndTime, a.Activity_LocationDetail, ast.ActivityStatus_ID, ast.ActivityStatus_Name, at.ActivityType_ID, 
+      at.ActivityType_Name ORDER BY a.Activity_StartTime DESC LIMIT 20`;
+
+    const activityTypeStatsSql = `SELECT at.ActivityType_ID, at.ActivityType_Name,
+      COUNT(DISTINCT a.Activity_ID) as activity_count, COUNT(DISTINCT r.Users_ID) as total_participants,
+      AVG(TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime)) as avg_duration FROM activitytype at
+      LEFT JOIN activity a ON at.ActivityType_ID = a.ActivityType_ID LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID 
+      AND r.Registration_CheckInTime IS NOT NULL AND r.Registration_CheckOutTime IS NOT NULL GROUP BY at.ActivityType_ID, 
+      at.ActivityType_Name ORDER BY activity_count DESC`;
+
+    const monthlyStatsSql = `SELECT DATE_FORMAT(a.Activity_StartTime, '%Y-%m') as month,
+      DATE_FORMAT(a.Activity_StartTime, '%M %Y') as month_name, COUNT(DISTINCT a.Activity_ID) as activity_count,
+      COUNT(DISTINCT r.Users_ID) as participant_count, SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL AND 
+      r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count FROM activity a LEFT JOIN registration r 
+      ON a.Activity_ID = r.Activity_ID WHERE a.Activity_StartTime >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) GROUP BY DATE_FORMAT
+      (a.Activity_StartTime, '%Y-%m'), DATE_FORMAT(a.Activity_StartTime, '%M %Y') ORDER BY month ASC`;
+
+    const statusStatsSql = `SELECT ast.ActivityStatus_ID, ast.ActivityStatus_Name,
+      COUNT(a.Activity_ID) as count FROM activitystatus ast LEFT JOIN activity a ON ast.ActivityStatus_ID = 
+      a.ActivityStatus_ID GROUP BY ast.ActivityStatus_ID, ast.ActivityStatus_Name ORDER BY ast.ActivityStatus_ID`;
+
+    const departmentStatsSql = `SELECT d.Department_Name, f.Faculty_Name, 
+      COUNT(DISTINCT ad.ActivityDetail_ID) as activity_count, SUM(ad.ActivityDetail_Total) as total_quota,
+      COUNT(DISTINCT s.Student_ID) as student_count FROM department d LEFT JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
+      LEFT JOIN activitydetail ad ON d.Department_ID = ad.Department_ID LEFT JOIN student s ON d.Department_ID = s.Department_ID 
+      AND s.Student_IsGraduated = FALSE GROUP BY d.Department_ID, d.Department_Name, f.Faculty_Name ORDER BY activity_count DESC LIMIT 10`;
+
+    const topActivitiesSql = `SELECT a.Activity_Title, COUNT(DISTINCT r.Users_ID) as participant_count, 
+      at.ActivityType_Name FROM activity a LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID LEFT JOIN 
+      activitytype at ON a.ActivityType_ID = at.ActivityType_ID GROUP BY a.Activity_ID, a.Activity_Title, at.ActivityType_Name
+      ORDER BY participant_count DESC LIMIT 10`;
+
+    const hourlyStatsSql = `SELECT HOUR(a.Activity_StartTime) as hour, COUNT(DISTINCT a.Activity_ID) as activity_count,
+      COUNT(DISTINCT r.Users_ID) as participant_count FROM activity a LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      WHERE a.Activity_StartTime >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) GROUP BY HOUR(a.Activity_StartTime) ORDER BY hour`;
+
+    const [studentResult, teacherResult, totalActivitiesResult, activeActivitiesResult,
+      completedActivitiesResult, participationResult, recentActivitiesResult, activityTypeStatsResult,
+      monthlyStatsResult, statusStatsResult, departmentStatsResult,
+      topActivitiesResult, hourlyStatsResult] = await Promise.all([
+        new Promise((resolve, reject) => {
+          db.query(studentCountSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results[0]);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(teacherCountSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results[0]);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(totalActivitiesSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results[0]);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(activeActivitiesSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results[0]);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(completedActivitiesSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results[0]);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(participationSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results[0]);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(recentActivitiesSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(activityTypeStatsSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(monthlyStatsSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(statusStatsSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(departmentStatsSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(topActivitiesSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(hourlyStatsSql, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        })
+      ]);
+
+    let participationRate = 0;
+    if (participationResult.total_registrations > 0) {
+      participationRate = Math.round(
+        (participationResult.completed_registrations / participationResult.total_registrations) * 100
+      );
+    }
+
+    const dashboardData = {
+      totalActivities: totalActivitiesResult.total || 0,
+      totalStudents: studentResult.total || 0,
+      totalTeachers: teacherResult.total || 0,
+      activeActivities: activeActivitiesResult.total || 0,
+      completedActivities: completedActivitiesResult.total || 0,
+      participationRate: participationRate,
+      participationDetails: {
+        participatedUsers: participationResult.participated_users || 0,
+        totalStudents: participationResult.total_students || 0,
+        totalRegistrations: participationResult.total_registrations || 0,
+        completedRegistrations: participationResult.completed_registrations || 0
+      },
+      recentActivities: recentActivitiesResult || [],
+      activityTypeStats: activityTypeStatsResult || [],
+      monthlyStats: monthlyStatsResult || [],
+      statusStats: statusStatsResult || [],
+      departmentStats: departmentStatsResult || [],
+      topActivities: topActivitiesResult || [],
+      hourlyStats: hourlyStatsResult || []
+    };
+
+    res.status(200).json({
+      message: 'Dashboard data retrieved successfully.',
+      status: true,
+      data: dashboardData
+    });
+
+  } catch (err) {
+    console.error('Get Dashboard Data Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching dashboard data.',
+      status: false
+    });
+  }
+});
 
 ////////////////////////////////Other Phone API///////////////////////////////////////
 //API add Other Phone Number
