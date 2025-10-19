@@ -206,7 +206,6 @@ if (isProduction) {
 }
 
 //////////////////////////////// OTHER FUNCTION ///////////////////////////////////////
-
 // Certificate Creation Function
 function escapeXml(text) {
   if (!text) return '';
@@ -288,6 +287,79 @@ async function generateCertificateImage(certData, fullName, outputPath) {
     console.error('Generate certificate error:', error);
     throw new Error(`Failed to generate certificate: ${error.message}`);
   }
+}
+
+//calculateDistance function
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+function toRadians(degrees) {
+  return degrees * Math.PI / 180;
+}
+
+// performCheckIn function
+function performCheckIn(res, activityId, Users_ID) {
+  const updateRegSql = `
+    UPDATE registration 
+    SET Registration_CheckInTime = CURRENT_TIMESTAMP,
+        RegistrationStatus_ID = 1
+    WHERE Activity_ID = ? AND Users_ID = ?
+  `;
+
+  db.query(updateRegSql, [activityId, Users_ID], (err, updateResult) => {
+    if (err) {
+      console.error('Update Check-in Error:', err);
+      return res.status(500).json({
+        message: 'ไม่สามารถเช็คอินได้',
+        status: false
+      });
+    }
+
+    res.status(200).json({
+      message: 'เช็คอินสำเร็จ',
+      status: true,
+      data: {
+        Activity_ID: activityId,
+        Users_ID: Users_ID,
+        check_in_time: new Date()
+      }
+    });
+  });
+}
+
+// insertRegistration function
+function insertRegistration(activityId, userId, res) {
+  const insertSql = `INSERT INTO registration (Users_ID, Activity_ID, RegistrationStatus_ID) VALUES (?, ?, 1)`;
+  db.query(insertSql, [userId, activityId], (err, result) => {
+    if (err) {
+      console.error('Insert Registration Error:', err);
+      return res.status(500).json({
+        message: 'Database error while registering.',
+        status: false
+      });
+    }
+
+    res.status(201).json({
+      message: 'ลงทะเบียนกิจกรรมสำเร็จ',
+      status: true,
+      data: {
+        Activity_ID: activityId,
+        Users_ID: userId,
+        Registration_RegisTime: new Date()
+      }
+    });
+  });
 }
 
 ////////////////////////////////// TEST API ///////////////////////////////////////
@@ -6880,6 +6952,93 @@ app.get('/api/admin/images/certificate-real-files/:filename', VerifyTokens_Websi
   }
 });
 
+// API get real certificate image files (Application)**
+app.get('/api/images/certificate-real-files/:filename', VerifyTokens, async (req, res) => {
+  try {
+    const userData = req.user;
+    const Users_Type = userData?.Users_Type;
+    const Login_Type = userData?.Login_Type;
+    if (Login_Type !== 'application') {
+      return res.status(403).json({
+        message: "Permission denied. This action is only allowed on the website.",
+        status: false
+      });
+    }
+
+    if (Users_Type !== 'teacher' && Users_Type !== 'student') {
+      return res.status(403).json({
+        message: "Permission denied. Only teacher and student can access certificate files.",
+        status: false
+      });
+    }
+
+    const filename = path.basename(req.params.filename);
+    if (!filename.match(/^certificate_[a-zA-Z0-9-]+\.png$/)) {
+      return res.status(400).json({
+        message: 'Invalid filename format',
+        status: false
+      });
+    }
+
+    const outputPath = path.join(uploadDir_Certificate, filename);
+    try {
+      await fs.access(outputPath);
+      return res.sendFile(outputPath);
+    } catch (err) {
+      console.log('Certificate not found, generating new one...');
+    }
+
+    const certSql = `SELECT c.Certificate_ID, c.Certificate_ImageFile, c.Template_ID,
+      c.Activity_ID, c.Users_ID, t.Template_ImageFile, t.Template_PositionX, t.Template_PositionY,
+      s.Signature_ImageFile, a.Activity_Title, st.Student_FirstName, st.Student_LastName, te.Teacher_FirstName,
+      te.Teacher_LastName FROM certificate c JOIN template t ON c.Template_ID = t.Template_ID LEFT JOIN signature s ON 
+      t.Signature_ID = s.Signature_ID JOIN activity a ON c.Activity_ID = a.Activity_ID LEFT JOIN student st ON c.Users_ID = 
+      st.Users_ID LEFT JOIN teacher te ON c.Users_ID = te.Users_ID WHERE c.Certificate_ImageFile = ?`;
+
+    db.query(certSql, [filename], async (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          message: 'Certificate not found in database',
+          status: false
+        });
+      }
+
+      const cert = results[0];
+      const fullName = cert.Student_FirstName
+        ? `${cert.Student_FirstName} ${cert.Student_LastName}`
+        : `${cert.Teacher_FirstName} ${cert.Teacher_LastName}`;
+
+      try {
+        await generateCertificateImage(cert, fullName, outputPath);
+        res.sendFile(outputPath);
+
+      } catch (genErr) {
+        console.error('Generate certificate error:', genErr);
+        return res.status(500).json({
+          message: 'Error generating certificate image',
+          status: false,
+          error: genErr.message
+        });
+      }
+    });
+
+  } catch (err) {
+    console.error('Certificate API error:', err);
+    res.status(500).json({
+      message: 'Internal server error',
+      status: false
+    });
+  }
+});
+
 // API get certificate image files
 app.get('/api/images/certificate-files/:filename', VerifyTokens_Website, (req, res) => {
   try {
@@ -9565,981 +9724,808 @@ app.patch('/api/admin/activities/:id/location-status',
 
 ////////////////////////////////Activity API for Application///////////////////////////////////////
 // API Get all activities for students/teachers (Application)**
-app.get('/api/activities',
-  RateLimiter(1 * 60 * 1000, 300),
-  VerifyTokens,
-  (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Users_ID = userData?.Users_ID;
+app.get('/api/activities', RateLimiter(1 * 60 * 1000, 300), VerifyTokens, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
 
-    if (Login_Type !== 'application') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed in the application.",
-        status: false
-      });
-    }
-
-    if (Users_Type !== 'student' && Users_Type !== 'teacher') {
-      return res.status(403).json({
-        message: "Permission denied. Only students and teachers can access activities.",
-        status: false
-      });
-    }
-
-    try {
-      let sql = `
-        SELECT 
-          a.Activity_ID,
-          a.Activity_Title,
-          a.Activity_Description,
-          a.Activity_LocationDetail,
-          ST_X(a.Activity_LocationGPS) as gps_lng,
-          ST_Y(a.Activity_LocationGPS) as gps_lat,
-          a.Activity_StartTime,
-          a.Activity_EndTime,
-          a.Activity_ImageFile,
-          a.Activity_IsRequire,
-          a.Activity_RegisTime,
-          at.ActivityType_ID,
-          at.ActivityType_Name,
-          at.ActivityType_Description,
-          ast.ActivityStatus_ID,
-          ast.ActivityStatus_Name,
-          ast.ActivityStatus_Description,
-          t.Template_ID,
-          t.Template_Name,
-          r.Registration_RegisTime,
-          r.Registration_CheckInTime,
-          r.Registration_CheckOutTime,
-          r.RegistrationStatus_ID,
-          rs.RegistrationStatus_Name,
-          CASE 
-            WHEN r.Users_ID IS NOT NULL THEN TRUE 
-            ELSE FALSE 
-          END as is_registered
-        FROM activity a
-        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        LEFT JOIN template t ON a.Template_ID = t.Template_ID
-        LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID AND r.Users_ID = ?
-        LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID
-      `;
-
-      // ถ้าเป็น student ให้แสดงเฉพาะกิจกรรมที่เกี่ยวข้องกับสาขาของตัวเอง
-      if (Users_Type === 'student') {
-        sql += `
-          INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-          INNER JOIN student s ON s.Users_ID = ? AND s.Department_ID = ad.Department_ID
-          WHERE s.Student_IsGraduated = FALSE
-        `;
-      } else {
-        sql += ` WHERE 1=1 `;
-      }
-
-      sql += ` ORDER BY a.Activity_StartTime DESC`;
-
-      const params = Users_Type === 'student' ? [Users_ID, Users_ID] : [Users_ID];
-
-      db.query(sql, params, (err, results) => {
-        if (err) {
-          console.error('Get Activities Error:', err);
-          return res.status(500).json({
-            message: 'Database error while fetching activities.',
-            status: false
-          });
-        }
-
-        // แปลง GPS coordinates
-        const activities = results.map(activity => {
-          const activityData = { ...activity };
-
-          if (activity.gps_lng && activity.gps_lat) {
-            activityData.Activity_LocationGPS = {
-              lng: activity.gps_lng,
-              lat: activity.gps_lat
-            };
-          } else {
-            activityData.Activity_LocationGPS = null;
-          }
-
-          delete activityData.gps_lng;
-          delete activityData.gps_lat;
-
-          return activityData;
-        });
-
-        res.status(200).json({
-          message: 'Activities retrieved successfully.',
-          status: true,
-          data: activities,
-          count: activities.length
-        });
-      });
-    } catch (err) {
-      console.error('Get Activities Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred while fetching activities.',
-        status: false
-      });
-    }
-  }
-);
-
-// API Get activity detail by ID (Application)**
-app.get('/api/activities/:id',
-  RateLimiter(1 * 60 * 1000, 300),
-  VerifyTokens,
-  (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Users_ID = userData?.Users_ID;
-    const activityId = parseInt(req.params.id);
-
-    if (Login_Type !== 'application') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed in the application.",
-        status: false
-      });
-    }
-
-    if (Users_Type !== 'student' && Users_Type !== 'teacher') {
-      return res.status(403).json({
-        message: "Permission denied. Only students and teachers can access this.",
-        status: false
-      });
-    }
-
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
-
-    try {
-      const sql = `
-        SELECT 
-          a.Activity_ID,
-          a.Activity_Title,
-          a.Activity_Description,
-          a.Activity_LocationDetail,
-          ST_X(a.Activity_LocationGPS) as gps_lng,
-          ST_Y(a.Activity_LocationGPS) as gps_lat,
-          a.Activity_StartTime,
-          a.Activity_EndTime,
-          a.Activity_ImageFile,
-          a.Activity_IsRequire,
-          a.Activity_RegisTime,
-          at.ActivityType_ID,
-          at.ActivityType_Name,
-          at.ActivityType_Description,
-          ast.ActivityStatus_ID,
-          ast.ActivityStatus_Name,
-          ast.ActivityStatus_Description,
-          t.Template_ID,
-          t.Template_Name,
-          t.Template_ImageFile,
-          s.Signature_Name,
-          s.Signature_ImageFile,
-          r.Registration_RegisTime,
-          r.Registration_CheckInTime,
-          r.Registration_CheckOutTime,
-          r.RegistrationStatus_ID,
-          rs.RegistrationStatus_Name,
-          CASE 
-            WHEN r.Users_ID IS NOT NULL THEN TRUE 
-            ELSE FALSE 
-          END as is_registered
-        FROM activity a
-        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        LEFT JOIN template t ON a.Template_ID = t.Template_ID
-        LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID
-        LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID AND r.Users_ID = ?
-        LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID
-        WHERE a.Activity_ID = ?
-      `;
-
-      db.query(sql, [Users_ID, activityId], (err, results) => {
-        if (err) {
-          console.error('Get Activity Detail Error:', err);
-          return res.status(500).json({
-            message: 'Database error while fetching activity.',
-            status: false
-          });
-        }
-
-        if (results.length === 0) {
-          return res.status(404).json({
-            message: 'Activity not found.',
-            status: false
-          });
-        }
-
-        const activity = results[0];
-
-        // แปลง GPS coordinates
-        if (activity.gps_lng && activity.gps_lat) {
-          activity.Activity_LocationGPS = {
-            lng: activity.gps_lng,
-            lat: activity.gps_lat
-          };
-        } else {
-          activity.Activity_LocationGPS = null;
-        }
-
-        delete activity.gps_lng;
-        delete activity.gps_lat;
-
-        res.status(200).json({
-          message: 'Activity detail retrieved successfully.',
-          status: true,
-          data: activity
-        });
-      });
-    } catch (err) {
-      console.error('Get Activity Detail Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred.',
-        status: false
-      });
-    }
-  }
-);
-
-// API Register for activity (Application)**
-app.post('/api/activities/:id/register',
-  RateLimiter(1 * 60 * 1000, 30),
-  VerifyTokens,
-  async (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Users_ID = userData?.Users_ID;
-    const activityId = parseInt(req.params.id);
-
-    if (Login_Type !== 'application') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed in the application.",
-        status: false
-      });
-    }
-
-    if (Users_Type !== 'student' && Users_Type !== 'teacher') {
-      return res.status(403).json({
-        message: "Permission denied. Only students and teachers can register for activities.",
-        status: false
-      });
-    }
-
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
-
-    try {
-      // ตรวจสอบว่ากิจกรรมเปิดรับสมัครหรือไม่
-      const checkActivitySql = `
-        SELECT a.Activity_ID, a.Activity_Title, ast.ActivityStatus_Name 
-        FROM activity a
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        WHERE a.Activity_ID = ?
-      `;
-
-      db.query(checkActivitySql, [activityId], (err, activityResult) => {
-        if (err) {
-          console.error('Check Activity Error:', err);
-          return res.status(500).json({
-            message: 'Database error while checking activity.',
-            status: false
-          });
-        }
-
-        if (activityResult.length === 0) {
-          return res.status(404).json({
-            message: 'ไม่พบกิจกรรมที่ต้องการลงทะเบียน',
-            status: false
-          });
-        }
-
-        const activity = activityResult[0];
-
-        if (activity.ActivityStatus_Name !== 'เปิดรับสมัคร') {
-          return res.status(400).json({
-            message: 'กิจกรรมนี้ไม่เปิดรับสมัครในขณะนี้',
-            status: false
-          });
-        }
-
-        // ตรวจสอบว่าลงทะเบียนแล้วหรือยัง
-        const checkRegistrationSql = `
-          SELECT Users_ID FROM registration 
-          WHERE Activity_ID = ? AND Users_ID = ?
-        `;
-
-        db.query(checkRegistrationSql, [activityId, Users_ID], (err, regResult) => {
-          if (err) {
-            console.error('Check Registration Error:', err);
-            return res.status(500).json({
-              message: 'Database error while checking registration.',
-              status: false
-            });
-          }
-
-          if (regResult.length > 0) {
-            return res.status(400).json({
-              message: 'คุณได้ลงทะเบียนกิจกรรมนี้แล้ว',
-              status: false
-            });
-          }
-
-          // ถ้าเป็นนักศึกษา ตรวจสอบว่ากิจกรรมนี้เปิดให้สาขาของตัวเองหรือไม่
-          if (Users_Type === 'student') {
-            const checkDepartmentSql = `
-              SELECT ad.ActivityDetail_ID 
-              FROM activitydetail ad
-              INNER JOIN student s ON s.Users_ID = ? AND s.Department_ID = ad.Department_ID
-              WHERE ad.ActivityDetail_ID = ?
-            `;
-
-            db.query(checkDepartmentSql, [Users_ID, activityId], (err, deptResult) => {
-              if (err) {
-                console.error('Check Department Error:', err);
-                return res.status(500).json({
-                  message: 'Database error while checking department.',
-                  status: false
-                });
-              }
-
-              if (deptResult.length === 0) {
-                return res.status(403).json({
-                  message: 'กิจกรรมนี้ไม่เปิดให้สาขาของคุณลงทะเบียน',
-                  status: false
-                });
-              }
-
-              // ลงทะเบียน
-              insertRegistration(activityId, Users_ID, res);
-            });
-          } else {
-            // ถ้าเป็นอาจารย์ ลงทะเบียนได้เลย
-            insertRegistration(activityId, Users_ID, res);
-          }
-        });
-      });
-
-    } catch (err) {
-      console.error('Register Activity Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred while registering.',
-        status: false
-      });
-    }
-  }
-);
-
-// Helper function สำหรับ insert registration
-function insertRegistration(activityId, userId, res) {
-  const insertSql = `
-    INSERT INTO registration (Users_ID, Activity_ID, RegistrationStatus_ID) 
-    VALUES (?, ?, 1)
-  `;
-
-  db.query(insertSql, [userId, activityId], (err, result) => {
-    if (err) {
-      console.error('Insert Registration Error:', err);
-      return res.status(500).json({
-        message: 'Database error while registering.',
-        status: false
-      });
-    }
-
-    res.status(201).json({
-      message: 'ลงทะเบียนกิจกรรมสำเร็จ',
-      status: true,
-      data: {
-        Activity_ID: activityId,
-        Users_ID: userId,
-        Registration_RegisTime: new Date()
-      }
+  if (Login_Type !== 'application') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the application.",
+      status: false
     });
-  });
-}
-
-// API Cancel registration (Application)
-app.delete('/api/activities/:id/register',
-  RateLimiter(1 * 60 * 1000, 30),
-  VerifyTokens,
-  (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Users_ID = userData?.Users_ID;
-    const activityId = parseInt(req.params.id);
-
-    if (Login_Type !== 'application') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed in the application.",
-        status: false
-      });
-    }
-
-    if (Users_Type !== 'student' && Users_Type !== 'teacher') {
-      return res.status(403).json({
-        message: "Permission denied.",
-        status: false
-      });
-    }
-
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
-
-    try {
-      // ตรวจสอบว่ามีการลงทะเบียนหรือไม่
-      const checkSql = `
-        SELECT r.Users_ID, r.Registration_CheckInTime, a.Activity_Title, ast.ActivityStatus_Name
-        FROM registration r
-        INNER JOIN activity a ON r.Activity_ID = a.Activity_ID
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        WHERE r.Activity_ID = ? AND r.Users_ID = ?
-      `;
-
-      db.query(checkSql, [activityId, Users_ID], (err, result) => {
-        if (err) {
-          console.error('Check Registration Error:', err);
-          return res.status(500).json({
-            message: 'Database error.',
-            status: false
-          });
-        }
-
-        if (result.length === 0) {
-          return res.status(404).json({
-            message: 'ไม่พบการลงทะเบียนกิจกรรมนี้',
-            status: false
-          });
-        }
-
-        const registration = result[0];
-
-        // ไม่สามารถยกเลิกถ้า check-in แล้ว
-        if (registration.Registration_CheckInTime) {
-          return res.status(400).json({
-            message: 'ไม่สามารถยกเลิกได้ เนื่องจากคุณได้ check-in เข้ากิจกรรมแล้ว',
-            status: false
-          });
-        }
-
-        // ไม่สามารถยกเลิกถ้ากิจกรรมเริ่มแล้วหรือจบแล้ว
-        if (registration.ActivityStatus_Name === 'กำลังดำเนินการ' ||
-          registration.ActivityStatus_Name === 'เสร็จสิ้น') {
-          return res.status(400).json({
-            message: 'ไม่สามารถยกเลิกได้ เนื่องจากกิจกรรมเริ่มแล้วหรือจบแล้ว',
-            status: false
-          });
-        }
-
-        // ลบการลงทะเบียน
-        const deleteSql = `
-          DELETE FROM registration 
-          WHERE Activity_ID = ? AND Users_ID = ?
-        `;
-
-        db.query(deleteSql, [activityId, Users_ID], (err, deleteResult) => {
-          if (err) {
-            console.error('Delete Registration Error:', err);
-            return res.status(500).json({
-              message: 'Database error while canceling registration.',
-              status: false
-            });
-          }
-
-          res.status(200).json({
-            message: 'ยกเลิกการลงทะเบียนสำเร็จ',
-            status: true
-          });
-        });
-      });
-
-    } catch (err) {
-      console.error('Cancel Registration Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred.',
-        status: false
-      });
-    }
   }
-);
 
-// API Get my registered activities (Application)**
-app.get('/api/activities/my/registered',
-  RateLimiter(1 * 60 * 1000, 300),
-  VerifyTokens,
-  (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Users_ID = userData?.Users_ID;
-
-    if (Login_Type !== 'application') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed in the application.",
-        status: false
-      });
-    }
-
-    if (Users_Type !== 'student' && Users_Type !== 'teacher') {
-      return res.status(403).json({
-        message: "Permission denied.",
-        status: false
-      });
-    }
-
-    try {
-      const sql = `
-        SELECT 
-          a.Activity_ID,
-          a.Activity_Title,
-          a.Activity_Description,
-          a.Activity_LocationDetail,
-          a.Activity_StartTime,
-          a.Activity_EndTime,
-          a.Activity_ImageFile,
-          a.Activity_IsRequire,
-          at.ActivityType_Name,
-          ast.ActivityStatus_Name,
-          r.Registration_RegisTime,
-          r.Registration_CheckInTime,
-          r.Registration_CheckOutTime,
-          r.RegistrationStatus_ID,
-          rs.RegistrationStatus_Name
-        FROM registration r
-        INNER JOIN activity a ON r.Activity_ID = a.Activity_ID
-        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID
-        WHERE r.Users_ID = ?
-        ORDER BY a.Activity_StartTime DESC
-      `;
-
-      db.query(sql, [Users_ID], (err, results) => {
-        if (err) {
-          console.error('Get Registered Activities Error:', err);
-          return res.status(500).json({
-            message: 'Database error.',
-            status: false
-          });
-        }
-
-        res.status(200).json({
-          message: 'Registered activities retrieved successfully.',
-          status: true,
-          data: results,
-          count: results.length
-        });
-      });
-    } catch (err) {
-      console.error('Get Registered Activities Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred.',
-        status: false
-      });
-    }
+  if (Users_Type !== 'student' && Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied. Only students and teachers can access activities.",
+      status: false
+    });
   }
-);
 
-// API Check-in with Image and GPS Validation and AI Verification**
-app.post('/api/activities/:id/checkin',
-  registrationUpload.single('activityImage'),
-  RateLimiter(1 * 60 * 1000, 30),
-  VerifyTokens,
-  async (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Users_ID = userData?.Users_ID;
-    const activityId = parseInt(req.params.id);
-    const { latitude, longitude, aiVerification } = req.body;
-
-    if (Login_Type !== 'application') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed in the application.",
-        status: false
-      });
-    }
-
-    if (Users_Type !== 'student' && Users_Type !== 'teacher') {
-      return res.status(403).json({
-        message: "Permission denied.",
-        status: false
-      });
-    }
-
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({
-        message: 'กรุณาแนบรูปภาพกิจกรรม',
-        status: false
-      });
-    }
-
-    try {
-      const checkRegSql = `
-        SELECT r.Registration_RegisTime, r.Registration_CheckInTime, 
-        a.Activity_LocationGPS, ast.ActivityStatus_Name
-        FROM registration r
-        INNER JOIN activity a ON r.Activity_ID = a.Activity_ID
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        WHERE r.Activity_ID = ? AND r.Users_ID = ?
-      `;
-
-      db.query(checkRegSql, [activityId, Users_ID], async (err, regResult) => {
-        if (err) {
-          console.error('Check Registration Error:', err);
-          return res.status(500).json({
-            message: 'Database error',
-            status: false
-          });
-        }
-
-        if (regResult.length === 0) {
-          return res.status(404).json({
-            message: 'ไม่พบการลงทะเบียนกิจกรรมนี้',
-            status: false
-          });
-        }
-
-        const registration = regResult[0];
-        if (registration.Registration_CheckInTime) {
-          return res.status(400).json({
-            message: 'คุณได้เช็คอินกิจกรรมนี้แล้ว',
-            status: false
-          });
-        }
-
-        if (registration.ActivityStatus_Name !== 'กำลังดำเนินการ') {
-          return res.status(400).json({
-            message: 'กิจกรรมยังไม่เปิดให้เช็คอิน',
-            status: false
-          });
-        }
-
-        if (registration.Activity_LocationGPS) {
-          if (!latitude || !longitude) {
-            return res.status(400).json({
-              message: 'กรุณาเปิด GPS เพื่อยืนยันตำแหน่ง',
-              status: false
-            });
-          }
-
-          const getGPSSql = `
-            SELECT ST_X(Activity_LocationGPS) as lng, 
-                   ST_Y(Activity_LocationGPS) as lat 
-            FROM activity 
-            WHERE Activity_ID = ?
-          `;
-
-          db.query(getGPSSql, [activityId], (err, gpsResult) => {
-            if (err || gpsResult.length === 0) {
-              return res.status(500).json({
-                message: 'ไม่สามารถตรวจสอบตำแหน่งได้',
-                status: false
-              });
-            }
-
-            const activityGPS = gpsResult[0];
-            const distance = calculateDistance(
-              parseFloat(latitude),
-              parseFloat(longitude),
-              activityGPS.lat,
-              activityGPS.lng
-            );
-
-            if (distance > 500) {
-              return res.status(400).json({
-                message: `คุณอยู่นอกพื้นที่กิจกรรม (${distance.toFixed(0)} เมตร)`,
-                status: false,
-                distance: distance
-              });
-            }
-
-            saveImageAndCheckIn(req, res, activityId, Users_ID, latitude, longitude, aiVerification);
-          });
-        } else {
-          saveImageAndCheckIn(req, res, activityId, Users_ID, null, null, aiVerification);
-        }
-      });
-
-    } catch (err) {
-      console.error('Check-in Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred.',
-        status: false
-      });
-    }
-  }
-);
-
-async function saveImageAndCheckIn(req, res, activityId, userId, latitude, longitude, aiVerificationString) {
   try {
-    const detected = await fileType.fileTypeFromBuffer(req.file.buffer);
-    if (!detected || !['image/jpeg', 'image/png'].includes(detected.mime)) {
-      return res.status(400).json({
-        message: 'ไฟล์ต้องเป็นรูปภาพเท่านั้น (JPG, PNG)',
-        status: false
-      });
-    }
+    let sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description, 
+        a.Activity_LocationDetail, ST_X(a.Activity_LocationGPS) as gps_lng, ST_Y(a.Activity_LocationGPS) as gps_lat, 
+        a.Activity_StartTime, a.Activity_EndTime, a.Activity_ImageFile, a.Activity_IsRequire, a.Activity_AllowTeachers, 
+        a.Activity_RegisTime, at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, ast.ActivityStatus_ID, 
+        ast.ActivityStatus_Name, ast.ActivityStatus_Description, tpl.Template_ID, tpl.Template_Name, r.Registration_RegisTime, 
+        r.Registration_CheckInTime, r.Registration_CheckOutTime, r.RegistrationStatus_ID, rs.RegistrationStatus_Name, CASE 
+        WHEN r.Users_ID IS NOT NULL THEN TRUE ELSE FALSE END as is_registered FROM activity a LEFT JOIN activitytype at ON 
+        a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+        LEFT JOIN template tpl ON a.Template_ID = tpl.Template_ID LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID 
+        AND r.Users_ID = ? LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID `;
 
-    const processedBuffer = await sharp(req.file.buffer)
-      .resize({ width: 1200, height: 1200, fit: 'inside' })
-      .jpeg({ quality: 85 })
-      .toBuffer();
+    let params = [Users_ID];
 
-    const filename = `registration_${uuidv4()}.jpg`;
-    const savePath = path.join(uploadDir_Registration, filename);
-    fs.writeFileSync(savePath, processedBuffer);
-    let aiIsSuccess = null;
-    let aiVerification = null;
-
-    console.log('🔍 Received aiVerificationString:', aiVerificationString);
-
-    if (aiVerificationString) {
-      try {
-        aiVerification = JSON.parse(aiVerificationString);
-        aiIsSuccess = aiVerification.isReal === true ? 1 : 0;
-
-        console.log('AI Verification Result:', {
-          isReal: aiVerification.isReal,
-          confidence: aiVerification.confidence,
-          aiIsSuccess: aiIsSuccess
-        });
-      } catch (parseErr) {
-        console.error('AI Verification Parse Error:', parseErr);
-      }
+    if (Users_Type === 'student') {
+      sql += `INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
+          INNER JOIN student s ON s.Users_ID = ? AND s.Department_ID = ad.Department_ID
+          WHERE s.Student_IsGraduated = FALSE`;
+      params.push(Users_ID);
+    } else if (Users_Type === 'teacher') {
+      sql += `INNER JOIN teacher tch ON tch.Users_ID = ? 
+          INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID 
+          AND ad.Department_ID = tch.Department_ID
+          WHERE a.Activity_AllowTeachers = TRUE`;
+      params.push(Users_ID);
     } else {
-      console.log('⚠️ No AI Verification data received');
+      sql += ` WHERE 1=1 `;
     }
 
-    const insertImageSql = `
-      INSERT INTO registrationpicture 
-      (RegistrationPicture_ImageFile, Users_ID, Activity_ID, RegistrationPictureStatus_ID, RegistrationPicture_IsAiSuccess) 
-      VALUES (?, ?, ?, 1, ?)
-    `;
+    sql += ` ORDER BY a.Activity_StartTime DESC`;
 
-    console.log('Inserting image with AI status:', {
-      filename,
-      userId,
-      activityId,
-      aiIsSuccess
-    });
-
-    db.query(insertImageSql, [filename, userId, activityId, aiIsSuccess], (err, imageResult) => {
+    db.query(sql, params, (err, results) => {
       if (err) {
-        console.error('Insert Image Error:', err);
-        if (fs.existsSync(savePath)) {
-          fs.unlinkSync(savePath);
-        }
+        console.error('Get Activities Error:', err);
         return res.status(500).json({
-          message: 'ไม่สามารถบันทึกรูปภาพได้',
+          message: 'Database error while fetching activities.',
           status: false
         });
       }
 
-      console.log('Image saved successfully with ID:', imageResult.insertId);
-      const updateRegSql = `
-        UPDATE registration 
-        SET Registration_CheckInTime = CURRENT_TIMESTAMP,
-            RegistrationStatus_ID = 4
-        WHERE Activity_ID = ? AND Users_ID = ?
-      `;
+      const activities = results.map(activity => {
+        const activityData = { ...activity };
 
-      db.query(updateRegSql, [activityId, userId], (err, updateResult) => {
+        if (activity.gps_lng && activity.gps_lat) {
+          activityData.Activity_LocationGPS = {
+            lng: activity.gps_lng,
+            lat: activity.gps_lat
+          };
+        } else {
+          activityData.Activity_LocationGPS = null;
+        }
+
+        delete activityData.gps_lng;
+        delete activityData.gps_lat;
+
+        return activityData;
+      });
+
+      res.status(200).json({
+        message: 'Activities retrieved successfully.',
+        status: true,
+        data: activities,
+        count: activities.length
+      });
+    });
+  } catch (err) {
+    console.error('Get Activities Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching activities.',
+      status: false
+    });
+  }
+});
+
+// API Get activity detail by ID with picture status (Application)**
+app.get('/api/activities/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+  const activityId = parseInt(req.params.id);
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the application.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'student' && Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied. Only students and teachers can access this.",
+      status: false
+    });
+  }
+
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
+
+  try {
+    const sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description,
+      a.Activity_LocationDetail, ST_X(a.Activity_LocationGPS) as gps_lng, ST_Y(a.Activity_LocationGPS) as gps_lat, 
+      a.Activity_StartTime, a.Activity_EndTime, a.Activity_ImageFile, a.Activity_IsRequire, a.Activity_AllowTeachers,
+      a.Activity_RegisTime, at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, ast.ActivityStatus_ID,
+      ast.ActivityStatus_Name, ast.ActivityStatus_Description, t.Template_ID, t.Template_Name, t.Template_ImageFile, 
+      s.Signature_Name, s.Signature_ImageFile, r.Registration_RegisTime, r.Registration_CheckInTime, r.Registration_CheckOutTime, 
+      r.RegistrationStatus_ID, rs.RegistrationStatus_Name, CASE WHEN r.Users_ID IS NOT NULL THEN TRUE ELSE FALSE END as is_registered,
+      rp.RegistrationPicture_ImageFile, rp.RegistrationPicture_IsAiSuccess, rps.RegistrationPictureStatus_Name, rp.RegistrationPicture_RejectReason,
+      rp.RegistrationPicture_RegisTime as Picture_UploadTime, rp.RegistrationPicture_ApprovedTime, rp.RegistrationPicture_RejectedTime
+      FROM activity a LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+      LEFT JOIN template t ON a.Template_ID = t.Template_ID LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID LEFT JOIN registration r ON a.Activity_ID = 
+      r.Activity_ID AND r.Users_ID = ? LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID LEFT JOIN registrationpicture rp ON 
+      a.Activity_ID = rp.Activity_ID AND rp.Users_ID = ? LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = 
+      rps.RegistrationPictureStatus_ID WHERE a.Activity_ID = ?`;
+
+    db.query(sql, [Users_ID, Users_ID, activityId], (err, results) => {
+      if (err) {
+        console.error('Get Activity Detail Error:', err);
+        return res.status(500).json({
+          message: 'Database error while fetching activity.',
+          status: false
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          message: 'Activity not found.',
+          status: false
+        });
+      }
+
+      const activity = results[0];
+      if (activity.gps_lng && activity.gps_lat) {
+        activity.Activity_LocationGPS = {
+          lng: activity.gps_lng,
+          lat: activity.gps_lat
+        };
+      } else {
+        activity.Activity_LocationGPS = null;
+      }
+
+      delete activity.gps_lng;
+      delete activity.gps_lat;
+
+      res.status(200).json({
+        message: 'Activity detail retrieved successfully.',
+        status: true,
+        data: activity
+      });
+    });
+  } catch (err) {
+    console.error('Get Activity Detail Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+});
+
+// API Get my registered activities with picture status (Application)**
+app.get('/api/activities/my/registered', RateLimiter(1 * 60 * 1000, 300), VerifyTokens, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the application.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'student' && Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied.",
+      status: false
+    });
+  }
+
+  try {
+    const sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description, a.Activity_LocationDetail, 
+      ST_X(a.Activity_LocationGPS) as gps_lng, ST_Y(a.Activity_LocationGPS) as gps_lat, a.Activity_StartTime,
+      a.Activity_EndTime, a.Activity_ImageFile, a.Activity_IsRequire, a.Activity_AllowTeachers, at.ActivityType_Name,
+      ast.ActivityStatus_Name, r.Registration_RegisTime, r.Registration_CheckInTime, r.Registration_CheckOutTime,
+      r.RegistrationStatus_ID, rs.RegistrationStatus_Name, rp.RegistrationPicture_ImageFile, rp.RegistrationPicture_IsAiSuccess,
+      rps.RegistrationPictureStatus_Name, rp.RegistrationPicture_RejectReason, rp.RegistrationPicture_RegisTime as Picture_UploadTime,
+      rp.RegistrationPicture_ApprovedTime, rp.RegistrationPicture_RejectedTime FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID 
+      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+      LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID LEFT JOIN registrationpicture rp ON r.Activity_ID = rp.Activity_ID 
+      AND r.Users_ID = rp.Users_ID LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+      WHERE r.Users_ID = ? ORDER BY a.Activity_StartTime DESC`;
+
+    db.query(sql, [Users_ID], (err, results) => {
+      if (err) {
+        console.error('Get Registered Activities Error:', err);
+        return res.status(500).json({
+          message: 'Database error.',
+          status: false
+        });
+      }
+
+      const activities = results.map(activity => {
+        const activityData = { ...activity };
+        if (activity.gps_lng && activity.gps_lat) {
+          activityData.Activity_LocationGPS = {
+            lng: activity.gps_lng,
+            lat: activity.gps_lat
+          };
+        } else {
+          activityData.Activity_LocationGPS = null;
+        }
+
+        delete activityData.gps_lng;
+        delete activityData.gps_lat;
+
+        return activityData;
+      });
+
+      res.status(200).json({
+        message: 'Registered activities retrieved successfully.',
+        status: true,
+        data: activities,
+        count: activities.length
+      });
+    });
+  } catch (err) {
+    console.error('Get Registered Activities Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+});
+
+
+// API Register for activity (Application)**
+app.post('/api/activities/:id/register', RateLimiter(1 * 60 * 1000, 30), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+  const activityId = parseInt(req.params.id);
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the application.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'student' && Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied. Only students and teachers can register for activities.",
+      status: false
+    });
+  }
+
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
+
+  try {
+    const checkActivitySql = `SELECT a.Activity_ID, a.Activity_Title, ast.ActivityStatus_Name FROM activity a
+      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID WHERE a.Activity_ID = ?`;
+
+    db.query(checkActivitySql, [activityId], (err, activityResult) => {
+      if (err) {
+        console.error('Check Activity Error:', err);
+        return res.status(500).json({
+          message: 'Database error while checking activity.',
+          status: false
+        });
+      }
+
+      if (activityResult.length === 0) {
+        return res.status(404).json({
+          message: 'ไม่พบกิจกรรมที่ต้องการลงทะเบียน',
+          status: false
+        });
+      }
+
+      const activity = activityResult[0];
+
+      if (activity.ActivityStatus_Name !== 'เปิดรับสมัคร') {
+        return res.status(400).json({
+          message: 'กิจกรรมนี้ไม่เปิดรับสมัครในขณะนี้',
+          status: false
+        });
+      }
+
+      const checkRegistrationSql = `SELECT Users_ID FROM registration WHERE Activity_ID = ? AND Users_ID = ?`;
+      db.query(checkRegistrationSql, [activityId, Users_ID], (err, regResult) => {
         if (err) {
-          console.error('Update Registration Error:', err);
+          console.error('Check Registration Error:', err);
           return res.status(500).json({
-            message: 'ไม่สามารถเช็คอินได้',
+            message: 'Database error while checking registration.',
+            status: false
+          });
+        }
+
+        if (regResult.length > 0) {
+          return res.status(400).json({
+            message: 'คุณได้ลงทะเบียนกิจกรรมนี้แล้ว',
+            status: false
+          });
+        }
+
+        if (Users_Type === 'student') {
+          const checkDepartmentSql = `SELECT ad.ActivityDetail_ID FROM activitydetail ad
+            INNER JOIN student s ON s.Users_ID = ? AND s.Department_ID = ad.Department_ID 
+            WHERE ad.ActivityDetail_ID = ?`;
+
+          db.query(checkDepartmentSql, [Users_ID, activityId], (err, deptResult) => {
+            if (err) {
+              console.error('Check Department Error:', err);
+              return res.status(500).json({
+                message: 'Database error while checking department.',
+                status: false
+              });
+            }
+
+            if (deptResult.length === 0) {
+              return res.status(403).json({
+                message: 'กิจกรรมนี้ไม่เปิดให้สาขาของคุณลงทะเบียน',
+                status: false
+              });
+            }
+            insertRegistration(activityId, Users_ID, res);
+          });
+        } else {
+          insertRegistration(activityId, Users_ID, res);
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Register Activity Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while registering.',
+      status: false
+    });
+  }
+}
+);
+
+// API Cancel registration (Application)**
+app.delete('/api/activities/:id/register', RateLimiter(1 * 60 * 1000, 30), VerifyTokens, (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+  const activityId = parseInt(req.params.id);
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the application.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'student' && Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied.",
+      status: false
+    });
+  }
+
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
+
+  try {
+    const checkSql = `SELECT r.Users_ID, r.Registration_CheckInTime, a.Activity_Title, ast.ActivityStatus_Name
+      FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID LEFT JOIN activitystatus ast ON 
+      a.ActivityStatus_ID = ast.ActivityStatus_ID WHERE r.Activity_ID = ? AND r.Users_ID = ?`;
+
+    db.query(checkSql, [activityId, Users_ID], (err, result) => {
+      if (err) {
+        console.error('Check Registration Error:', err);
+        return res.status(500).json({
+          message: 'Database error.',
+          status: false
+        });
+      }
+
+      if (result.length === 0) {
+        return res.status(404).json({
+          message: 'ไม่พบการลงทะเบียนกิจกรรมนี้',
+          status: false
+        });
+      }
+
+      const registration = result[0];
+      if (registration.Registration_CheckInTime) {
+        return res.status(400).json({
+          message: 'ไม่สามารถยกเลิกได้ เนื่องจากคุณได้ check-in เข้ากิจกรรมแล้ว',
+          status: false
+        });
+      }
+
+      if (registration.ActivityStatus_Name === 'กำลังดำเนินการ' ||
+        registration.ActivityStatus_Name === 'เสร็จสิ้น') {
+        return res.status(400).json({
+          message: 'ไม่สามารถยกเลิกได้ เนื่องจากกิจกรรมเริ่มแล้วหรือจบแล้ว',
+          status: false
+        });
+      }
+
+      const deleteSql = `DELETE FROM registration WHERE Activity_ID = ? AND Users_ID = ?`;
+      db.query(deleteSql, [activityId, Users_ID], (err, deleteResult) => {
+        if (err) {
+          console.error('Delete Registration Error:', err);
+          return res.status(500).json({
+            message: 'Database error while canceling registration.',
             status: false
           });
         }
 
         res.status(200).json({
-          message: 'เช็คอินสำเร็จ',
-          status: true,
-          data: {
-            Activity_ID: activityId,
-            Users_ID: userId,
-            image_file: filename,
-            check_in_time: new Date(),
-            latitude: latitude,
-            longitude: longitude,
-            ai_verification: aiVerification ? {
-              is_real: aiVerification.isReal,
-              confidence: aiVerification.confidence,
-              success: aiIsSuccess === 1
-            } : null
-          }
+          message: 'ยกเลิกการลงทะเบียนสำเร็จ',
+          status: true
         });
       });
     });
 
   } catch (err) {
-    console.error('Save Image Error:', err);
+    console.error('Cancel Registration Error:', err);
     res.status(500).json({
-      message: 'เกิดข้อผิดพลาดในการบันทึกรูปภาพ',
+      message: 'An unexpected error occurred.',
       status: false
     });
   }
-}
+});
 
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = toRadians(lat2 - lat1);
-  const dLon = toRadians(lon2 - lon1);
+// API Check-in with Image and GPS Validation and AI Verification**
+app.post('/api/activities/:id/checkin', RateLimiter(1 * 60 * 1000, 30), VerifyTokens, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+  const activityId = parseInt(req.params.id);
+  const { latitude, longitude } = req.body;
 
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  if (Login_Type !== 'application') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the application.",
+      status: false
+    });
+  }
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  if (Users_Type !== 'student' && Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied.",
+      status: false
+    });
+  }
 
-  return R * c;
-}
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
 
-function toRadians(degrees) {
-  return degrees * Math.PI / 180;
-}
+  try {
+    const checkRegSql = `SELECT r.Registration_RegisTime, r.Registration_CheckInTime, 
+      a.Activity_LocationGPS, ast.ActivityStatus_Name FROM registration r INNER JOIN activity a 
+      ON r.Activity_ID = a.Activity_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
+      WHERE r.Activity_ID = ? AND r.Users_ID = ?`;
 
-// API Check-out**
-app.post('/api/activities/:id/checkout',
-  RateLimiter(1 * 60 * 1000, 30),
-  VerifyTokens,
-  async (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Users_ID = userData?.Users_ID;
-    const activityId = parseInt(req.params.id);
+    db.query(checkRegSql, [activityId, Users_ID], async (err, regResult) => {
+      if (err) {
+        console.error('Check Registration Error:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
 
-    if (Login_Type !== 'application') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed in the application.",
-        status: false
-      });
-    }
+      if (regResult.length === 0) {
+        return res.status(404).json({
+          message: 'ไม่พบการลงทะเบียนกิจกรรมนี้',
+          status: false
+        });
+      }
 
-    if (Users_Type !== 'student' && Users_Type !== 'teacher') {
-      return res.status(403).json({
-        message: "Permission denied.",
-        status: false
-      });
-    }
+      const registration = regResult[0];
+      if (registration.Registration_CheckInTime) {
+        return res.status(400).json({
+          message: 'คุณได้เช็คอินกิจกรรมนี้แล้ว',
+          status: false
+        });
+      }
 
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
+      if (registration.ActivityStatus_Name !== 'กำลังดำเนินการ') {
+        return res.status(400).json({
+          message: 'กิจกรรมยังไม่เปิดให้เช็คอิน',
+          status: false
+        });
+      }
 
-    try {
-      const checkRegSql = `
-        SELECT Registration_CheckInTime, Registration_CheckOutTime, 
-        ast.ActivityStatus_Name
-        FROM registration r
-        INNER JOIN activity a ON r.Activity_ID = a.Activity_ID
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        WHERE r.Activity_ID = ? AND r.Users_ID = ?
-      `;
-
-      db.query(checkRegSql, [activityId, Users_ID], (err, regResult) => {
-        if (err) {
-          console.error('Check Registration Error:', err);
-          return res.status(500).json({
-            message: 'Database error',
-            status: false
-          });
-        }
-
-        if (regResult.length === 0) {
-          return res.status(404).json({
-            message: 'ไม่พบการลงทะเบียนกิจกรรมนี้',
-            status: false
-          });
-        }
-
-        const registration = regResult[0];
-        if (!registration.Registration_CheckInTime) {
+      if (registration.Activity_LocationGPS) {
+        if (!latitude || !longitude) {
           return res.status(400).json({
-            message: 'คุณยังไม่ได้เช็คอิน',
+            message: 'กรุณาเปิด GPS เพื่อยืนยันตำแหน่ง',
             status: false
           });
         }
 
-        if (registration.Registration_CheckOutTime) {
-          return res.status(400).json({
-            message: 'คุณได้เช็คเอาต์กิจกรรมนี้แล้ว',
-            status: false
-          });
-        }
+        const getGPSSql = `SELECT ST_X(Activity_LocationGPS) as lng, 
+          ST_Y(Activity_LocationGPS) as lat FROM activity WHERE Activity_ID = ?`;
 
-        if (registration.ActivityStatus_Name !== 'กำลังดำเนินการ') {
-          return res.status(400).json({
-            message: 'กิจกรรมยังไม่เปิดให้เช็คเอาต์',
-            status: false
-          });
-        }
-
-        const updateRegSql = `
-          UPDATE registration 
-          SET Registration_CheckOutTime = CURRENT_TIMESTAMP
-          WHERE Activity_ID = ? AND Users_ID = ?
-        `;
-
-        db.query(updateRegSql, [activityId, Users_ID], (err, updateResult) => {
-          if (err) {
-            console.error('Update Registration Error:', err);
+        db.query(getGPSSql, [activityId], (err, gpsResult) => {
+          if (err || gpsResult.length === 0) {
             return res.status(500).json({
-              message: 'ไม่สามารถเช็คเอาต์ได้',
+              message: 'ไม่สามารถตรวจสอบตำแหน่งได้',
               status: false
             });
           }
 
-          res.status(200).json({
-            message: 'เช็คเอาต์สำเร็จ',
-            status: true,
-            data: {
-              Activity_ID: activityId,
-              Users_ID: Users_ID,
-              check_out_time: new Date()
-            }
-          });
-        });
-      });
+          const activityGPS = gpsResult[0];
+          const distance = calculateDistance(
+            parseFloat(latitude),
+            parseFloat(longitude),
+            activityGPS.lat,
+            activityGPS.lng
+          );
 
-    } catch (err) {
-      console.error('Check-out Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred.',
+          if (distance > 500) {
+            return res.status(400).json({
+              message: `คุณอยู่นอกพื้นที่กิจกรรม (${distance.toFixed(0)} เมตร)`,
+              status: false,
+              distance: distance
+            });
+          }
+          performCheckIn(res, activityId, Users_ID);
+        });
+      } else {
+        performCheckIn(res, activityId, Users_ID);
+      }
+    });
+
+  } catch (err) {
+    console.error('Check-in Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+}
+);
+
+// API Check-out with proper image handling*
+app.post('/api/activities/:id/checkout', RateLimiter(1 * 60 * 1000, 30), VerifyTokens, registrationUpload.single('activityImage'), async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+  const activityId = parseInt(req.params.id);
+  const aiVerificationStr = req.body.aiVerification;
+
+  if (Login_Type !== 'application') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the application.",
+      status: false
+    });
+  }
+
+  if (Users_Type !== 'student' && Users_Type !== 'teacher') {
+    return res.status(403).json({
+      message: "Permission denied.",
+      status: false
+    });
+  }
+
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({
+      message: 'กรุณาแนบรูปภาพกิจกรรม',
+      status: false
+    });
+  }
+
+  try {
+    let aiVerification = null;
+    if (aiVerificationStr) {
+      try {
+        aiVerification = JSON.parse(aiVerificationStr);
+      } catch (e) {
+        console.error('Parse AI Verification Error:', e);
+      }
+    }
+
+    const timestamp = Date.now();
+    const randomString = uuidv4().split('-')[0];
+    const imageFileName = `registration_${activityId}_${Users_ID}_${timestamp}_${randomString}.jpg`;
+    const imagePath = path.join(uploadDir_Registration, imageFileName);
+
+    try {
+      await sharp(req.file.buffer)
+        .resize(1200, 1200, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: 85 })
+        .toFile(imagePath);
+
+      console.log('Image saved successfully:', imageFileName);
+    } catch (sharpError) {
+      console.error('Sharp Processing Error:', sharpError);
+      return res.status(500).json({
+        message: 'ไม่สามารถประมวลผลรูปภาพได้',
         status: false
       });
     }
+
+    if (!fs.existsSync(imagePath)) {
+      console.error('Image file not found after save:', imagePath);
+      return res.status(500).json({
+        message: 'ไม่สามารถบันทึกรูปภาพได้',
+        status: false
+      });
+    }
+
+    const checkRegSql = `SELECT r.Registration_CheckInTime, r.Registration_CheckOutTime, 
+        a.Activity_EndTime, ast.ActivityStatus_Name FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID 
+        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID WHERE r.Activity_ID = ? AND r.Users_ID = ?`;
+
+    db.query(checkRegSql, [activityId, Users_ID], (err, regResult) => {
+      if (err) {
+        console.error('Check Registration Error:', err);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      if (regResult.length === 0) {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+        return res.status(404).json({
+          message: 'ไม่พบการลงทะเบียนกิจกรรมนี้',
+          status: false
+        });
+      }
+
+      const registration = regResult[0];
+      if (!registration.Registration_CheckInTime) {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+        return res.status(400).json({
+          message: 'คุณยังไม่ได้เช็คอิน',
+          status: false
+        });
+      }
+
+      if (registration.Registration_CheckOutTime) {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+        return res.status(400).json({
+          message: 'คุณได้เช็คเอาต์กิจกรรมนี้แล้ว',
+          status: false
+        });
+      }
+
+      const now = new Date();
+      const endTime = new Date(registration.Activity_EndTime);
+      const oneHourBeforeEnd = new Date(endTime.getTime() - 60 * 60 * 1000);
+      const thirtyMinutesAfterEnd = new Date(endTime.getTime() + 30 * 60 * 1000);
+
+      if (now < oneHourBeforeEnd) {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+        return res.status(400).json({
+          message: 'ยังไม่ถึงเวลาเช็คเอาต์ (ก่อนกิจกรรมจบ 1 ชั่วโมง)',
+          status: false
+        });
+      }
+
+      if (now > thirtyMinutesAfterEnd) {
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+        return res.status(400).json({
+          message: 'เลยเวลาเช็คเอาต์แล้ว (หลังกิจกรรมจบ 30 นาที)',
+          status: false
+        });
+      }
+
+      const isAiSuccess = aiVerification?.isReal === true;
+      const insertImageSql = `INSERT INTO registrationpicture (RegistrationPicture_ImageFile, 
+          Users_ID, Activity_ID, RegistrationPicture_IsAiSuccess, RegistrationPictureStatus_ID) VALUES (?, ?, ?, ?, ?)`;
+
+      db.query(
+        insertImageSql,
+        [imageFileName, Users_ID, activityId, isAiSuccess, 1],
+        (err, imageResult) => {
+          if (err) {
+            console.error('Insert Image Error:', err);
+            if (fs.existsSync(imagePath)) {
+              fs.unlinkSync(imagePath);
+            }
+            return res.status(500).json({
+              message: 'ไม่สามารถบันทึกข้อมูลรูปภาพได้',
+              status: false
+            });
+          }
+          const updateRegSql = `UPDATE registration SET Registration_CheckOutTime = 
+              CURRENT_TIMESTAMP, RegistrationStatus_ID = 4 WHERE Activity_ID = ? AND Users_ID = ?`;
+
+          db.query(updateRegSql, [activityId, Users_ID], (err, updateResult) => {
+            if (err) {
+              console.error('Update Check-out Error:', err);
+              db.query(
+                'DELETE FROM registrationpicture WHERE RegistrationPicture_ID = ?',
+                [imageResult.insertId],
+                () => {
+                  if (fs.existsSync(imagePath)) {
+                    fs.unlinkSync(imagePath);
+                  }
+                }
+              );
+              return res.status(500).json({
+                message: 'ไม่สามารถเช็คเอาต์ได้',
+                status: false
+              });
+            }
+
+            console.log('Check-out successful:', {
+              activityId,
+              userId: Users_ID,
+              imageFile: imageFileName,
+              aiVerification
+            });
+
+            res.status(200).json({
+              message: 'เช็คเอาต์สำเร็จ',
+              status: true,
+              data: {
+                Activity_ID: activityId,
+                Users_ID: Users_ID,
+                check_out_time: new Date(),
+                image_file: imageFileName,
+                ai_verification: aiVerification
+              }
+            });
+          });
+        }
+      );
+    });
+
+  } catch (err) {
+    console.error('Check-out Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
   }
-);
+});
 
 // API Get Registration Pictures by User**
 app.get('/api/activities/:id/pictures',
