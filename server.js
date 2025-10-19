@@ -9849,21 +9849,36 @@ app.get('/api/activities/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens, (r
 
   try {
     const sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description,
-      a.Activity_LocationDetail, ST_X(a.Activity_LocationGPS) as gps_lng, ST_Y(a.Activity_LocationGPS) as gps_lat, 
-      a.Activity_StartTime, a.Activity_EndTime, a.Activity_ImageFile, a.Activity_IsRequire, a.Activity_AllowTeachers,
-      a.Activity_RegisTime, at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, ast.ActivityStatus_ID,
-      ast.ActivityStatus_Name, ast.ActivityStatus_Description, t.Template_ID, t.Template_Name, t.Template_ImageFile, 
-      s.Signature_Name, s.Signature_ImageFile, r.Registration_RegisTime, r.Registration_CheckInTime, r.Registration_CheckOutTime, 
-      r.RegistrationStatus_ID, rs.RegistrationStatus_Name, CASE WHEN r.Users_ID IS NOT NULL THEN TRUE ELSE FALSE END as is_registered,
-      rp.RegistrationPicture_ImageFile, rp.RegistrationPicture_IsAiSuccess, rps.RegistrationPictureStatus_Name, rp.RegistrationPicture_RejectReason,
-      rp.RegistrationPicture_RegisTime as Picture_UploadTime, rp.RegistrationPicture_ApprovedTime, rp.RegistrationPicture_RejectedTime
-      FROM activity a LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
-      LEFT JOIN template t ON a.Template_ID = t.Template_ID LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID LEFT JOIN registration r ON a.Activity_ID = 
-      r.Activity_ID AND r.Users_ID = ? LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID LEFT JOIN registrationpicture rp ON 
-      a.Activity_ID = rp.Activity_ID AND rp.Users_ID = ? LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = 
-      rps.RegistrationPictureStatus_ID WHERE a.Activity_ID = ?`;
-
-    db.query(sql, [Users_ID, Users_ID, activityId], (err, results) => {
+      a.Activity_LocationDetail, ST_X(a.Activity_LocationGPS) as gps_lng, 
+      ST_Y(a.Activity_LocationGPS) as gps_lat, 
+      a.Activity_StartTime, a.Activity_EndTime, a.Activity_ImageFile, 
+      a.Activity_IsRequire, a.Activity_AllowTeachers,
+      a.Activity_RegisTime, 
+      at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, 
+      ast.ActivityStatus_ID, ast.ActivityStatus_Name, ast.ActivityStatus_Description, 
+      t.Template_ID, t.Template_Name, t.Template_ImageFile, 
+      s.Signature_Name, s.Signature_ImageFile, 
+      r.Registration_RegisTime, r.Registration_CheckInTime, r.Registration_CheckOutTime, 
+      r.RegistrationStatus_ID, rs.RegistrationStatus_Name,
+      rp.RegistrationPicture_ImageFile, rp.RegistrationPicture_IsAiSuccess,
+      rp.RegistrationPicture_ApprovedTime, rp.RegistrationPicture_RejectedTime,
+      rp.RegistrationPicture_RejectReason,
+      rps.RegistrationPictureStatus_Name,
+      cert.Certificate_ImageFile,
+      CASE WHEN r.Users_ID IS NOT NULL THEN TRUE ELSE FALSE END as is_registered 
+      FROM activity a 
+      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
+      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+      LEFT JOIN template t ON a.Template_ID = t.Template_ID 
+      LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID 
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID AND r.Users_ID = ?
+      LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID
+      LEFT JOIN registrationpicture rp ON r.Activity_ID = rp.Activity_ID AND r.Users_ID = rp.Users_ID
+      LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+      LEFT JOIN certificate cert ON a.Activity_ID = cert.Activity_ID AND r.Users_ID = cert.Users_ID
+      WHERE a.Activity_ID = ?`;
+      
+    db.query(sql, [Users_ID, activityId], (err, results) => {
       if (err) {
         console.error('Get Activity Detail Error:', err);
         return res.status(500).json({
