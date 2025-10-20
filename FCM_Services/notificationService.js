@@ -1,155 +1,237 @@
 const { admin } = require('./firebaseConfig');
 const db = require('../Server_Services/databaseClient');
 
-const sendNotificationToUser = async (userId, title, body, data = {}) => {
+/**
+ * ส่ง FCM notification ไปยังผู้ใช้หลายคน
+ */
+const sendNotificationToMultipleUsers = async (userIds, title, body, data = {}) => {
   try {
-    const sql = `SELECT FCM_Token FROM fcmtokens WHERE Users_ID = ? AND FCMToken_IsActive = TRUE`;
+    if (!userIds || userIds.length === 0) {
+      console.log('⚠️ No users to send notification');
+      return { success: 0, failure: 0, total: 0 };
+    }
 
-    return new Promise((resolve, reject) => {
-      db.query(sql, [userId], async (err, results) => {
-        if (err) {
-          console.error('Error fetching FCM tokens:', err);
-          return reject(err);
-        }
+    console.log(`📤 Sending notification to ${userIds.length} users...`);
 
-        if (results.length === 0) {
-          return resolve({ success: false, message: 'No tokens found' });
-        }
+    // ดึง FCM tokens
+    const tokens = await getFCMTokensByUserIds(userIds);
+    
+    if (tokens.length === 0) {
+      console.log('⚠️ No active FCM tokens found');
+      return { success: 0, failure: 0, total: 0 };
+    }
 
-        const tokens = results.map(row => row.FCM_Token);
-
-        const message = {
-          notification: {
-            title,
-            body,
+    // สร้าง message payload
+    const message = {
+      notification: {
+        title: title,
+        body: body,
+      },
+      data: {
+        ...data,
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        title: title,
+        body: body,
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'activity_channel',
+          priority: 'high',
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          defaultLightSettings: true,
+          color: '#001B3F',
+          icon: 'ic_launcher',
+          sound: 'default',
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            alert: {
+              title: title,
+              body: body,
+            },
+            sound: 'default',
+            badge: 1,
+            'content-available': 1,
           },
-          data: {
-            ...data,
-            click_action: 'FLUTTER_NOTIFICATION_CLICK',
-            timestamp: new Date().toISOString()
-          },
-          android: {
-            priority: 'high',
-            notification: {
-              channelId: 'activity_channel',
-              priority: 'high',
-              defaultSound: true,
-              defaultVibrateTimings: true,
-              defaultLightSettings: true,
-              sound: 'notification_sound',
-              color: '#001B3F',
-              visibility: 'public',
-            }
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: 'notification_sound.caf',
-                badge: 1,
-                alert: {
-                  title,
-                  body
-                },
-                'interruption-level': 'time-sensitive'
-              }
-            }
-          },
-          tokens: tokens
-        };
+        },
+        headers: {
+          'apns-priority': '10',
+          'apns-push-type': 'alert',
+        },
+      },
+    };
 
-        try {
-          const response = await admin.messaging().sendEachForMulticast(message);
+    // ส่ง notification
+    const results = await sendMulticastNotification(tokens, message);
+    
+    console.log(`✅ Notification sent: ${results.successCount} success, ${results.failureCount} failed`);
+    
+    // ลบ tokens ที่ invalid
+    if (results.invalidTokens.length > 0) {
+      await removeInvalidTokens(results.invalidTokens);
+    }
 
-          console.log(`✅ Sent notification to user ${userId}:`, {
-            successCount: response.successCount,
-            failureCount: response.failureCount
-          });
-          if (response.failureCount > 0) {
-            const failedTokens = [];
-            response.responses.forEach((resp, idx) => {
-              if (!resp.success) {
-                failedTokens.push(tokens[idx]);
-                console.error(`Token failed: ${tokens[idx]}, Error:`, resp.error);
-              }
-            });
-            if (failedTokens.length > 0) {
-              const deactivateSql = `UPDATE fcmtokens SET FCMToken_IsActive = FALSE WHERE FCM_Token IN (?)`;
-              db.query(deactivateSql, [failedTokens], (err) => {
-                if (err) console.error('Error deactivating tokens:', err);
-                else console.log(`Deactivated ${failedTokens.length} failed tokens`);
-              });
-            }
-          }
+    return {
+      success: results.successCount,
+      failure: results.failureCount,
+      total: tokens.length
+    };
 
-          resolve({
-            success: true,
-            successCount: response.successCount,
-            failureCount: response.failureCount
-          });
-        } catch (error) {
-          console.error('Error sending FCM notification:', error);
-          reject(error);
-        }
-      });
-    });
   } catch (error) {
-    console.error('Error in sendNotificationToUser:', error);
-    throw error;
+    console.error('❌ Error sending notification:', error);
+    return { success: 0, failure: userIds.length, total: userIds.length };
   }
 };
 
-const sendNotificationToMultipleUsers = async (userIds, title, body, data = {}) => {
-  const results = {
-    total: userIds.length,
-    success: 0,
-    failed: 0
-  };
+/**
+ * ส่ง notification แบบ multicast (batch)
+ */
+const sendMulticastNotification = async (tokens, message) => {
+  const batchSize = 500; // FCM limit
+  let successCount = 0;
+  let failureCount = 0;
+  const invalidTokens = [];
 
-  for (const userId of userIds) {
+  for (let i = 0; i < tokens.length; i += batchSize) {
+    const batch = tokens.slice(i, i + batchSize);
+    
     try {
-      const result = await sendNotificationToUser(userId, title, body, data);
-      if (result.success) {
-        results.success++;
-      } else {
-        results.failed++;
-      }
+      const response = await admin.messaging().sendEachForMulticast({
+        tokens: batch,
+        ...message
+      });
+
+      successCount += response.successCount;
+      failureCount += response.failureCount;
+
+      // เก็บ tokens ที่ invalid
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          const error = resp.error?.code;
+          if (error === 'messaging/invalid-registration-token' || 
+              error === 'messaging/registration-token-not-registered') {
+            invalidTokens.push(batch[idx]);
+          }
+          if (error) {
+            console.warn(`  Failed: ${error}`);
+          }
+        }
+      });
+
     } catch (error) {
-      results.failed++;
-      console.error(`Failed to send notification to user ${userId}:`, error);
+      console.error('  Error sending batch:', error.message);
+      failureCount += batch.length;
     }
   }
 
-  return results;
+  return { successCount, failureCount, invalidTokens };
 };
 
-const saveNotificationForUsers = async (userIds, title, detail, activityId, notificationType) => {
+/**
+ * ดึง FCM tokens ของผู้ใช้
+ */
+const getFCMTokensByUserIds = (userIds) => {
   return new Promise((resolve, reject) => {
-    const values = userIds.map(userId => [
-      title,
-      detail,
-      notificationType,
-      true,
-      userId,
-      activityId
-    ]);
+    if (!userIds || userIds.length === 0) {
+      return resolve([]);
+    }
 
-    const sql = `INSERT INTO notification 
-      (Notification_Title, Notification_Detail, Notification_Type, Notification_IsSent, Users_ID, Activity_ID) 
-      VALUES ?`;
+    const placeholders = userIds.map(() => '?').join(',');
+    const sql = `
+      SELECT DISTINCT FCM_Token 
+      FROM FCMTokens 
+      WHERE Users_ID IN (${placeholders})
+      AND FCMToken_IsActive = TRUE
+      AND FCM_Token IS NOT NULL
+      AND FCM_Token != ''
+    `;
 
-    db.query(sql, [values], (err, result) => {
+    db.query(sql, userIds, (err, results) => {
       if (err) {
-        console.error('Error saving notifications to database:', err);
+        console.error('Error fetching FCM tokens:', err);
         return reject(err);
       }
-      console.log(`Saved ${result.affectedRows} notifications to database`);
+      
+      const tokens = results.map(r => r.FCM_Token).filter(Boolean);
+      console.log(`📱 Found ${tokens.length} active FCM tokens`);
+      resolve(tokens);
+    });
+  });
+};
+
+/**
+ * ลบ FCM tokens ที่ invalid
+ */
+const removeInvalidTokens = async (tokens) => {
+  if (!tokens || tokens.length === 0) return;
+
+  return new Promise((resolve, reject) => {
+    const placeholders = tokens.map(() => '?').join(',');
+    const sql = `
+      UPDATE FCMTokens 
+      SET FCMToken_IsActive = FALSE 
+      WHERE FCM_Token IN (${placeholders})
+    `;
+
+    db.query(sql, tokens, (err, result) => {
+      if (err) {
+        console.error('Error removing invalid tokens:', err);
+        return reject(err);
+      }
+      console.log(`🗑️ Removed ${result.affectedRows} invalid tokens`);
       resolve(result);
     });
   });
 };
 
+/**
+ * บันทึก notification ลง database
+ */
+const saveNotificationForUsers = async (userIds, title, detail, activityId, type) => {
+  if (!userIds || userIds.length === 0) return;
+
+  return new Promise((resolve, reject) => {
+    const values = userIds.map(userId => [
+      userId,
+      title,
+      detail,
+      activityId,
+      type,
+      true // Notification_IsSent
+    ]);
+
+    const sql = `
+      INSERT INTO notification 
+      (Users_ID, Notification_Title, Notification_Detail, Activity_ID, Notification_Type, Notification_IsSent)
+      VALUES ?
+    `;
+
+    db.query(sql, [values], (err, result) => {
+      if (err) {
+        console.error('Error saving notifications:', err);
+        return reject(err);
+      }
+      console.log(`💾 Saved ${result.affectedRows} notifications to database`);
+      resolve(result);
+    });
+  });
+};
+
+/**
+ * ส่ง notification ไปยังผู้ใช้คนเดียว
+ */
+const sendNotificationToUser = async (userId, title, body, data = {}) => {
+  return sendNotificationToMultipleUsers([userId], title, body, data);
+};
+
 module.exports = {
-  sendNotificationToUser,
   sendNotificationToMultipleUsers,
-  saveNotificationForUsers
+  sendNotificationToUser,
+  saveNotificationForUsers,
+  getFCMTokensByUserIds
 };

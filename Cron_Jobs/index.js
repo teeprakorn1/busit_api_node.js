@@ -1,5 +1,14 @@
 const { initActivityStatusCron, updateActivityStatus } = require('./activityStatusUpdater');
-const { initActivityNotificationCron, checkAndSendActivityNotifications } = require('./activityNotificationScheduler');
+const { 
+  initActivityNotificationCron, 
+  sendActivityCreatedNotification, 
+  sendActivityUpdatedNotification, 
+  sendActivityStartingNotification, 
+  sendActivityEndedNotification, 
+  checkAndSendReminderNotifications,
+  checkAndSendStartingNotifications,
+  checkAndSendEndedNotifications
+} = require('./activityNotificationScheduler');
 
 const initAllCronJobs = () => {
   console.log('\n========================================');
@@ -21,5 +30,11 @@ const initAllCronJobs = () => {
 module.exports = {
   initAllCronJobs,
   updateActivityStatus,
-  checkAndSendActivityNotifications
+  sendActivityCreatedNotification, 
+  sendActivityUpdatedNotification, 
+  sendActivityStartingNotification, 
+  sendActivityEndedNotification, 
+  checkAndSendReminderNotifications,
+  checkAndSendStartingNotifications,
+  checkAndSendEndedNotifications
 };
