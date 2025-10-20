@@ -12508,11 +12508,12 @@ app.get('/api/admin/dashboard-stats', RateLimiter(1 * 60 * 1000, 300), VerifyTok
   }
 });
 
-// API Get comprehensive dashboard data**
+// API Get comprehensive dashboard data with filters**
 app.get('/api/admin/dashboard', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
 
   if (Login_Type !== 'website') {
     return res.status(403).json({
@@ -12528,63 +12529,142 @@ app.get('/api/admin/dashboard', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_We
     });
   }
 
+  const { semester, academicYear } = req.query;
+
   try {
+    let userDepartmentId = null;
+    let isDean = false;
+
+    if (Users_Type === 'teacher') {
+      const teacherSql = `SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?`;
+      const teacherResult = await new Promise((resolve, reject) => {
+        db.query(teacherSql, [Users_ID], (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      });
+
+      if (teacherResult) {
+        userDepartmentId = teacherResult.Department_ID;
+        isDean = teacherResult.Teacher_IsDean;
+      }
+    }
+
+    let departmentJoin = '';
+    let departmentFilter = '';
+    let departmentParams = [];
+
+    if (Users_Type === 'teacher' && !isDean && userDepartmentId) {
+      departmentJoin = ' INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID';
+      departmentFilter = ' AND ad.Department_ID = ?';
+      departmentParams.push(userDepartmentId);
+    }
+
+    let dateFilter = '';
+    let dateParams = [];
+
+    if (semester && academicYear) {
+      const yearStart = parseInt(academicYear) - 543;
+      const semesterNum = parseInt(semester);
+
+      if (semesterNum === 1) {
+        dateFilter = ' AND a.Activity_StartTime >= ? AND a.Activity_StartTime < ?';
+        dateParams.push(`${yearStart}-07-01`, `${yearStart}-11-01`);
+      } else if (semesterNum === 2) {
+        dateFilter = ' AND a.Activity_StartTime >= ? AND a.Activity_StartTime < ?';
+        dateParams.push(`${yearStart}-11-01`, `${yearStart + 1}-03-01`);
+      } else if (semesterNum === 3) {
+        dateFilter = ' AND a.Activity_StartTime >= ? AND a.Activity_StartTime < ?';
+        dateParams.push(`${yearStart + 1}-03-01`, `${yearStart + 1}-07-01`);
+      }
+    } else if (academicYear) {
+      const yearStart = parseInt(academicYear) - 543;
+      dateFilter = ' AND a.Activity_StartTime >= ? AND a.Activity_StartTime < ?';
+      dateParams.push(`${yearStart}-07-01`, `${yearStart + 1}-07-01`);
+    }
+
     const studentCountSql = `SELECT COUNT(*) as total FROM student WHERE Student_IsGraduated = FALSE`;
     const teacherCountSql = `SELECT COUNT(*) as total FROM teacher WHERE Teacher_IsResign = FALSE`;
-    const totalActivitiesSql = `SELECT COUNT(*) as total FROM activity`;
-    const activeActivitiesSql = `SELECT COUNT(*) as total FROM activity WHERE ActivityStatus_ID IN (1, 2)`;
-    const completedActivitiesSql = `SELECT COUNT(*) as total FROM activity WHERE ActivityStatus_ID = 3`;
+
+    const totalActivitiesSql = `SELECT COUNT(DISTINCT a.Activity_ID) as total FROM activity a ${departmentJoin} WHERE 1=1 ${dateFilter} ${departmentFilter}`;
+    const activeActivitiesSql = `SELECT COUNT(DISTINCT a.Activity_ID) as total FROM activity a ${departmentJoin} WHERE a.ActivityStatus_ID IN (1, 2) ${dateFilter} ${departmentFilter}`;
+    const completedActivitiesSql = `SELECT COUNT(DISTINCT a.Activity_ID) as total FROM activity a ${departmentJoin} WHERE a.ActivityStatus_ID = 3 ${dateFilter} ${departmentFilter}`;
 
     const participationSql = `SELECT COUNT(DISTINCT r.Users_ID) as participated_users,
       (SELECT COUNT(*) FROM student WHERE Student_IsGraduated = FALSE) as total_students,
       COUNT(*) as total_registrations, SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
       AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_registrations
-      FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID WHERE a.ActivityStatus_ID IN (2, 3)`;
+      FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID ${departmentJoin}
+      WHERE a.ActivityStatus_ID IN (2, 3) ${dateFilter} ${departmentFilter}`;
 
     const recentActivitiesSql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_StartTime, 
       a.Activity_EndTime, a.Activity_LocationDetail, ast.ActivityStatus_ID, ast.ActivityStatus_Name, 
       at.ActivityType_ID, at.ActivityType_Name, COUNT(DISTINCT r.Users_ID) as participant_count, SUM(CASE 
       WHEN r.Registration_CheckInTime IS NOT NULL AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 
       END) as completed_count, TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as duration_hours, 
-      GROUP_CONCAT(DISTINCT d.Department_Name SEPARATOR ', ') as departments FROM activity a LEFT JOIN activitystatus ast 
-      ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
-      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-      LEFT JOIN department d ON ad.Department_ID = d.Department_ID GROUP BY a.Activity_ID, a.Activity_Title, a.Activity_StartTime, 
+      GROUP_CONCAT(DISTINCT d.Department_Name SEPARATOR ', ') as departments FROM activity a 
+      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID 
+      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
+      LEFT JOIN department d ON ad.Department_ID = d.Department_ID 
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY a.Activity_ID, a.Activity_Title, a.Activity_StartTime, 
       a.Activity_EndTime, a.Activity_LocationDetail, ast.ActivityStatus_ID, ast.ActivityStatus_Name, at.ActivityType_ID, 
       at.ActivityType_Name ORDER BY a.Activity_StartTime DESC LIMIT 20`;
 
     const activityTypeStatsSql = `SELECT at.ActivityType_ID, at.ActivityType_Name,
       COUNT(DISTINCT a.Activity_ID) as activity_count, COUNT(DISTINCT r.Users_ID) as total_participants,
       AVG(TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime)) as avg_duration FROM activitytype at
-      LEFT JOIN activity a ON at.ActivityType_ID = a.ActivityType_ID LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID 
-      AND r.Registration_CheckInTime IS NOT NULL AND r.Registration_CheckOutTime IS NOT NULL GROUP BY at.ActivityType_ID, 
-      at.ActivityType_Name ORDER BY activity_count DESC`;
+      LEFT JOIN activity a ON at.ActivityType_ID = a.ActivityType_ID ${departmentJoin}
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID 
+      AND r.Registration_CheckInTime IS NOT NULL AND r.Registration_CheckOutTime IS NOT NULL 
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY at.ActivityType_ID, at.ActivityType_Name ORDER BY activity_count DESC`;
 
     const monthlyStatsSql = `SELECT DATE_FORMAT(a.Activity_StartTime, '%Y-%m') as month,
       DATE_FORMAT(a.Activity_StartTime, '%M %Y') as month_name, COUNT(DISTINCT a.Activity_ID) as activity_count,
       COUNT(DISTINCT r.Users_ID) as participant_count, SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL AND 
-      r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count FROM activity a LEFT JOIN registration r 
-      ON a.Activity_ID = r.Activity_ID WHERE a.Activity_StartTime >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) GROUP BY DATE_FORMAT
-      (a.Activity_StartTime, '%Y-%m'), DATE_FORMAT(a.Activity_StartTime, '%M %Y') ORDER BY month ASC`;
+      r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count FROM activity a ${departmentJoin}
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID 
+      WHERE a.Activity_StartTime >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) ${dateFilter} ${departmentFilter}
+      GROUP BY DATE_FORMAT(a.Activity_StartTime, '%Y-%m'), DATE_FORMAT(a.Activity_StartTime, '%M %Y') 
+      ORDER BY month ASC`;
 
     const statusStatsSql = `SELECT ast.ActivityStatus_ID, ast.ActivityStatus_Name,
-      COUNT(a.Activity_ID) as count FROM activitystatus ast LEFT JOIN activity a ON ast.ActivityStatus_ID = 
-      a.ActivityStatus_ID GROUP BY ast.ActivityStatus_ID, ast.ActivityStatus_Name ORDER BY ast.ActivityStatus_ID`;
+      COUNT(DISTINCT a.Activity_ID) as count FROM activitystatus ast 
+      LEFT JOIN activity a ON ast.ActivityStatus_ID = a.ActivityStatus_ID ${departmentJoin}
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY ast.ActivityStatus_ID, ast.ActivityStatus_Name ORDER BY ast.ActivityStatus_ID`;
 
     const departmentStatsSql = `SELECT d.Department_Name, f.Faculty_Name, 
       COUNT(DISTINCT ad.ActivityDetail_ID) as activity_count, SUM(ad.ActivityDetail_Total) as total_quota,
-      COUNT(DISTINCT s.Student_ID) as student_count FROM department d LEFT JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
-      LEFT JOIN activitydetail ad ON d.Department_ID = ad.Department_ID LEFT JOIN student s ON d.Department_ID = s.Department_ID 
-      AND s.Student_IsGraduated = FALSE GROUP BY d.Department_ID, d.Department_Name, f.Faculty_Name ORDER BY activity_count DESC LIMIT 10`;
+      COUNT(DISTINCT s.Student_ID) as student_count FROM department d 
+      LEFT JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
+      LEFT JOIN activitydetail ad ON d.Department_ID = ad.Department_ID 
+      LEFT JOIN activity a ON ad.ActivityDetail_ID = a.Activity_ID
+      LEFT JOIN student s ON d.Department_ID = s.Department_ID AND s.Student_IsGraduated = FALSE 
+      WHERE 1=1 ${dateFilter} ${Users_Type === 'teacher' && !isDean && userDepartmentId ? 'AND d.Department_ID = ?' : ''}
+      GROUP BY d.Department_ID, d.Department_Name, f.Faculty_Name ORDER BY activity_count DESC LIMIT 10`;
 
     const topActivitiesSql = `SELECT a.Activity_Title, COUNT(DISTINCT r.Users_ID) as participant_count, 
-      at.ActivityType_Name FROM activity a LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID LEFT JOIN 
-      activitytype at ON a.ActivityType_ID = at.ActivityType_ID GROUP BY a.Activity_ID, a.Activity_Title, at.ActivityType_Name
+      at.ActivityType_Name FROM activity a ${departmentJoin}
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID LEFT JOIN 
+      activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY a.Activity_ID, a.Activity_Title, at.ActivityType_Name
       ORDER BY participant_count DESC LIMIT 10`;
 
     const hourlyStatsSql = `SELECT HOUR(a.Activity_StartTime) as hour, COUNT(DISTINCT a.Activity_ID) as activity_count,
-      COUNT(DISTINCT r.Users_ID) as participant_count FROM activity a LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
-      WHERE a.Activity_StartTime >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) GROUP BY HOUR(a.Activity_StartTime) ORDER BY hour`;
+      COUNT(DISTINCT r.Users_ID) as participant_count FROM activity a ${departmentJoin}
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      WHERE a.Activity_StartTime >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) ${dateFilter} ${departmentFilter}
+      GROUP BY HOUR(a.Activity_StartTime) ORDER BY hour`;
+
+    const queryParams = [...dateParams, ...departmentParams];
+    const deptQueryParams = Users_Type === 'teacher' && !isDean && userDepartmentId
+      ? [...dateParams, userDepartmentId]
+      : dateParams;
 
     const [studentResult, teacherResult, totalActivitiesResult, activeActivitiesResult,
       completedActivitiesResult, participationResult, recentActivitiesResult, activityTypeStatsResult,
@@ -12603,67 +12683,67 @@ app.get('/api/admin/dashboard', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_We
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(totalActivitiesSql, (err, results) => {
+          db.query(totalActivitiesSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results[0]);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(activeActivitiesSql, (err, results) => {
+          db.query(activeActivitiesSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results[0]);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(completedActivitiesSql, (err, results) => {
+          db.query(completedActivitiesSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results[0]);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(participationSql, (err, results) => {
+          db.query(participationSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results[0]);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(recentActivitiesSql, (err, results) => {
+          db.query(recentActivitiesSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(activityTypeStatsSql, (err, results) => {
+          db.query(activityTypeStatsSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(monthlyStatsSql, (err, results) => {
+          db.query(monthlyStatsSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(statusStatsSql, (err, results) => {
+          db.query(statusStatsSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(departmentStatsSql, (err, results) => {
+          db.query(departmentStatsSql, deptQueryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(topActivitiesSql, (err, results) => {
+          db.query(topActivitiesSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results);
           });
         }),
         new Promise((resolve, reject) => {
-          db.query(hourlyStatsSql, (err, results) => {
+          db.query(hourlyStatsSql, queryParams, (err, results) => {
             if (err) reject(err);
             else resolve(results);
           });
@@ -12678,6 +12758,11 @@ app.get('/api/admin/dashboard', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_We
     }
 
     const dashboardData = {
+      userInfo: {
+        isDean: isDean || Users_Type === 'staff',
+        departmentRestricted: Users_Type === 'teacher' && !isDean,
+        userType: Users_Type
+      },
       totalActivities: totalActivitiesResult.total || 0,
       totalStudents: studentResult.total || 0,
       totalTeachers: teacherResult.total || 0,
@@ -12709,6 +12794,250 @@ app.get('/api/admin/dashboard', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_We
     console.error('Get Dashboard Data Error:', err);
     res.status(500).json({
       message: 'An unexpected error occurred while fetching dashboard data.',
+      status: false
+    });
+  }
+});
+
+// API Get semester and academic year reports**
+app.get('/api/admin/dashboard/semester-report', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Users_ID = userData?.Users_ID;
+
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed in the website.",
+      status: false
+    });
+  }
+
+  if (!['staff', 'teacher'].includes(Users_Type)) {
+    return res.status(403).json({
+      message: "Permission denied. Only staff and teachers can access this endpoint.",
+      status: false
+    });
+  }
+
+  const { semester, academicYear } = req.query;
+
+  try {
+    let userDepartmentId = null;
+    let isDean = false;
+
+    if (Users_Type === 'teacher') {
+      const teacherSql = `SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?`;
+      const teacherResult = await new Promise((resolve, reject) => {
+        db.query(teacherSql, [Users_ID], (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      });
+
+      if (teacherResult) {
+        userDepartmentId = teacherResult.Department_ID;
+        isDean = teacherResult.Teacher_IsDean;
+      }
+    }
+
+    let departmentFilter = '';
+    let departmentParams = [];
+
+    if (Users_Type === 'teacher' && !isDean && userDepartmentId) {
+      departmentFilter = ' AND ad.Department_ID = ?';
+      departmentParams.push(userDepartmentId);
+    }
+
+    let dateFilter = '';
+    let dateParams = [];
+
+    if (semester && academicYear) {
+      const yearStart = parseInt(academicYear) - 543;
+      const semesterNum = parseInt(semester);
+
+      if (semesterNum === 1) {
+        dateFilter = ' AND a.Activity_StartTime >= ? AND a.Activity_StartTime < ?';
+        dateParams.push(
+          `${yearStart}-07-01`,
+          `${yearStart}-11-01`
+        );
+      } else if (semesterNum === 2) {
+        dateFilter = ' AND a.Activity_StartTime >= ? AND a.Activity_StartTime < ?';
+        dateParams.push(
+          `${yearStart}-11-01`,
+          `${yearStart + 1}-03-01`
+        );
+      } else if (semesterNum === 3) {
+        dateFilter = ' AND a.Activity_StartTime >= ? AND a.Activity_StartTime < ?';
+        dateParams.push(
+          `${yearStart + 1}-03-01`,
+          `${yearStart + 1}-07-01`
+        );
+      }
+    } else if (academicYear) {
+      const yearStart = parseInt(academicYear) - 543;
+      dateFilter = ' AND a.Activity_StartTime >= ? AND a.Activity_StartTime < ?';
+      dateParams.push(
+        `${yearStart}-08-01`,
+        `${yearStart + 1}-07-31`
+      );
+    }
+
+    const summarySql = `
+      SELECT 
+        COUNT(DISTINCT a.Activity_ID) as total_activities,
+        COUNT(DISTINCT r.Users_ID) as total_participants,
+        SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
+          AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_participations,
+        COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 3 THEN a.Activity_ID END) as completed_activities,
+        COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 1 THEN a.Activity_ID END) as open_activities,
+        COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 2 THEN a.Activity_ID END) as ongoing_activities,
+        SUM(TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime)) as total_hours
+      FROM activity a
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+    `;
+
+    const typeStatsSql = `
+      SELECT 
+        at.ActivityType_Name,
+        COUNT(DISTINCT a.Activity_ID) as activity_count,
+        COUNT(DISTINCT r.Users_ID) as participant_count,
+        SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
+          AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count
+      FROM activitytype at
+      LEFT JOIN activity a ON at.ActivityType_ID = a.ActivityType_ID
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY at.ActivityType_ID, at.ActivityType_Name
+      ORDER BY activity_count DESC
+    `;
+
+    const departmentStatsSql = `
+      SELECT 
+        d.Department_Name,
+        f.Faculty_Name,
+        COUNT(DISTINCT a.Activity_ID) as activity_count,
+        COUNT(DISTINCT r.Users_ID) as participant_count,
+        SUM(ad.ActivityDetail_Total) as total_quota
+      FROM department d
+      LEFT JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
+      LEFT JOIN activitydetail ad ON d.Department_ID = ad.Department_ID
+      LEFT JOIN activity a ON ad.ActivityDetail_ID = a.Activity_ID
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY d.Department_ID, d.Department_Name, f.Faculty_Name
+      ORDER BY activity_count DESC
+    `;
+
+    const topActivitiesSql = `
+      SELECT 
+        a.Activity_Title,
+        a.Activity_StartTime,
+        at.ActivityType_Name,
+        COUNT(DISTINCT r.Users_ID) as participant_count,
+        SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
+          AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count,
+        GROUP_CONCAT(DISTINCT d.Department_Name SEPARATOR ', ') as departments
+      FROM activity a
+      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
+      LEFT JOIN department d ON ad.Department_ID = d.Department_ID
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY a.Activity_ID, a.Activity_Title, a.Activity_StartTime, at.ActivityType_Name
+      ORDER BY participant_count DESC
+      LIMIT 10
+    `;
+
+    const monthlySql = `
+      SELECT 
+        DATE_FORMAT(a.Activity_StartTime, '%Y-%m') as month,
+        DATE_FORMAT(a.Activity_StartTime, '%M %Y') as month_name,
+        COUNT(DISTINCT a.Activity_ID) as activity_count,
+        COUNT(DISTINCT r.Users_ID) as participant_count,
+        SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
+          AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count
+      FROM activity a
+      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
+      WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY DATE_FORMAT(a.Activity_StartTime, '%Y-%m'), 
+        DATE_FORMAT(a.Activity_StartTime, '%M %Y')
+      ORDER BY month ASC
+    `;
+
+    const queryParams = [...dateParams, ...departmentParams];
+
+    const [summaryResult, typeStatsResult, departmentStatsResult,
+      topActivitiesResult, monthlyResult] = await Promise.all([
+        new Promise((resolve, reject) => {
+          db.query(summarySql, queryParams, (err, results) => {
+            if (err) reject(err);
+            else resolve(results[0]);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(typeStatsSql, queryParams, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(departmentStatsSql, queryParams, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(topActivitiesSql, queryParams, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(monthlySql, queryParams, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+          });
+        })
+      ]);
+
+    const reportData = {
+      period: {
+        semester: semester || 'ทั้งปี',
+        academicYear: academicYear || 'ทั้งหมด',
+        isDean: isDean || Users_Type === 'staff',
+        departmentRestricted: Users_Type === 'teacher' && !isDean
+      },
+      summary: summaryResult || {
+        total_activities: 0,
+        total_participants: 0,
+        completed_participations: 0,
+        completed_activities: 0,
+        open_activities: 0,
+        ongoing_activities: 0,
+        total_hours: 0
+      },
+      typeStats: typeStatsResult || [],
+      departmentStats: departmentStatsResult || [],
+      topActivities: topActivitiesResult || [],
+      monthlyStats: monthlyResult || []
+    };
+
+    res.status(200).json({
+      message: 'Semester report retrieved successfully.',
+      status: true,
+      data: reportData
+    });
+
+  } catch (err) {
+    console.error('Get Semester Report Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while fetching semester report.',
       status: false
     });
   }
