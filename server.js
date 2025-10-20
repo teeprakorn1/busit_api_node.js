@@ -1917,7 +1917,7 @@ app.post('/api/dataedit/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Verif
   const userData = req.user;
   const Users_Type = userData?.Users_Type;
 
-  if (Users_Type !== 'staff') {
+  if (Users_Type !== 'staff' && Users_Type !== 'teacher') {
     return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
   }
 
@@ -4655,10 +4655,12 @@ app.get('/api/admin/users/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens_We
 });
 
 // API Get All Teachers with Pagination, Filtering, and Search of Website Admin
+// API Get All Teachers with Pagination, Filtering, and Search of Website Admin
 app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
+  const Requester_Users_ID = userData?.Users_ID;
 
   if (Login_Type !== 'website') {
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
@@ -4676,6 +4678,30 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
   try {
     let whereConditions = [];
     let queryParams = [];
+
+    // ตรวจสอบว่าเป็น teacher ธรรมดา (ไม่ใช่ dean และไม่ใช่ staff)
+    if (Requester_Users_Type === 'teacher') {
+      // ดึงข้อมูล Department_ID และ Teacher_IsDean ของผู้ request
+      const teacherCheckSql = 'SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?';
+      
+      const teacherData = await new Promise((resolve, reject) => {
+        db.query(teacherCheckSql, [Requester_Users_ID], (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      });
+
+      if (!teacherData) {
+        return res.status(404).json({ message: 'Teacher data not found', status: false });
+      }
+
+      // ถ้าไม่ใช่ dean ให้จำกัดเฉพาะสาขาของตนเอง
+      if (!teacherData.Teacher_IsDean) {
+        whereConditions.push('t.Department_ID = ?');
+        queryParams.push(teacherData.Department_ID);
+      }
+      // ถ้าเป็น dean จะไม่มีการจำกัด สามารถดูได้ทุกสาขา
+    }
 
     if (!includeResigned) {
       whereConditions.push('t.Teacher_IsResign = FALSE');
@@ -5834,18 +5860,19 @@ app.get('/api/admin/students/incomplete-activities', RateLimiter(1 * 60 * 1000, 
 }
 );
 
-// API Get All Students with Filtering, and Search of Website Admin
+// API Get All Students with Filtering, and Search of Website Admin***
 app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
   const Login_Type = userData?.Login_Type;
+  const Requester_Users_ID = userData?.Users_ID;
 
   if (Login_Type !== 'website') {
     return res.status(403).json({ message: "Permission denied. This action is only allowed on the website.", status: false });
   }
 
   if (Requester_Users_Type !== 'staff' && Requester_Users_Type !== 'teacher') {
-    return res.status(403).json({ message: "Permission denied. Only staff can perform this action.", status: false });
+    return res.status(403).json({ message: "Permission denied. Only staff and teachers can perform this action.", status: false });
   }
 
   const includeGraduated = req.query.includeGraduated === 'true';
@@ -5857,6 +5884,30 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
   try {
     let whereConditions = [];
     let queryParams = [];
+
+    // ตรวจสอบว่าเป็น teacher ธรรมดา (ไม่ใช่ dean และไม่ใช่ staff)
+    if (Requester_Users_Type === 'teacher') {
+      // ดึงข้อมูล Department_ID และ Teacher_IsDean ของผู้ request
+      const teacherCheckSql = 'SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?';
+      
+      const teacherData = await new Promise((resolve, reject) => {
+        db.query(teacherCheckSql, [Requester_Users_ID], (err, results) => {
+          if (err) reject(err);
+          else resolve(results[0]);
+        });
+      });
+
+      if (!teacherData) {
+        return res.status(404).json({ message: 'Teacher data not found', status: false });
+      }
+
+      // ถ้าไม่ใช่ dean ให้จำกัดเฉพาะสาขาของตนเอง
+      if (!teacherData.Teacher_IsDean) {
+        whereConditions.push('s.Department_ID = ?');
+        queryParams.push(teacherData.Department_ID);
+      }
+      // ถ้าเป็น dean จะไม่มีการจำกัด สามารถดูได้ทุกสาขา
+    }
 
     if (!includeGraduated) {
       whereConditions.push('s.Student_IsGraduated = FALSE');
