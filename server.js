@@ -4683,7 +4683,7 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
     if (Requester_Users_Type === 'teacher') {
       // ดึงข้อมูล Department_ID และ Teacher_IsDean ของผู้ request
       const teacherCheckSql = 'SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?';
-      
+
       const teacherData = await new Promise((resolve, reject) => {
         db.query(teacherCheckSql, [Requester_Users_ID], (err, results) => {
           if (err) reject(err);
@@ -5889,7 +5889,7 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
     if (Requester_Users_Type === 'teacher') {
       // ดึงข้อมูล Department_ID และ Teacher_IsDean ของผู้ request
       const teacherCheckSql = 'SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?';
-      
+
       const teacherData = await new Promise((resolve, reject) => {
         db.query(teacherCheckSql, [Requester_Users_ID], (err, results) => {
           if (err) reject(err);
@@ -10458,9 +10458,7 @@ app.get('/api/activities/department/all', RateLimiter(1 * 60 * 1000, 300), Verif
   }
 
   try {
-    const getUserSql = `SELECT Department_ID, Teacher_IsDean 
-      FROM teacher WHERE Users_ID = ?`;
-
+    const getUserSql = `SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?`;
     db.query(getUserSql, [Users_ID], (err, userResults) => {
       if (err) {
         console.error('Get User Error:', err);
@@ -10483,44 +10481,27 @@ app.get('/api/activities/department/all', RateLimiter(1 * 60 * 1000, 300), Verif
       let sql, params;
 
       if (isDean) {
-        sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description, 
-          a.Activity_LocationDetail, 
-          ST_X(a.Activity_LocationGPS) as gps_lng, 
-          ST_Y(a.Activity_LocationGPS) as gps_lat, 
-          a.Activity_StartTime, a.Activity_EndTime, a.Activity_ImageFile, 
-          a.Activity_IsRequire, a.Activity_AllowTeachers, a.Activity_RegisTime,
-          at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, 
-          ast.ActivityStatus_ID, ast.ActivityStatus_Name, ast.ActivityStatus_Description,
-          (SELECT COUNT(*) FROM registration r WHERE r.Activity_ID = a.Activity_ID) as registered_count,
-          (SELECT COUNT(DISTINCT ad.Department_ID) FROM activitydetail ad WHERE ad.ActivityDetail_ID = a.Activity_ID) as department_count,
-          GROUP_CONCAT(DISTINCT d.Department_Name ORDER BY d.Department_Name SEPARATOR ', ') as departments
-          FROM activity a 
-          LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
-          LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-          LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-          LEFT JOIN department d ON ad.Department_ID = d.Department_ID
-          GROUP BY a.Activity_ID
-          ORDER BY a.Activity_StartTime DESC`;
+        sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description, a.Activity_LocationDetail, 
+          ST_X(a.Activity_LocationGPS) as gps_lng, ST_Y(a.Activity_LocationGPS) as gps_lat, a.Activity_StartTime, 
+          a.Activity_EndTime, a.Activity_ImageFile, a.Activity_IsRequire, a.Activity_AllowTeachers, a.Activity_RegisTime, 
+          at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, ast.ActivityStatus_ID, ast.ActivityStatus_Name, 
+          ast.ActivityStatus_Description, (SELECT COUNT(*) FROM registration r WHERE r.Activity_ID = a.Activity_ID) as registered_count, 
+          (SELECT COUNT(DISTINCT ad.Department_ID) FROM activitydetail ad WHERE ad.ActivityDetail_ID = a.Activity_ID) as department_count, 
+          GROUP_CONCAT(DISTINCT d.Department_Name ORDER BY d.Department_Name SEPARATOR ', ') as departments FROM activity a LEFT JOIN 
+          activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = 
+          ast.ActivityStatus_ID LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID LEFT JOIN department d 
+          ON ad.Department_ID = d.Department_ID GROUP BY a.Activity_ID ORDER BY a.Activity_StartTime DESC`;
         params = [];
       } else {
-        sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description, 
-          a.Activity_LocationDetail, 
-          ST_X(a.Activity_LocationGPS) as gps_lng, 
-          ST_Y(a.Activity_LocationGPS) as gps_lat, 
-          a.Activity_StartTime, a.Activity_EndTime, a.Activity_ImageFile, 
-          a.Activity_IsRequire, a.Activity_AllowTeachers, a.Activity_RegisTime,
-          at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, 
-          ast.ActivityStatus_ID, ast.ActivityStatus_Name, ast.ActivityStatus_Description,
-          (SELECT COUNT(*) FROM registration r WHERE r.Activity_ID = a.Activity_ID) as registered_count,
-          d.Department_Name
-          FROM activity a 
-          INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID 
-          INNER JOIN department d ON ad.Department_ID = d.Department_ID
-          LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
-          LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-          WHERE ad.Department_ID = ? AND a.Activity_AllowTeachers = TRUE
-          GROUP BY a.Activity_ID
-          ORDER BY a.Activity_StartTime DESC`;
+        sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description, a.Activity_LocationDetail, 
+          ST_X(a.Activity_LocationGPS) as gps_lng, ST_Y(a.Activity_LocationGPS) as gps_lat, a.Activity_StartTime, 
+          a.Activity_EndTime, a.Activity_ImageFile, a.Activity_IsRequire, a.Activity_AllowTeachers, a.Activity_RegisTime,
+          at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, ast.ActivityStatus_ID, ast.ActivityStatus_Name, 
+          ast.ActivityStatus_Description, (SELECT COUNT(*) FROM registration r WHERE r.Activity_ID = a.Activity_ID) as registered_count,
+          d.Department_Name FROM activity a INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID INNER JOIN department d 
+          ON ad.Department_ID = d.Department_ID LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
+          LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID WHERE ad.Department_ID = ?
+          GROUP BY a.Activity_ID ORDER BY a.Activity_StartTime DESC`;
         params = [departmentId];
       }
 
