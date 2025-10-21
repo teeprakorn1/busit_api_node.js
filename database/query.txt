@@ -279,22 +279,6 @@ CREATE TABLE IF NOT EXISTS FCMTokens(
     INDEX idx_fcm_active (FCMToken_IsActive)
 );
 
-CREATE TABLE IF NOT EXISTS Announcement(
-    Announcement_ID INT(13) NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY,
-    Announcement_Title VARCHAR(255) NOT NULL,
-    Announcement_Description TEXT NOT NULL,
-    Announcement_ImageFile VARCHAR(255),
-    Announcement_StartDate DATETIME NOT NULL,
-    Announcement_EndDate DATETIME,
-    Announcement_RegisTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Announcement_UpdateTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    Announcement_IsActive BOOLEAN NOT NULL DEFAULT TRUE,
-    Announcement_Priority INT(3) NOT NULL DEFAULT 0,
-    INDEX idx_announcement_active (Announcement_IsActive),
-    INDEX idx_announcement_dates (Announcement_StartDate, Announcement_EndDate),
-    INDEX idx_announcement_priority (Announcement_Priority)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 INSERT INTO faculty (Faculty_Name) 
 VALUES ('บริหารธุรกิจและเทคโนโลยีสารสนเทศ');
 
@@ -345,23 +329,45 @@ INSERT INTO registrationstatus (RegistrationStatus_Name) VALUES
 ('ยกเลิก'),
 ('เข้าร่วมสำเร็จ');
 
+-- INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
+-- ('staff.admin@rmutto.ac.th', 'staff.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'staff'),
+-- ('teacher.admin@rmutto.ac.th', 'teacher.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
+-- ('dean.admin@rmutto.ac.th', 'dean.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
+-- ('student.admin@rmutto.ac.th', 'student.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student');
+
+-- INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Users_ID)
+-- VALUES ('000000000000-1', 'Staff', 'Admin', '1');
+
+-- INSERT INTO teacher (Teacher_Code, Teacher_FirstName, Teacher_LastName, Users_ID, Department_ID)
+-- VALUES ('111111111111-1', 'Teacher', 'Admin', '2', '1');
+
+-- INSERT INTO teacher (Teacher_Code, Teacher_FirstName, Teacher_LastName, Users_ID, Department_ID, Teacher_IsDean)
+-- VALUES ('111111111111-2', 'Dean', 'Admin', '3', '2', TRUE);
+
+-- INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
+-- VALUES ('222222222222-1', 'Student', 'Admin', '2025', '4', '1', '1');
+
 INSERT INTO users (Users_Email, Users_Username, Users_Password, Users_Type) VALUES 
-('staff.admin@rmutto.ac.th', 'staff.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'staff'),
-('teacher.admin@rmutto.ac.th', 'teacher.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
-('dean.admin@rmutto.ac.th', 'dean.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
-('student.admin@rmutto.ac.th', 'student.admin', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student');
+('manassikan.ma@rmutto.ac.th', 'manassikan.ma', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'staff'),
+('suwannaphol.sut@rmutto.ac.th', 'suwannaphol.sut', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'teacher'),
+('teepakorn.kum@rmutto.ac.th', 'teepakorn.kum', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student'),
+('rinyaphat.bow@rmutto.ac.th', 'rinyaphat.bow', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student'),
+('suphawat.bae@rmutto.ac.th', 'suphawat.bae', '$2b$14$RrGcVoydiDD0j5Bdthqtxek0NVcz2qg3G7gLEHvm7zqrvtzhu3auS', 'student');
 
 INSERT INTO staff (Staff_Code, Staff_FirstName, Staff_LastName, Users_ID)
-VALUES ('000000000000-1', 'Staff', 'Admin', '1');
+VALUES ('620620120559-1', ' มนัสสิกัญฎิ์ ', 'มะลิวัลย์', '1');
 
 INSERT INTO teacher (Teacher_Code, Teacher_FirstName, Teacher_LastName, Users_ID, Department_ID)
-VALUES ('111111111111-1', 'Teacher', 'Admin', '2', '1');
-
-INSERT INTO teacher (Teacher_Code, Teacher_FirstName, Teacher_LastName, Users_ID, Department_ID, Teacher_IsDean)
-VALUES ('111111111111-2', 'Dean', 'Admin', '3', '2', TRUE);
+VALUES ('531186114159-9', 'สุวรรณณาพล', 'สุทธิสงครามชัย', '2', '1');
 
 INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
-VALUES ('222222222222-1', 'Student', 'Admin', '2025', '4', '1', '1');
+VALUES ('026530461001-6', 'ทีปกร', 'คุ้มวงศ์', '2022', '3', '1', '1');
+
+INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
+VALUES ('026530461017-2', 'ริญญภัสร์', 'บวรจิรพรรัตน์', '2022', '4', '1', '1');
+
+INSERT INTO student (Student_Code, Student_FirstName, Student_LastName, Student_AcademicYear, Users_ID, Teacher_ID, Department_ID)
+VALUES ('026530461010-7', 'ศุภวัทน์', 'แบบขุนทด', '2022', '5', '1', '1');
 
 INSERT INTO timestamptype (TimestampType_Name)
 VALUES ('timestamp_application_login'),('timestamp_website_login'),
