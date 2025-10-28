@@ -1,7 +1,6 @@
 const e = require('cors');
 const jwt = require('jsonwebtoken');
 
-// Generator Token
 function Tokens_Generator(Users_ID, Users_Email, Users_Username, UsersType_ID, Users_Type, Login_Type) {
   if (!Users_ID || !Users_Email || !Users_Username || !UsersType_ID || !Users_Type || !Login_Type) {
     return 0;

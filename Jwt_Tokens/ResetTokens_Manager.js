@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const redisClient = require('./../Server_Services/redisClient');
 
-// --------- Utility ---------
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }

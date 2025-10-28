@@ -1,7 +1,5 @@
 function otpEmailTemplate(email, otp , message) {
   const logoURL = "https://drive.google.com/uc?export=view&id=1Xj2BWf7bdQzR_SBRNSNtYM2_YFnPfFeL";
-
-  // หมดอายุในอีก 5 นาที
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
   const formatter = new Intl.DateTimeFormat('th-TH', {
     dateStyle: 'long',

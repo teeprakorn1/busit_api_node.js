@@ -315,12 +315,8 @@ function toRadians(degrees) {
 
 // performCheckIn function
 function performCheckIn(res, activityId, Users_ID) {
-  const updateRegSql = `
-    UPDATE registration 
-    SET Registration_CheckInTime = CURRENT_TIMESTAMP,
-        RegistrationStatus_ID = 1
-    WHERE Activity_ID = ? AND Users_ID = ?
-  `;
+  const updateRegSql = `UPDATE registration SET Registration_CheckInTime = 
+    CURRENT_TIMESTAMP, RegistrationStatus_ID = 1 WHERE Activity_ID = ? AND Users_ID = ?`;
 
   db.query(updateRegSql, [activityId, Users_ID], (err, updateResult) => {
     if (err) {
@@ -343,7 +339,6 @@ function performCheckIn(res, activityId, Users_ID) {
   });
 }
 
-// insertRegistration function
 function insertRegistration(activityId, userId, res) {
   const insertSql = `INSERT INTO registration (Users_ID, Activity_ID, RegistrationStatus_ID) VALUES (?, ?, 1)`;
   db.query(insertSql, [userId, activityId], (err, result) => {
@@ -685,22 +680,11 @@ app.get('/api/notifications/my-notifications', VerifyTokens, async (req, res) =>
       whereClause += ' AND n.Notification_IsRead = FALSE';
     }
 
-    const sql = `
-      SELECT 
-        n.Notifications_ID,
-        n.Notification_Title,
-        n.Notification_Detail,
-        n.Notification_Type,
-        n.Notification_RegisTime,
-        n.Notification_IsRead,
-        n.Activity_ID,
-        a.Activity_Title
-      FROM notification n
-      LEFT JOIN activity a ON n.Activity_ID = a.Activity_ID
-      ${whereClause}
-      ORDER BY n.Notification_RegisTime DESC
-      LIMIT ? OFFSET ?
-    `;
+    const sql = `SELECT n.Notifications_ID, n.Notification_Title,
+      n.Notification_Detail, n.Notification_Type, n.Notification_RegisTime,
+      n.Notification_IsRead, n.Activity_ID, a.Activity_Title FROM notification n
+      LEFT JOIN activity a ON n.Activity_ID = a.Activity_ID ${whereClause} ORDER BY 
+      n.Notification_RegisTime DESC LIMIT ? OFFSET ?`;
 
     db.query(sql, [...params, limit, offset], (err, notifications) => {
       if (err) {
@@ -711,11 +695,8 @@ app.get('/api/notifications/my-notifications', VerifyTokens, async (req, res) =>
         });
       }
 
-      const countSql = `
-        SELECT COUNT(*) as unread_count 
-        FROM notification 
-        WHERE Users_ID = ? AND Notification_IsRead = FALSE
-      `;
+      const countSql = `SELECT COUNT(*) as unread_count 
+        FROM notification WHERE Users_ID = ? AND Notification_IsRead = FALSE`;
 
       db.query(countSql, [usersId], (countErr, countResult) => {
         if (countErr) {
@@ -760,11 +741,8 @@ app.put('/api/notifications/:id/read', VerifyTokens, async (req, res) => {
   }
 
   try {
-    const checkSql = `
-      SELECT Notifications_ID 
-      FROM notification 
-      WHERE Notifications_ID = ? AND Users_ID = ?
-    `;
+    const checkSql = `SELECT Notifications_ID 
+      FROM notification WHERE Notifications_ID = ? AND Users_ID = ?`;
 
     db.query(checkSql, [notificationId, usersId], (checkErr, checkResult) => {
       if (checkErr) {
@@ -782,12 +760,7 @@ app.put('/api/notifications/:id/read', VerifyTokens, async (req, res) => {
         });
       }
 
-      const updateSql = `
-        UPDATE notification 
-        SET Notification_IsRead = TRUE 
-        WHERE Notifications_ID = ? AND Users_ID = ?
-      `;
-
+      const updateSql = `UPDATE notification SET Notification_IsRead = TRUE WHERE Notifications_ID = ? AND Users_ID = ?`;
       db.query(updateSql, [notificationId, usersId], (updateErr, result) => {
         if (updateErr) {
           console.error('Error updating notification:', updateErr);
@@ -820,13 +793,7 @@ app.patch('/api/notifications/:notificationId/mark-read', RateLimiter(1 * 60 * 1
   const { notificationId } = req.params;
 
   try {
-    const sql = `
-        UPDATE notification 
-        SET Notification_IsRead = TRUE 
-        WHERE Notifications_ID = ? 
-        AND Users_ID = ?
-      `;
-
+    const sql = `UPDATE notification SET Notification_IsRead = TRUE WHERE Notifications_ID = ? AND Users_ID = ?`;
     db.query(sql, [notificationId, Users_ID], (err, result) => {
       if (err) {
         console.error('Error marking notification as read:', err);
@@ -869,12 +836,7 @@ app.put('/api/notifications/mark-all-read', VerifyTokens, async (req, res) => {
   }
 
   try {
-    const sql = `
-      UPDATE notification 
-      SET Notification_IsRead = TRUE 
-      WHERE Users_ID = ? AND Notification_IsRead = FALSE
-    `;
-
+    const sql = `UPDATE notification SET Notification_IsRead = TRUE WHERE Users_ID = ? AND Notification_IsRead = FALSE`;
     db.query(sql, [usersId], (err, result) => {
       if (err) {
         console.error('Error marking all as read:', err);
@@ -914,10 +876,8 @@ app.delete('/api/notifications/:id', VerifyTokens, async (req, res) => {
   }
 
   try {
-    const sql = `
-      DELETE FROM notification 
-      WHERE Notifications_ID = ? AND Users_ID = ?
-    `;
+    const sql = `DELETE FROM notification 
+      WHERE Notifications_ID = ? AND Users_ID = ?`;
 
     db.query(sql, [notificationId, usersId], (err, result) => {
       if (err) {
@@ -963,12 +923,7 @@ app.get('/api/notifications/unread-count', VerifyTokens, async (req, res) => {
   }
 
   try {
-    const sql = `
-      SELECT COUNT(*) as count 
-      FROM notification 
-      WHERE Users_ID = ? AND Notification_IsRead = FALSE
-    `;
-
+    const sql = `SELECT COUNT(*) as count FROM notification WHERE Users_ID = ? AND Notification_IsRead = FALSE`;
     db.query(sql, [usersId], (err, result) => {
       if (err) {
         console.error('Error getting unread count:', err);
@@ -1333,7 +1288,6 @@ app.post('/api/system/resetpassword-resettoken', RateLimiter(0.5 * 60 * 1000, 12
           const notifyMsg = 'บัญชีของคุณได้รับการอัปเดตรหัสผ่านเรียบร้อยแล้ว หากคุณไม่ได้ทำรายการนี้ โปรดติดต่อฝ่ายสนับสนุนโดยด่วน';
           try {
             await sendEmail(Users_Email, "แจ้งเตือน: คุณได้เปลี่ยนรหัสผ่าน", "หากไม่ใช่คุณ กรุณาติดต่อทีมงานด่วน", "เปลี่ยนรหัสผ่านสำเร็จ", notifyMsg);
-
           } catch (emailError) {
             console.error('Error sending notification email:', emailError);
           }
@@ -1541,10 +1495,9 @@ app.post('/api/timestamp/insert', RateLimiter(0.5 * 60 * 1000, 15), VerifyTokens
   }
 
   try {
-    const sql = `
-      INSERT INTO timestamp (Timestamp_Name, Timestamp_IP_Address, Timestamp_UserAgent, Users_ID, TimestampType_ID)
-      VALUES (?, ?, ?, ?, ?)
-    `;
+    const sql = `INSERT INTO timestamp (Timestamp_Name, 
+      Timestamp_IP_Address, Timestamp_UserAgent, Users_ID, TimestampType_ID) VALUES (?, ?, ?, ?, ?)`;
+
     db.query(sql, [Timestamp_Name, Timestamp_IP_Address, Timestamp_UserAgent, usersID, TimestampType_ID], (err, result) => {
       if (err) {
         console.error('Database error (timestamp)', err);
@@ -1583,10 +1536,9 @@ app.post('/api/timestamp/website/insert', RateLimiter(0.5 * 60 * 1000, 15), Veri
   }
 
   try {
-    const sql = `
-      INSERT INTO timestamp (Timestamp_Name, Timestamp_IP_Address, Timestamp_UserAgent, Users_ID, TimestampType_ID)
-      VALUES (?, ?, ?, ?, ?)
-    `;
+    const sql = `INSERT INTO timestamp (Timestamp_Name, 
+      Timestamp_IP_Address, Timestamp_UserAgent, Users_ID, TimestampType_ID) VALUES (?, ?, ?, ?, ?)`;
+
     db.query(sql, [Timestamp_Name, Timestamp_IP_Address, Timestamp_UserAgent, usersID, TimestampType_ID], (err, result) => {
       if (err) {
         console.error('Database error (timestamp)', err);
@@ -2139,72 +2091,25 @@ app.get('/api/dataedit/get/source/:SourceTable', RateLimiter(0.5 * 60 * 1000, 12
 
   try {
     let sql;
-
-    // Special handling for Activity source table
     if (SourceTable === 'Activity') {
-      sql = `SELECT 
-        de.DataEdit_ID, 
-        de.DataEdit_ThisId, 
-        de.DataEdit_RegisTime, 
-        de.DataEdit_Name, 
-        de.DataEdit_SourceTable, 
-        de.DataEdit_UserAgent, 
-        de.DataEdit_IP_Address, 
-        de.DataEditType_ID, 
-        de.Staff_ID, 
-        s.Staff_Code, 
-        s.Staff_FirstName, 
-        s.Staff_LastName, 
-        s.Staff_Phone,
-        s.Staff_RegisTime as Staff_RegisTime,
-        u.Users_Email, 
-        u.Users_Type,
-        u.Users_ImageFile,
-        det.DataEditType_Name,
-        a.Activity_Title,
-        a.Activity_Description,
-        a.Activity_StartTime,
-        a.Activity_EndTime,
-        a.Activity_LocationDetail,
-        a.Activity_ImageFile,
-        a.Activity_IsRequire,
-        ast.ActivityStatus_Name,
-        at.ActivityType_Name
-      FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
-      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID 
-      LEFT JOIN activity a ON de.DataEdit_ThisId = a.Activity_ID
-      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
-      WHERE de.DataEdit_SourceTable = ? 
-        AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY
-      ORDER BY de.DataEdit_RegisTime DESC`;
+      sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, 
+        de.DataEdit_Name, de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, 
+        de.DataEditType_ID, de.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, s.Staff_Phone, 
+        s.Staff_RegisTime as Staff_RegisTime, u.Users_Email, u.Users_Type, u.Users_ImageFile, det.DataEditType_Name, 
+        a.Activity_Title, a.Activity_Description, a.Activity_StartTime, a.Activity_EndTime, a.Activity_LocationDetail, 
+        a.Activity_ImageFile, a.Activity_IsRequire, ast.ActivityStatus_Name, at.ActivityType_Name FROM dataedit de 
+        INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
+        INNER JOIN users u ON s.Users_ID = u.Users_ID LEFT JOIN activity a ON de.DataEdit_ThisId = a.Activity_ID 
+        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN activitytype at ON 
+        a.ActivityType_ID = at.ActivityType_ID WHERE de.DataEdit_SourceTable = ? AND de.DataEdit_RegisTime >= 
+        CURDATE() - INTERVAL 90 DAY ORDER BY de.DataEdit_RegisTime DESC`;
     } else {
-      // Original query for other source tables
-      sql = `SELECT 
-        de.DataEdit_ID, 
-        de.DataEdit_ThisId, 
-        de.DataEdit_RegisTime, 
-        de.DataEdit_Name, 
-        de.DataEdit_SourceTable, 
-        de.DataEdit_UserAgent, 
-        de.DataEdit_IP_Address, 
-        de.DataEditType_ID, 
-        de.Staff_ID, 
-        s.Staff_Code, 
-        s.Staff_FirstName, 
-        s.Staff_LastName, 
-        u.Users_Email, 
-        u.Users_Type, 
-        det.DataEditType_Name 
-      FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
-      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID 
-      WHERE de.DataEdit_SourceTable = ? 
-        AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY
-      ORDER BY de.DataEdit_RegisTime DESC`;
+      sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, 
+        de.DataEdit_Name, de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, 
+        de.DataEditType_ID, de.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, u.Users_Email, 
+        u.Users_Type, det.DataEditType_Name FROM dataedit de INNER JOIN dataEditType det ON de.DataEditType_ID = 
+        det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID INNER JOIN users u ON s.Users_ID = u.Users_ID 
+        WHERE de.DataEdit_SourceTable = ? AND de.DataEdit_RegisTime >= CURDATE() - INTERVAL 90 DAY ORDER BY de.DataEdit_RegisTime DESC`;
     }
 
     db.query(sql, [SourceTable], (err, result) => {
@@ -2278,55 +2183,25 @@ app.get('/api/dataedit/search', RateLimiter(0.5 * 60 * 1000, 10), VerifyTokens_W
   }
 
   try {
-    let sql = `SELECT 
-      de.DataEdit_ID, 
-      de.DataEdit_ThisId, 
-      de.DataEdit_RegisTime, 
-      de.DataEdit_Name, 
-      de.DataEdit_SourceTable, 
-      de.DataEdit_UserAgent, 
-      de.DataEdit_IP_Address, 
-      de.DataEditType_ID, 
-      de.Staff_ID, 
-      s.Staff_Code, 
-      s.Staff_FirstName, 
-      s.Staff_LastName,
-      s.Staff_Phone,
-      s.Staff_RegisTime as Staff_RegisTime,
-      u.Users_Email, 
-      u.Users_Type,
-      u.Users_ImageFile,
-      det.DataEditType_Name`;
+    let sql = `SELECT de.DataEdit_ID, de.DataEdit_ThisId, de.DataEdit_RegisTime, 
+      de.DataEdit_Name, de.DataEdit_SourceTable, de.DataEdit_UserAgent, de.DataEdit_IP_Address, 
+      de.DataEditType_ID, de.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName,s.Staff_Phone,
+      s.Staff_RegisTime as Staff_RegisTime, u.Users_Email, u.Users_Type, u.Users_ImageFile, det.DataEditType_Name`;
 
-    // Add Activity-specific fields if searching in Activity table
     if (source_table === 'Activity' || activity_id || activity_title) {
-      sql += `,
-        a.Activity_Title,
-        a.Activity_Description,
-        a.Activity_StartTime,
-        a.Activity_EndTime,
-        a.Activity_LocationDetail,
-        a.Activity_ImageFile,
-        a.Activity_IsRequire,
-        ast.ActivityStatus_Name,
-        at.ActivityType_Name`;
+      sql += `, a.Activity_Title, a.Activity_Description, a.Activity_StartTime,
+        a.Activity_EndTime, a.Activity_LocationDetail, a.Activity_ImageFile, a.Activity_IsRequire, ast.ActivityStatus_Name, at.ActivityType_Name`;
     }
 
-    sql += ` FROM dataedit de 
-      INNER JOIN dataEditType det ON de.DataEditType_ID = det.DataEditType_ID 
-      INNER JOIN staff s ON de.Staff_ID = s.Staff_ID 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID`;
+    sql += ` FROM dataedit de INNER JOIN dataEditType det ON de.DataEditType_ID = 
+      det.DataEditType_ID INNER JOIN staff s ON de.Staff_ID = s.Staff_ID INNER JOIN users u ON s.Users_ID = u.Users_ID`;
 
-    // Add Activity joins if needed
     if (source_table === 'Activity' || activity_id || activity_title) {
-      sql += ` 
-        LEFT JOIN activity a ON de.DataEdit_ThisId = a.Activity_ID
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID`;
+      sql += ` LEFT JOIN activity a ON de.DataEdit_ThisId = a.Activity_ID LEFT JOIN activitystatus ast 
+        ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID`;
     }
 
     sql += ` WHERE 1=1`;
-
     const params = [];
 
     if (email) {
@@ -4273,7 +4148,6 @@ app.get('/api/admin/faculties/:facultyId/departments', RateLimiter(1 * 60 * 1000
 
   try {
     const checkFacultySql = `SELECT Faculty_ID, Faculty_Name FROM faculty WHERE Faculty_ID = ?`;
-
     db.query(checkFacultySql, [facultyId], (err, facultyResult) => {
       if (err) {
         console.error('Check Faculty Error:', err);
@@ -4529,12 +4403,12 @@ app.get('/api/admin/departments/stats/all', RateLimiter(1 * 60 * 1000, 300), Ver
   }
 
   try {
-    const sql = `SELECT 
-      d.Department_ID, d.Department_Name, d.Faculty_ID,f.Faculty_Name,COALESCE(t.teacher_count, 0) as teacher_count, 
-        COALESCE(s.student_count, 0) as student_count FROM department d INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
-        LEFT JOIN ( SELECT Department_ID, COUNT(*) as teacher_count FROM teacher WHERE Teacher_IsResign = FALSE GROUP BY Department_ID) 
-        t ON d.Department_ID = t.Department_ID LEFT JOIN ( SELECT Department_ID, COUNT(*) as student_count FROM student WHERE 
-        Student_IsGraduated = FALSE GROUP BY Department_ID) s ON d.Department_ID = s.Department_ID ORDER BY f.Faculty_Name ASC, d.Department_Name ASC`;
+    const sql = `SELECT d.Department_ID, d.Department_Name, d.Faculty_ID, 
+      f.Faculty_Name, COALESCE (t.teacher_count, 0) as teacher_count, COALESCE(s.student_count, 0) 
+      as student_count FROM department d INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID LEFT JOIN 
+      (SELECT Department_ID, COUNT(*) as teacher_count FROM teacher WHERE Teacher_IsResign = FALSE GROUP BY Department_ID) 
+      t ON d.Department_ID = t.Department_ID LEFT JOIN ( SELECT Department_ID, COUNT(*) as student_count FROM student WHERE 
+      Student_IsGraduated = FALSE GROUP BY Department_ID) s ON d.Department_ID = s.Department_ID ORDER BY f.Faculty_Name ASC, d.Department_Name ASC`;
 
     db.query(sql, (err, results) => {
       if (err) {
@@ -4612,9 +4486,8 @@ app.get('/api/admin/users/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens_We
   }
 
   try {
-    const userSql = `SELECT u.Users_ID, u.Users_Email, u.Users_Username, u.Users_RegisTime, 
-      u.Users_ImageFile, u.Users_Type, u.Users_IsActive 
-      FROM users u WHERE u.Users_ID = ?`;
+    const userSql = `SELECT u.Users_ID, u.Users_Email, u.Users_Username, 
+      u.Users_RegisTime, u.Users_ImageFile, u.Users_Type, u.Users_IsActive FROM users u WHERE u.Users_ID = ?`;
 
     db.query(userSql, [userId], (err, userResults) => {
       if (err) {
@@ -4654,8 +4527,7 @@ app.get('/api/admin/users/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens_We
   }
 });
 
-// API Get All Teachers with Pagination, Filtering, and Search of Website Admin
-// API Get All Teachers with Pagination, Filtering, and Search of Website Admin
+// API Get All Teachers with Pagination, Filtering, and Search of Website Admin**
 app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
   const userData = req.user;
   const Requester_Users_Type = userData?.Users_Type;
@@ -4679,9 +4551,7 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
     let whereConditions = [];
     let queryParams = [];
 
-    // ตรวจสอบว่าเป็น teacher ธรรมดา (ไม่ใช่ dean และไม่ใช่ staff)
     if (Requester_Users_Type === 'teacher') {
-      // ดึงข้อมูล Department_ID และ Teacher_IsDean ของผู้ request
       const teacherCheckSql = 'SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?';
 
       const teacherData = await new Promise((resolve, reject) => {
@@ -4695,12 +4565,10 @@ app.get('/api/admin/teachers', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
         return res.status(404).json({ message: 'Teacher data not found', status: false });
       }
 
-      // ถ้าไม่ใช่ dean ให้จำกัดเฉพาะสาขาของตนเอง
       if (!teacherData.Teacher_IsDean) {
         whereConditions.push('t.Department_ID = ?');
         queryParams.push(teacherData.Department_ID);
       }
-      // ถ้าเป็น dean จะไม่มีการจำกัด สามารถดูได้ทุกสาขา
     }
 
     if (!includeResigned) {
@@ -4920,39 +4788,17 @@ app.get('/api/users/:id/activities', RateLimiter(1 * 60 * 1000, 150), VerifyToke
   }
 
   try {
-    const activitiesSql = `
-      SELECT 
-        a.Activity_ID, 
-        a.Activity_Title, 
-        a.Activity_Description, 
-        a.Activity_StartTime, 
-        a.Activity_EndTime,
-        TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as Activity_TotalHours, 
-        a.Activity_LocationDetail, 
-        at.ActivityType_ID,
-        at.ActivityType_Name, 
-        ast.ActivityStatus_ID, 
-        ast.ActivityStatus_Name, 
-        r.Registration_RegisTime, 
-        r.Registration_CheckInTime, 
-        r.Registration_CheckOutTime,
-        rs.RegistrationStatus_ID, 
-        rs.RegistrationStatus_Name,
-        rp.RegistrationPicture_ApprovedTime,
-        rp.RegistrationPicture_IsAiSuccess,
-        rps.RegistrationPictureStatus_ID,
-        rps.RegistrationPictureStatus_Name
-      FROM registration r 
-      INNER JOIN activity a ON r.Activity_ID = a.Activity_ID 
-      INNER JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
-      INNER JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
-      LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID
-      LEFT JOIN registrationpicture rp ON rp.Users_ID = r.Users_ID AND rp.Activity_ID = r.Activity_ID
-      LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-      WHERE r.Users_ID = ? 
-      ORDER BY r.Registration_RegisTime DESC 
-      LIMIT 50
-    `;
+    const activitiesSql = `SELECT a.Activity_ID, 
+      a.Activity_Title, a.Activity_Description, a.Activity_StartTime, 
+      a.Activity_EndTime, TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as Activity_TotalHours, 
+      a.Activity_LocationDetail, at.ActivityType_ID, at.ActivityType_Name, ast.ActivityStatus_ID, ast.ActivityStatus_Name, 
+      r.Registration_RegisTime, r.Registration_CheckInTime, r.Registration_CheckOutTime, rs.RegistrationStatus_ID, rs.RegistrationStatus_Name,
+      rp.RegistrationPicture_ApprovedTime, rp.RegistrationPicture_IsAiSuccess, rps.RegistrationPictureStatus_ID, rps.RegistrationPictureStatus_Name
+      FROM registration r INNER JOIN activity a ON r.Activity_ID = a.Activity_ID INNER JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
+      INNER JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = 
+      rs.RegistrationStatus_ID LEFT JOIN registrationpicture rp ON rp.Users_ID = r.Users_ID AND rp.Activity_ID = r.Activity_ID LEFT JOIN 
+      registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID WHERE r.Users_ID = ? 
+      ORDER BY r.Registration_RegisTime DESC LIMIT 50`;
 
     db.query(activitiesSql, [userId], (err, results) => {
       if (err) {
@@ -5885,9 +5731,7 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
     let whereConditions = [];
     let queryParams = [];
 
-    // ตรวจสอบว่าเป็น teacher ธรรมดา (ไม่ใช่ dean และไม่ใช่ staff)
     if (Requester_Users_Type === 'teacher') {
-      // ดึงข้อมูล Department_ID และ Teacher_IsDean ของผู้ request
       const teacherCheckSql = 'SELECT Department_ID, Teacher_IsDean FROM teacher WHERE Users_ID = ?';
 
       const teacherData = await new Promise((resolve, reject) => {
@@ -5901,12 +5745,10 @@ app.get('/api/admin/students', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Web
         return res.status(404).json({ message: 'Teacher data not found', status: false });
       }
 
-      // ถ้าไม่ใช่ dean ให้จำกัดเฉพาะสาขาของตนเอง
       if (!teacherData.Teacher_IsDean) {
         whereConditions.push('s.Department_ID = ?');
         queryParams.push(teacherData.Department_ID);
       }
-      // ถ้าเป็น dean จะไม่มีการจำกัด สามารถดูได้ทุกสาขา
     }
 
     if (!includeGraduated) {
@@ -6010,45 +5852,17 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
   }
 
   try {
-    const studentSql = `
-      SELECT 
-        s.Student_ID, 
-        s.Student_Code, 
-        s.Student_FirstName, 
-        s.Student_LastName, 
-        s.Student_Phone, 
-        s.Student_AcademicYear, 
-        s.Student_Birthdate, 
-        s.Student_Religion, 
-        s.Student_MedicalProblem, 
-        s.Student_RegisTime, 
-        s.Student_IsGraduated, 
-        s.Users_ID, 
-        s.Teacher_ID, 
-        s.Department_ID, 
-        d.Department_Name, 
-        f.Faculty_ID, 
-        f.Faculty_Name, 
-        u.Users_Email, 
-        u.Users_Username, 
-        u.Users_RegisTime, 
-        u.Users_ImageFile, 
-        u.Users_IsActive, 
-        t.Teacher_FirstName AS Advisor_FirstName, 
-        t.Teacher_LastName AS Advisor_LastName,
-        (
-          SELECT COUNT(DISTINCT rp.Activity_ID)
-          FROM registrationpicture rp
-          WHERE rp.Users_ID = s.Users_ID
-            AND rp.RegistrationPictureStatus_ID = 2
-        ) as completed_activities
-      FROM student s 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID 
-      INNER JOIN department d ON s.Department_ID = d.Department_ID 
-      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
-      LEFT JOIN teacher t ON s.Teacher_ID = t.Teacher_ID 
-      WHERE s.Student_ID = ?
-    `;
+    const studentSql = `SELECT s.Student_ID, s.Student_Code, s.Student_FirstName, 
+      s.Student_LastName, s.Student_Phone, s.Student_AcademicYear, s.Student_Birthdate, 
+      s.Student_Religion, s.Student_MedicalProblem, s.Student_RegisTime, s.Student_IsGraduated, 
+      s.Users_ID, s.Teacher_ID, s.Department_ID, d.Department_Name, f.Faculty_ID, f.Faculty_Name, 
+      u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive, 
+      t.Teacher_FirstName AS Advisor_FirstName, t.Teacher_LastName AS Advisor_LastName, (
+      SELECT COUNT(DISTINCT rp.Activity_ID) FROM registrationpicture rp WHERE rp.Users_ID = s.Users_ID
+      AND rp.RegistrationPictureStatus_ID = 2) as completed_activities FROM student s INNER JOIN users u 
+      ON s.Users_ID = u.Users_ID INNER JOIN department d ON s.Department_ID = d.Department_ID 
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID LEFT JOIN teacher t ON 
+      s.Teacher_ID = t.Teacher_ID WHERE s.Student_ID = ?`;
 
     db.query(studentSql, [studentId], (err, studentResults) => {
       if (err) {
@@ -6061,34 +5875,14 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
       }
 
       const student = studentResults[0];
-
-      // Get completed activities with full details including Registration data
-      const activitiesSql = `
-        SELECT DISTINCT
-          a.Activity_ID,
-          a.Activity_Title,
-          a.Activity_Description,
-          a.Activity_StartTime,
-          a.Activity_EndTime,
-          a.Activity_LocationDetail,
-          at.ActivityType_Name,
-          rp.RegistrationPicture_ApprovedTime,
-          rp.RegistrationPicture_IsAiSuccess,
-          rps.RegistrationPictureStatus_Name,
-          r.Registration_RegisTime,
-          r.Registration_CheckInTime,
-          r.Registration_CheckOutTime,
-          TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as Activity_Hours
-        FROM registrationpicture rp
-        INNER JOIN activity a ON rp.Activity_ID = a.Activity_ID
-        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
+      const activitiesSql = `SELECT DISTINCT a.Activity_ID, a.Activity_Title, a.Activity_Description,
+        a.Activity_StartTime, a.Activity_EndTime, a.Activity_LocationDetail, at.ActivityType_Name, rp.RegistrationPicture_ApprovedTime,
+        rp.RegistrationPicture_IsAiSuccess, rps.RegistrationPictureStatus_Name, r.Registration_RegisTime, r.Registration_CheckInTime,
+        r.Registration_CheckOutTime, TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime) as Activity_Hours FROM registrationpicture rp
+        INNER JOIN activity a ON rp.Activity_ID = a.Activity_ID LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
         LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-        LEFT JOIN registration r ON r.Users_ID = rp.Users_ID AND r.Activity_ID = rp.Activity_ID
-        WHERE rp.Users_ID = ?
-          AND rp.RegistrationPictureStatus_ID = 2
-        ORDER BY rp.RegistrationPicture_ApprovedTime DESC
-        LIMIT 10
-      `;
+        LEFT JOIN registration r ON r.Users_ID = rp.Users_ID AND r.Activity_ID = rp.Activity_ID WHERE rp.Users_ID = ? AND
+        rp.RegistrationPictureStatus_ID = 2 ORDER BY rp.RegistrationPicture_ApprovedTime DESC LIMIT 10`;
 
       db.query(activitiesSql, [student.Users_ID], (actErr, activityResults) => {
         if (actErr) {
@@ -6096,12 +5890,8 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
           activityResults = [];
         }
 
-        const otherPhonesSql = `
-          SELECT OtherPhone_ID, OtherPhone_Name, OtherPhone_Phone 
-          FROM otherphone 
-          WHERE Users_ID = ? 
-          ORDER BY OtherPhone_ID ASC
-        `;
+        const otherPhonesSql = `SELECT OtherPhone_ID, OtherPhone_Name, 
+        OtherPhone_Phone FROM otherphone WHERE Users_ID = ? ORDER BY OtherPhone_ID ASC`;
 
         db.query(otherPhonesSql, [student.Users_ID], (phoneErr, phoneResults) => {
           if (phoneErr) {
@@ -6130,11 +5920,9 @@ app.get('/api/admin/students/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens
             locationDetail: act.Activity_LocationDetail || '',
             approvedDate: act.RegistrationPicture_ApprovedTime,
             hours: act.Activity_Hours || 0,
-            // Registration data
             registrationTime: act.Registration_RegisTime,
             checkInTime: act.Registration_CheckInTime,
             checkOutTime: act.Registration_CheckOutTime,
-            // AI verification data
             isAiSuccess: act.RegistrationPicture_IsAiSuccess,
             pictureStatus: act.RegistrationPictureStatus_Name
           }));
@@ -6609,12 +6397,10 @@ app.get('/api/admin/staff', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Websit
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
-    const sql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
-      s.Staff_Phone, s.Staff_RegisTime, s.Staff_IsResign, s.Users_ID,
+    const sql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, 
+      s.Staff_LastName, s.Staff_Phone, s.Staff_RegisTime, s.Staff_IsResign, s.Users_ID,
       u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive 
-      FROM staff s 
-      INNER JOIN users u ON s.Users_ID = u.Users_ID 
-      ${whereClause} 
+      FROM staff s INNER JOIN users u ON s.Users_ID = u.Users_ID ${whereClause} 
       ORDER BY s.Staff_FirstName ASC, s.Staff_LastName ASC`;
 
     db.query(sql, queryParams, (err, results) => {
@@ -6676,9 +6462,8 @@ app.get('/api/admin/staff/:id', RateLimiter(1 * 60 * 1000, 150), VerifyTokens_We
 
   try {
     const staffSql = `SELECT s.Staff_ID, s.Staff_Code, s.Staff_FirstName, s.Staff_LastName, 
-      s.Staff_Phone, s.Staff_RegisTime, s.Staff_IsResign, s.Users_ID, 
-      u.Users_Email, u.Users_Username, u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive 
-      FROM staff s INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE s.Staff_ID = ?`;
+      s.Staff_Phone, s.Staff_RegisTime, s.Staff_IsResign, s.Users_ID, u.Users_Email, u.Users_Username, 
+      u.Users_RegisTime, u.Users_ImageFile, u.Users_IsActive FROM staff s INNER JOIN users u ON s.Users_ID = u.Users_ID WHERE s.Staff_ID = ?`;
 
     db.query(staffSql, [staffId], (err, staffResults) => {
       if (err) {
@@ -6777,7 +6562,6 @@ app.put('/api/admin/staff/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_We
   }
 
   try {
-    // Start transaction using MySQL query
     db.query('START TRANSACTION', (err) => {
       if (err) {
         console.error('Transaction Error:', err);
@@ -7677,13 +7461,7 @@ app.get('/api/admin/images/registration-images/:filename', VerifyTokens_Website,
       });
     }
 
-    const sql = `
-      SELECT RegistrationPicture_IsAiSuccess 
-      FROM registrationpicture 
-      WHERE RegistrationPicture_ImageFile = ?
-      LIMIT 1
-    `;
-
+    const sql = `SELECT RegistrationPicture_IsAiSuccess FROM registrationpicture WHERE RegistrationPicture_ImageFile = ? LIMIT 1`;
     db.query(sql, [filename], (err, results) => {
       if (err) {
         console.error('Error querying AI status:', err);
@@ -8903,8 +8681,8 @@ app.post('/api/admin/activities', activityUpload.single('activityImage'), RateLi
     const activitySql = `INSERT INTO activity ( Activity_Title, Activity_Description, 
         Activity_LocationDetail, Activity_LocationGPS, Activity_StartTime, Activity_EndTime, 
         Activity_ImageFile, Activity_IsRequire, Activity_AllowTeachers, ActivityType_ID, 
-        ActivityStatus_ID, Template_ID) 
-        VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        ActivityStatus_ID, Template_ID) VALUES (?, ?, ?, ${gpsPoint ? 'ST_GeomFromText(?)' : 'NULL'}, 
+        ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const activityParams = gpsPoint
       ? [activityTitle, activityDescription, activityLocationDetail, gpsPoint,
@@ -9192,10 +8970,10 @@ app.put('/api/admin/activities/:id', activityUpload.single('activityImage'), Rat
         if (hasSignificantChanges) {
           sendActivityUpdatedNotification(activityId, 'info_changed')
             .then(() => {
-              console.log(`✅ Update notification sent for activity ${activityId}`);
+              console.log(`Update notification sent for activity ${activityId}`);
             })
             .catch(err => {
-              console.error(`❌ Failed to send update notification for activity ${activityId}:`, err);
+              console.error(`Failed to send update notification for activity ${activityId}:`, err);
             });
         }
 
@@ -9395,49 +9173,16 @@ app.get('/api/admin/activities/:id/participants', RateLimiter(1 * 60 * 1000, 300
   }
 
   try {
-    const sql = `
-        SELECT 
-          r.Users_ID, 
-          r.Registration_RegisTime, 
-          r.Registration_CheckInTime, 
-          r.Registration_CheckOutTime, 
-          r.RegistrationStatus_ID, 
-          rs.RegistrationStatus_Name,
-          u.Users_Email,
-          u.Users_Type,
-          
-          -- ข้อมูลนักศึกษา
-          s.Student_FirstName, 
-          s.Student_LastName, 
-          s.Student_Code, 
-          s.Student_Phone,
-          
-          -- ข้อมูลอาจารย์
-          t.Teacher_FirstName,
-          t.Teacher_LastName,
-          t.Teacher_Code,
-          t.Teacher_Phone,
-          
-          -- ข้อมูลสาขา
-          d.Department_Name, 
-          f.Faculty_Name
-          
-        FROM registration r 
-        INNER JOIN users u ON r.Users_ID = u.Users_ID 
-        
-        -- Left join เพราะอาจเป็นนักศึกษาหรืออาจารย์
-        LEFT JOIN student s ON u.Users_ID = s.Users_ID 
-        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
-        
-        -- Department และ Faculty สามารถมาจากทั้ง student และ teacher
-        LEFT JOIN department d ON (s.Department_ID = d.Department_ID OR t.Department_ID = d.Department_ID)
-        LEFT JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
-        
-        LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID 
-        
-        WHERE r.Activity_ID = ? 
-        ORDER BY r.Registration_RegisTime DESC
-      `;
+    const sql = `SELECT r.Users_ID, r.Registration_RegisTime, 
+      r.Registration_CheckInTime, r.Registration_CheckOutTime, r.RegistrationStatus_ID, 
+      rs.RegistrationStatus_Name, u.Users_Email, u.Users_Type, s.Student_FirstName, s.Student_LastName, 
+      s.Student_Code, s.Student_Phone, t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code, t.Teacher_Phone,
+      d.Department_Name, f.Faculty_Name FROM registration r INNER JOIN users u ON r.Users_ID = u.Users_ID 
+      LEFT JOIN student s ON u.Users_ID = s.Users_ID LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
+      LEFT JOIN department d ON (s.Department_ID = d.Department_ID OR t.Department_ID = d.Department_ID)
+      LEFT JOIN faculty f ON d.Faculty_ID = f.Faculty_ID LEFT JOIN registrationstatus rs ON 
+      r.RegistrationStatus_ID = rs.RegistrationStatus_ID WHERE r.Activity_ID = ? 
+      ORDER BY r.Registration_RegisTime DESC`;
 
     db.query(sql, [activityId], (err, results) => {
       if (err) {
@@ -9456,10 +9201,8 @@ app.get('/api/admin/activities/:id/participants', RateLimiter(1 * 60 * 1000, 300
         LastName: row.Student_LastName || row.Teacher_LastName,
         Code: row.Student_Code || row.Teacher_Code,
         Phone: row.Student_Phone || row.Teacher_Phone,
-
         Department_Name: row.Department_Name,
         Faculty_Name: row.Faculty_Name,
-
         Registration_RegisTime: row.Registration_RegisTime,
         Registration_CheckInTime: row.Registration_CheckInTime,
         Registration_CheckOutTime: row.Registration_CheckOutTime,
@@ -9512,60 +9255,19 @@ app.get('/api/admin/activities/with-participants',
     }
 
     try {
-      const sql = `
-        SELECT 
-          a.*,
-          at.ActivityType_Name,
-          ast.ActivityStatus_Name,
-          t.Template_Name,
-          t.Template_ImageFile,
-          s.Signature_Name,
-          s.Signature_ImageFile,
-          
-          -- คำนวณจำนวนที่คาดหวัง
-          COALESCE(SUM(ad.ActivityDetail_Total), 0) as expected_participants,
-          
-          -- นับผู้ลงทะเบียนทั้งหมด (ใช้ Users_ID, Activity_ID แทน Registration_ID)
-          (SELECT COUNT(*) 
-           FROM registration r 
-           WHERE r.Activity_ID = a.Activity_ID) as total_registered,
-          
-          -- นับนักศึกษาที่ลงทะเบียน (ใช้ JOIN กับ Student)
-          (SELECT COUNT(*) 
-           FROM registration r 
-           INNER JOIN users u ON r.Users_ID = u.Users_ID
-           WHERE r.Activity_ID = a.Activity_ID 
-           AND u.Users_Type = 'student') as student_count,
-          
-          -- นับอาจารย์ที่ลงทะเบียน (ใช้ JOIN กับ Teacher)
-          (SELECT COUNT(*) 
-           FROM registration r 
-           INNER JOIN users u ON r.Users_ID = u.Users_ID
-           WHERE r.Activity_ID = a.Activity_ID 
-           AND u.Users_Type = 'teacher') as teacher_count,
-          
-          -- นับผู้ที่เช็คอินแล้ว
-          (SELECT COUNT(*) 
-           FROM registration r 
-           WHERE r.Activity_ID = a.Activity_ID 
-           AND r.Registration_CheckInTime IS NOT NULL) as total_checked_in,
-          
-          -- นับผู้ที่เช็คเอาท์แล้ว (เสร็จสิ้น)
-          (SELECT COUNT(*) 
-           FROM registration r 
-           WHERE r.Activity_ID = a.Activity_ID 
-           AND r.Registration_CheckOutTime IS NOT NULL) as total_checked_out
-          
-        FROM activity a
-        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID
-        LEFT JOIN template t ON a.Template_ID = t.Template_ID
-        LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID
-        LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-        
-        GROUP BY a.Activity_ID
-        ORDER BY a.Activity_StartTime DESC
-      `;
+      const sql = `SELECT a.*, at.ActivityType_Name, ast.ActivityStatus_Name,
+        t.Template_Name, t.Template_ImageFile, s.Signature_Name, s.Signature_ImageFile,
+        COALESCE(SUM(ad.ActivityDetail_Total), 0) as expected_participants, (SELECT COUNT(*) 
+        FROM registration r WHERE r.Activity_ID = a.Activity_ID) as total_registered, (SELECT COUNT(*) 
+        FROM registration r INNER JOIN users u ON r.Users_ID = u.Users_ID WHERE r.Activity_ID = a.Activity_ID 
+        AND u.Users_Type = 'student') as student_count, (SELECT COUNT(*) FROM registration r INNER JOIN users u ON r.Users_ID = u.Users_ID
+        WHERE r.Activity_ID = a.Activity_ID AND u.Users_Type = 'teacher') as teacher_count, (SELECT COUNT(*) FROM 
+        registration r WHERE r.Activity_ID = a.Activity_ID AND r.Registration_CheckInTime IS NOT NULL) as total_checked_in, (SELECT COUNT(*) 
+        FROM registration r WHERE r.Activity_ID = a.Activity_ID AND r.Registration_CheckOutTime IS NOT NULL) as total_checked_out
+        FROM activity a LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN activitystatus ast 
+        ON a.ActivityStatus_ID = ast.ActivityStatus_ID LEFT JOIN template t ON a.Template_ID = t.Template_ID
+        LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID LEFT JOIN activitydetail ad ON a.Activity_ID 
+        = ad.ActivityDetail_ID GROUP BY a.Activity_ID ORDER BY a.Activity_StartTime DESC`;
 
       db.query(sql, (err, results) => {
         if (err) {
@@ -9745,72 +9447,26 @@ app.get('/api/admin/activities/:id/details', RateLimiter(1 * 60 * 1000, 300), Ve
         ST_Y(a.Activity_LocationGPS) as gps_lat, at.ActivityType_Name, at.ActivityType_Description, 
         ast.ActivityStatus_Name, ast.ActivityStatus_Description, 
         t.Template_Name, t.Template_ImageFile, t.Template_PositionX, t.Template_PositionY,
-        s.Signature_Name, s.Signature_ImageFile 
-        FROM activity a 
-        LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
-        LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+        s.Signature_Name, s.Signature_ImageFile FROM activity a LEFT JOIN 
+        activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN 
+        activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
         LEFT JOIN template t ON a.Template_ID = t.Template_ID 
         LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID 
         WHERE a.Activity_ID = ?`;
 
-    const departmentsSql = `
-        SELECT 
-          ad.Department_ID, 
-          ad.ActivityDetail_Total, 
-          d.Department_Name, 
-          f.Faculty_ID, 
-          f.Faculty_Name,
-          
-          -- นับจำนวนผู้ลงทะเบียนทั้งหมด (นักศึกษา + อาจารย์)
-          COUNT(DISTINCT r.Users_ID) as registered_count,
-          
-          -- นับจำนวนผู้ที่ check-in แล้ว
-          COUNT(DISTINCT CASE 
-            WHEN r.Registration_CheckInTime IS NOT NULL 
-            THEN r.Users_ID 
-          END) as checked_in_count,
-          
-          -- นับแยกนักศึกษาและอาจารย์
-          COUNT(DISTINCT CASE 
-            WHEN u.Users_Type = 'student' 
-            THEN r.Users_ID 
-          END) as student_count,
-          
-          COUNT(DISTINCT CASE 
-            WHEN u.Users_Type = 'teacher' 
-            THEN r.Users_ID 
-          END) as teacher_count
-          
-        FROM activitydetail ad 
-        INNER JOIN department d ON ad.Department_ID = d.Department_ID 
-        INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID 
-        
-        -- Left join registration และ users เพื่อนับทั้งนักศึกษาและอาจารย์
-        LEFT JOIN (
-          SELECT r.*, u.Users_Type
-          FROM registration r
-          INNER JOIN users u ON r.Users_ID = u.Users_ID
-          WHERE r.Activity_ID = ?
-        ) r ON (
-          (r.Users_Type = 'student' AND EXISTS (
-            SELECT 1 FROM student s 
-            WHERE s.Users_ID = r.Users_ID 
-            AND s.Department_ID = ad.Department_ID
-          ))
-          OR
-          (r.Users_Type = 'teacher' AND EXISTS (
-            SELECT 1 FROM teacher t 
-            WHERE t.Users_ID = r.Users_ID 
-            AND t.Department_ID = ad.Department_ID
-          ))
-        )
-        
-        LEFT JOIN users u ON r.Users_ID = u.Users_ID
-        
-        WHERE ad.ActivityDetail_ID = ? 
-        GROUP BY ad.Department_ID, ad.ActivityDetail_Total, d.Department_Name, f.Faculty_ID, f.Faculty_Name 
-        ORDER BY f.Faculty_Name, d.Department_Name
-      `;
+    const departmentsSql = `SELECT ad.Department_ID, ad.ActivityDetail_Total, 
+      d.Department_Name, f.Faculty_ID, f.Faculty_Name, COUNT(DISTINCT r.Users_ID) as registered_count, 
+      COUNT(DISTINCT CASE WHEN r.Registration_CheckInTime IS NOT NULL THEN r.Users_ID END) as checked_in_count, 
+      COUNT(DISTINCT CASE WHEN u.Users_Type = 'student' THEN r.Users_ID END) as student_count, 
+      COUNT(DISTINCT CASE WHEN u.Users_Type = 'teacher' THEN r.Users_ID END) as teacher_count 
+      FROM activitydetail ad INNER JOIN department d ON ad.Department_ID = d.Department_ID 
+      INNER JOIN faculty f ON d.Faculty_ID = f.Faculty_ID LEFT JOIN (SELECT r.*, u.Users_Type
+      FROM registration r INNER JOIN users u ON r.Users_ID = u.Users_ID WHERE r.Activity_ID = ?) r ON (
+      (r.Users_Type = 'student' AND EXISTS (SELECT 1 FROM student s WHERE s.Users_ID = r.Users_ID 
+      AND s.Department_ID = ad.Department_ID)) OR (r.Users_Type = 'teacher' AND EXISTS (
+      SELECT 1 FROM teacher t WHERE t.Users_ID = r.Users_ID AND t.Department_ID = ad.Department_ID)))
+      LEFT JOIN users u ON r.Users_ID = u.Users_ID WHERE ad.ActivityDetail_ID = ? GROUP BY ad.Department_ID, 
+      ad.ActivityDetail_Total, d.Department_Name, f.Faculty_ID, f.Faculty_Name ORDER BY f.Faculty_Name, d.Department_Name`;
 
     db.query(activitySql, [activityId], (err, activityResults) => {
       if (err) {
@@ -9885,10 +9541,7 @@ app.patch('/api/admin/activities/:id/participants/:userId/checkin',
     }
 
     try {
-      const sql = `UPDATE registration 
-        SET Registration_CheckInTime = CURRENT_TIMESTAMP 
-        WHERE Activity_ID = ? AND Users_ID = ?`;
-
+      const sql = `UPDATE registration SET Registration_CheckInTime = CURRENT_TIMESTAMP WHERE Activity_ID = ? AND Users_ID = ?`;
       db.query(sql, [activityId, userId], (err, result) => {
         if (err) {
           return res.status(500).json({
@@ -9927,10 +9580,7 @@ app.patch('/api/admin/activities/:id/participants/:userId/checkout',
     }
 
     try {
-      const sql = `UPDATE registration 
-        SET Registration_CheckOutTime = CURRENT_TIMESTAMP 
-        WHERE Activity_ID = ? AND Users_ID = ?`;
-
+      const sql = `UPDATE registration SET Registration_CheckOutTime = CURRENT_TIMESTAMP WHERE Activity_ID = ? AND Users_ID = ?`;
       db.query(sql, [activityId, userId], (err, result) => {
         if (err) {
           return res.status(500).json({
@@ -9954,210 +9604,202 @@ app.patch('/api/admin/activities/:id/participants/:userId/checkout',
 );
 
 // API Update Activity Departments**
-app.put('/api/admin/activities/:id/departments',
-  RateLimiter(1 * 60 * 1000, 30),
-  VerifyTokens_Website,
-  async (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const activityId = parseInt(req.params.id);
-    const { departments } = req.body;
+app.put('/api/admin/activities/:id/departments', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const activityId = parseInt(req.params.id);
+  const { departments } = req.body;
 
-    if (Login_Type !== 'website') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed on the website.",
-        status: false
-      });
-    }
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
 
-    if (Users_Type !== 'staff') {
-      return res.status(403).json({
-        message: "Permission denied. Only staff can update activity departments.",
-        status: false
-      });
-    }
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff can update activity departments.",
+      status: false
+    });
+  }
 
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
 
-    if (!Array.isArray(departments) || departments.length === 0) {
-      return res.status(400).json({
-        message: "กรุณาระบุสาขาอย่างน้อย 1 สาขา",
-        status: false
-      });
-    }
+  if (!Array.isArray(departments) || departments.length === 0) {
+    return res.status(400).json({
+      message: "กรุณาระบุสาขาอย่างน้อย 1 สาขา",
+      status: false
+    });
+  }
 
-    let connection;
-    try {
-      connection = await new Promise((resolve, reject) => {
-        db.getConnection((err, conn) => {
-          if (err) reject(err);
-          else resolve(conn);
-        });
+  let connection;
+  try {
+    connection = await new Promise((resolve, reject) => {
+      db.getConnection((err, conn) => {
+        if (err) reject(err);
+        else resolve(conn);
       });
+    });
+
+    await new Promise((resolve, reject) => {
+      connection.beginTransaction((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    await new Promise((resolve, reject) => {
+      const deleteSql = `DELETE FROM activitydetail WHERE ActivityDetail_ID = ?`;
+      connection.query(deleteSql, [activityId], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
+
+    if (departments.length > 0) {
+      const detailValues = departments.map(dept => [
+        activityId,
+        dept.Department_ID,
+        dept.ActivityDetail_Total || 0
+      ]);
 
       await new Promise((resolve, reject) => {
-        connection.beginTransaction((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-
-      // ลบข้อมูลเก่า
-      await new Promise((resolve, reject) => {
-        const deleteSql = `DELETE FROM activitydetail WHERE ActivityDetail_ID = ?`;
-        connection.query(deleteSql, [activityId], (err, result) => {
+        const insertSql = `INSERT INTO activitydetail (ActivityDetail_ID, Department_ID, ActivityDetail_Total) VALUES ?`;
+        connection.query(insertSql, [detailValues], (err, result) => {
           if (err) reject(err);
           else resolve(result);
         });
       });
+    }
 
-      // เพิ่มข้อมูลใหม่
-      if (departments.length > 0) {
-        const detailValues = departments.map(dept => [
-          activityId,
-          dept.Department_ID,
-          dept.ActivityDetail_Total || 0
-        ]);
-
-        await new Promise((resolve, reject) => {
-          const insertSql = `INSERT INTO activitydetail (ActivityDetail_ID, Department_ID, ActivityDetail_Total) VALUES ?`;
-          connection.query(insertSql, [detailValues], (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          });
-        });
-      }
-
-      await new Promise((resolve, reject) => {
-        connection.commit((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
+    await new Promise((resolve, reject) => {
+      connection.commit((err) => {
+        if (err) reject(err);
+        else resolve();
       });
+    });
 
-      connection.release();
+    connection.release();
 
-      res.status(200).json({
-        message: 'อัปเดตสาขาที่เข้าร่วมสำเร็จ',
-        status: true,
-        data: {
-          Activity_ID: activityId,
-          totalDepartments: departments.length,
-          totalExpected: departments.reduce((sum, d) => sum + (d.ActivityDetail_Total || 0), 0)
-        }
-      });
-
-    } catch (err) {
-      console.error('Update Activity Departments Error:', err);
-      if (connection) {
-        await new Promise((resolve) => {
-          connection.rollback(() => {
-            connection.release();
-            resolve();
-          });
-        });
+    res.status(200).json({
+      message: 'อัปเดตสาขาที่เข้าร่วมสำเร็จ',
+      status: true,
+      data: {
+        Activity_ID: activityId,
+        totalDepartments: departments.length,
+        totalExpected: departments.reduce((sum, d) => sum + (d.ActivityDetail_Total || 0), 0)
       }
+    });
 
-      res.status(500).json({
-        message: 'เกิดข้อผิดพลาดในการอัปเดตสาขา',
-        status: false,
-        error: err.message
+  } catch (err) {
+    console.error('Update Activity Departments Error:', err);
+    if (connection) {
+      await new Promise((resolve) => {
+        connection.rollback(() => {
+          connection.release();
+          resolve();
+        });
       });
     }
-  });
+
+    res.status(500).json({
+      message: 'เกิดข้อผิดพลาดในการอัปเดตสาขา',
+      status: false,
+      error: err.message
+    });
+  }
+});
 
 // API Update Activity GPS and Status Only**
-app.patch('/api/admin/activities/:id/location-status',
-  RateLimiter(1 * 60 * 1000, 30),
-  VerifyTokens_Website,
-  async (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const activityId = parseInt(req.params.id);
-    const { activityLocationGPS, activityStatusId } = req.body;
+app.patch('/api/admin/activities/:id/location-status', RateLimiter(1 * 60 * 1000, 30), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const activityId = parseInt(req.params.id);
+  const { activityLocationGPS, activityStatusId } = req.body;
 
-    if (Login_Type !== 'website') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed on the website.",
-        status: false
-      });
-    }
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
 
-    if (Users_Type !== 'staff') {
-      return res.status(403).json({
-        message: "Permission denied. Only staff can update activities.",
-        status: false
-      });
-    }
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff can update activities.",
+      status: false
+    });
+  }
 
-    if (!activityId || isNaN(activityId)) {
-      return res.status(400).json({
-        message: "Invalid activity ID provided.",
-        status: false
-      });
-    }
+  if (!activityId || isNaN(activityId)) {
+    return res.status(400).json({
+      message: "Invalid activity ID provided.",
+      status: false
+    });
+  }
 
-    try {
-      let gpsPoint = null;
-      if (activityLocationGPS) {
-        try {
-          const gpsData = JSON.parse(activityLocationGPS);
-          if (gpsData.lat && gpsData.lng) {
-            gpsPoint = `POINT(${gpsData.lng} ${gpsData.lat})`;
-          }
-        } catch (e) {
-          console.warn('Invalid GPS data:', e);
+  try {
+    let gpsPoint = null;
+    if (activityLocationGPS) {
+      try {
+        const gpsData = JSON.parse(activityLocationGPS);
+        if (gpsData.lat && gpsData.lng) {
+          gpsPoint = `POINT(${gpsData.lng} ${gpsData.lat})`;
         }
+      } catch (e) {
+        console.warn('Invalid GPS data:', e);
+      }
+    }
+
+    const updateSql = gpsPoint
+      ? `UPDATE activity SET Activity_LocationGPS = ST_GeomFromText(?), ActivityStatus_ID = ? WHERE Activity_ID = ?`
+      : `UPDATE activity SET Activity_LocationGPS = NULL, ActivityStatus_ID = ? WHERE Activity_ID = ?`;
+
+    const params = gpsPoint
+      ? [gpsPoint, activityStatusId || null, activityId]
+      : [activityStatusId || null, activityId];
+
+    db.query(updateSql, params, (err, result) => {
+      if (err) {
+        console.error('Update Activity Location/Status Error:', err);
+        return res.status(500).json({
+          message: 'Database error while updating activity.',
+          status: false
+        });
       }
 
-      const updateSql = gpsPoint
-        ? `UPDATE activity SET Activity_LocationGPS = ST_GeomFromText(?), ActivityStatus_ID = ? WHERE Activity_ID = ?`
-        : `UPDATE activity SET Activity_LocationGPS = NULL, ActivityStatus_ID = ? WHERE Activity_ID = ?`;
-
-      const params = gpsPoint
-        ? [gpsPoint, activityStatusId || null, activityId]
-        : [activityStatusId || null, activityId];
-
-      db.query(updateSql, params, (err, result) => {
-        if (err) {
-          console.error('Update Activity Location/Status Error:', err);
-          return res.status(500).json({
-            message: 'Database error while updating activity.',
-            status: false
-          });
-        }
-
-        if (result.affectedRows === 0) {
-          return res.status(404).json({
-            message: 'ไม่พบกิจกรรมที่ต้องการแก้ไข',
-            status: false
-          });
-        }
-
-        res.status(200).json({
-          message: 'อัพเดทตำแหน่งและสถานะสำเร็จ',
-          status: true,
-          data: {
-            Activity_ID: activityId
-          }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          message: 'ไม่พบกิจกรรมที่ต้องการแก้ไข',
+          status: false
         });
-      });
+      }
 
-    } catch (err) {
-      console.error('Update Activity Location/Status Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred while updating activity.',
-        status: false
+      res.status(200).json({
+        message: 'อัพเดทตำแหน่งและสถานะสำเร็จ',
+        status: true,
+        data: {
+          Activity_ID: activityId
+        }
       });
-    }
-  });
+    });
+
+  } catch (err) {
+    console.error('Update Activity Location/Status Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while updating activity.',
+      status: false
+    });
+  }
+});
 
 
 ////////////////////////////////Activity API for Application///////////////////////////////////////
@@ -10198,21 +9840,19 @@ app.get('/api/activities', RateLimiter(1 * 60 * 1000, 300), VerifyTokens, (req, 
 
     if (Users_Type === 'student') {
       sql += `INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-          INNER JOIN student s ON s.Users_ID = ? AND s.Department_ID = ad.Department_ID
-          WHERE s.Student_IsGraduated = FALSE`;
+        INNER JOIN student s ON s.Users_ID = ? AND s.Department_ID = ad.Department_ID
+        WHERE s.Student_IsGraduated = FALSE`;
       params.push(Users_ID);
     } else if (Users_Type === 'teacher') {
       sql += `INNER JOIN teacher tch ON tch.Users_ID = ? 
-          INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID 
-          AND ad.Department_ID = tch.Department_ID
-          WHERE a.Activity_AllowTeachers = TRUE`;
+        INNER JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID 
+        AND ad.Department_ID = tch.Department_ID WHERE a.Activity_AllowTeachers = TRUE`;
       params.push(Users_ID);
     } else {
       sql += ` WHERE 1=1 `;
     }
 
     sql += ` ORDER BY a.Activity_StartTime DESC`;
-
     db.query(sql, params, (err, results) => {
       if (err) {
         console.error('Get Activities Error:', err);
@@ -10288,27 +9928,22 @@ app.get('/api/activities/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens, (r
   try {
     const sql = `SELECT a.Activity_ID, a.Activity_Title, a.Activity_Description,
       a.Activity_LocationDetail, ST_X(a.Activity_LocationGPS) as gps_lng, 
-      ST_Y(a.Activity_LocationGPS) as gps_lat, 
-      a.Activity_StartTime, a.Activity_EndTime, a.Activity_ImageFile, 
-      a.Activity_IsRequire, a.Activity_AllowTeachers,
-      a.Activity_RegisTime, 
-      at.ActivityType_ID, at.ActivityType_Name, at.ActivityType_Description, 
-      ast.ActivityStatus_ID, ast.ActivityStatus_Name, ast.ActivityStatus_Description, 
+      ST_Y(a.Activity_LocationGPS) as gps_lat, a.Activity_StartTime, 
+      a.Activity_EndTime, a.Activity_ImageFile, a.Activity_IsRequire, 
+      a.Activity_AllowTeachers, a.Activity_RegisTime, at.ActivityType_ID, 
+      at.ActivityType_Name, at.ActivityType_Description, ast.ActivityStatus_ID, 
+      ast.ActivityStatus_Name, ast.ActivityStatus_Description, 
       t.Template_ID, t.Template_Name, t.Template_ImageFile, 
       s.Signature_Name, s.Signature_ImageFile, 
       r.Registration_RegisTime, r.Registration_CheckInTime, r.Registration_CheckOutTime, 
       r.RegistrationStatus_ID, rs.RegistrationStatus_Name,
       rp.RegistrationPicture_ImageFile, rp.RegistrationPicture_IsAiSuccess,
       rp.RegistrationPicture_ApprovedTime, rp.RegistrationPicture_RejectedTime,
-      rp.RegistrationPicture_RejectReason,
-      rps.RegistrationPictureStatus_Name,
-      cert.Certificate_ImageFile,
-      CASE WHEN r.Users_ID IS NOT NULL THEN TRUE ELSE FALSE END as is_registered 
-      FROM activity a 
-      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID 
-      LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
-      LEFT JOIN template t ON a.Template_ID = t.Template_ID 
-      LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID 
+      rp.RegistrationPicture_RejectReason, rps.RegistrationPictureStatus_Name,
+      cert.Certificate_ImageFile, CASE WHEN r.Users_ID IS NOT NULL THEN TRUE ELSE FALSE 
+      END as is_registered FROM activity a LEFT JOIN activitytype at ON a.ActivityType_ID 
+      = at.ActivityType_ID LEFT JOIN activitystatus ast ON a.ActivityStatus_ID = ast.ActivityStatus_ID 
+      LEFT JOIN template t ON a.Template_ID = t.Template_ID LEFT JOIN signature s ON t.Signature_ID = s.Signature_ID 
       LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID AND r.Users_ID = ?
       LEFT JOIN registrationstatus rs ON r.RegistrationStatus_ID = rs.RegistrationStatus_ID
       LEFT JOIN registrationpicture rp ON r.Activity_ID = rp.Activity_ID AND r.Users_ID = rp.Users_ID
@@ -11125,21 +10760,13 @@ app.get('/api/activities/:id/pictures',
     }
 
     try {
-      let sql = `
-        SELECT rp.*, u.Users_Email, 
-        s.Student_FirstName, s.Student_LastName, s.Student_Code,
-        t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
-        rps.RegistrationPictureStatus_Name
-        FROM registrationpicture rp
-        INNER JOIN users u ON rp.Users_ID = u.Users_ID
-        LEFT JOIN student s ON u.Users_ID = s.Users_ID
-        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
-        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-        WHERE rp.Activity_ID = ?
-      `;
+      let sql = `SELECT rp.*, u.Users_Email, s.Student_FirstName, s.Student_LastName, s.Student_Code,
+        t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code, rps.RegistrationPictureStatus_Name
+        FROM registrationpicture rp INNER JOIN users u ON rp.Users_ID = u.Users_ID LEFT JOIN student s ON u.Users_ID = s.Users_ID
+        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID 
+        = rps.RegistrationPictureStatus_ID WHERE rp.Activity_ID = ?`;
 
       const params = [activityId];
-
       if (userId) {
         sql += ` AND rp.Users_ID = ?`;
         params.push(parseInt(userId));
@@ -11206,21 +10833,12 @@ app.patch('/api/registration-pictures/:id/approve',
     }
 
     try {
-      // ตรวจสอบว่ารูปภาพมีอยู่จริง
-      const checkSql = `
-        SELECT rp.RegistrationPicture_ID, rp.RegistrationPicture_ImageFile, 
-        rp.Users_ID, rp.Activity_ID, rps.RegistrationPictureStatus_Name,
-        a.Activity_Title,
-        s.Student_FirstName, s.Student_LastName, s.Student_Code,
-        t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code
-        FROM registrationpicture rp
+      const checkSql = `SELECT rp.RegistrationPicture_ID, rp.RegistrationPicture_ImageFile, 
+        rp.Users_ID, rp.Activity_ID, rps.RegistrationPictureStatus_Name, a.Activity_Title, s.Student_FirstName, 
+        s.Student_LastName, s.Student_Code, t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code FROM registrationpicture rp
         LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-        LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID
-        LEFT JOIN users u ON rp.Users_ID = u.Users_ID
-        LEFT JOIN student s ON u.Users_ID = s.Users_ID
-        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
-        WHERE rp.RegistrationPicture_ID = ?
-      `;
+        LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID LEFT JOIN users u ON rp.Users_ID = u.Users_ID
+        LEFT JOIN student s ON u.Users_ID = s.Users_ID LEFT JOIN teacher t ON u.Users_ID = t.Users_ID WHERE rp.RegistrationPicture_ID = ?`;
 
       db.query(checkSql, [pictureId], (err, result) => {
         if (err) {
@@ -11239,8 +10857,6 @@ app.patch('/api/registration-pictures/:id/approve',
         }
 
         const picture = result[0];
-
-        // ตรวจสอบว่ารูปภาพถูกอนุมัติหรือปฏิเสธแล้วหรือไม่
         if (picture.RegistrationPictureStatus_Name === 'อนุมัติแล้ว') {
           return res.status(400).json({
             message: 'รูปภาพนี้ได้รับการอนุมัติแล้ว',
@@ -11255,14 +10871,9 @@ app.patch('/api/registration-pictures/:id/approve',
           });
         }
 
-        // อัปเดตสถานะเป็น "อนุมัติแล้ว" (ID = 2)
-        const updateSql = `
-          UPDATE registrationpicture 
-          SET RegistrationPictureStatus_ID = 2,
-              RegistrationPicture_ApprovedBy = ?,
-              RegistrationPicture_ApprovedTime = CURRENT_TIMESTAMP
-          WHERE RegistrationPicture_ID = ?
-        `;
+        const updateSql = `UPDATE registrationpicture 
+          SET RegistrationPictureStatus_ID = 2, RegistrationPicture_ApprovedBy = ?,
+          RegistrationPicture_ApprovedTime = CURRENT_TIMESTAMP WHERE RegistrationPicture_ID = ?`;
 
         db.query(updateSql, [Staff_ID, pictureId], (err, updateResult) => {
           if (err) {
@@ -11273,14 +10884,10 @@ app.patch('/api/registration-pictures/:id/approve',
             });
           }
 
-          // Log การอนุมัติ
-          const logName = `อนุมัติรูปภาพกิจกรรม: ${picture.Activity_Title} - ${picture.Student_FirstName || picture.Teacher_FirstName} ${picture.Student_LastName || picture.Teacher_LastName}`;
-
-          const logSql = `
-            INSERT INTO dataedit 
-            (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
-            VALUES (?, ?, 'registrationpicture', ?, 6)
-          `;
+          const logName = `อนุมัติรูปภาพกิจกรรม: ${picture.Activity_Title} - 
+            ${picture.Student_FirstName || picture.Teacher_FirstName} ${picture.Student_LastName || picture.Teacher_LastName}`;
+          const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
+            DataEdit_SourceTable, Staff_ID, DataEditType_ID) VALUES (?, ?, 'registrationpicture', ?, 6)`;
 
           db.query(logSql, [pictureId, logName, Staff_ID], (logErr) => {
             if (logErr) {
@@ -11312,146 +10919,122 @@ app.patch('/api/registration-pictures/:id/approve',
 );
 
 // API Reject Registration Picture**
-app.patch('/api/registration-pictures/:id/reject',
-  RateLimiter(1 * 60 * 1000, 100),
-  VerifyTokens_Website,
-  async (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const Staff_ID = userData?.Staff_ID;
-    const pictureId = parseInt(req.params.id);
-    const { reason } = req.body;
+app.patch('/api/registration-pictures/:id/reject', RateLimiter(1 * 60 * 1000, 100), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const Staff_ID = userData?.Staff_ID;
+  const pictureId = parseInt(req.params.id);
+  const { reason } = req.body;
 
-    if (Login_Type !== 'website') {
-      return res.status(403).json({
-        message: "Permission denied. This action is only allowed on the website.",
-        status: false
-      });
-    }
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied. This action is only allowed on the website.",
+      status: false
+    });
+  }
 
-    if (Users_Type !== 'staff') {
-      return res.status(403).json({
-        message: "Permission denied. Only staff can reject pictures.",
-        status: false
-      });
-    }
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Permission denied. Only staff can reject pictures.",
+      status: false
+    });
+  }
 
-    if (!pictureId || isNaN(pictureId)) {
-      return res.status(400).json({
-        message: "Invalid picture ID provided.",
-        status: false
-      });
-    }
+  if (!pictureId || isNaN(pictureId)) {
+    return res.status(400).json({
+      message: "Invalid picture ID provided.",
+      status: false
+    });
+  }
 
-    try {
-      // ตรวจสอบว่ารูปภาพมีอยู่จริง
-      const checkSql = `
-        SELECT rp.RegistrationPicture_ID, rp.RegistrationPicture_ImageFile, 
-        rp.Users_ID, rp.Activity_ID, rps.RegistrationPictureStatus_Name,
-        a.Activity_Title,
-        s.Student_FirstName, s.Student_LastName, s.Student_Code,
-        t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code
-        FROM registrationpicture rp
-        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-        LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID
-        LEFT JOIN users u ON rp.Users_ID = u.Users_ID
-        LEFT JOIN student s ON u.Users_ID = s.Users_ID
-        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
-        WHERE rp.RegistrationPicture_ID = ?
-      `;
+  try {
+    const checkSql = `SELECT rp.RegistrationPicture_ID, rp.RegistrationPicture_ImageFile, 
+      rp.Users_ID, rp.Activity_ID, rps.RegistrationPictureStatus_Name, a.Activity_Title, s.Student_FirstName, 
+      s.Student_LastName, s.Student_Code, t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code FROM registrationpicture rp
+      LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID LEFT JOIN activity a 
+      ON rp.Activity_ID = a.Activity_ID LEFT JOIN users u ON rp.Users_ID = u.Users_ID LEFT JOIN student s ON u.Users_ID = s.Users_ID
+      LEFT JOIN teacher t ON u.Users_ID = t.Users_ID WHERE rp.RegistrationPicture_ID = ?`;
 
-      db.query(checkSql, [pictureId], (err, result) => {
+    db.query(checkSql, [pictureId], (err, result) => {
+      if (err) {
+        console.error('Check Picture Error:', err);
+        return res.status(500).json({
+          message: 'Database error while checking picture.',
+          status: false
+        });
+      }
+
+      if (result.length === 0) {
+        return res.status(404).json({
+          message: 'ไม่พบรูปภาพที่ต้องการปฏิเสธ',
+          status: false
+        });
+      }
+
+      const picture = result[0];
+      if (picture.RegistrationPictureStatus_Name === 'อนุมัติแล้ว') {
+        return res.status(400).json({
+          message: 'รูปภาพนี้ได้รับการอนุมัติแล้ว ไม่สามารถปฏิเสธได้',
+          status: false
+        });
+      }
+
+      if (picture.RegistrationPictureStatus_Name === 'ปฏิเสธ') {
+        return res.status(400).json({
+          message: 'รูปภาพนี้ถูกปฏิเสธแล้ว',
+          status: false
+        });
+      }
+
+      const rejectReason = reason ? xss(reason.trim()) : 'ไม่ระบุเหตุผล';
+
+      const updateSql = `UPDATE registrationpicture SET RegistrationPictureStatus_ID = 3,
+        RegistrationPicture_RejectedBy = ?, RegistrationPicture_RejectedTime = CURRENT_TIMESTAMP,
+        RegistrationPicture_RejectReason = ? WHERE RegistrationPicture_ID = ?`;
+
+      db.query(updateSql, [Staff_ID, rejectReason, pictureId], (err, updateResult) => {
         if (err) {
-          console.error('Check Picture Error:', err);
+          console.error('Reject Picture Error:', err);
           return res.status(500).json({
-            message: 'Database error while checking picture.',
+            message: 'Database error while rejecting picture.',
             status: false
           });
         }
 
-        if (result.length === 0) {
-          return res.status(404).json({
-            message: 'ไม่พบรูปภาพที่ต้องการปฏิเสธ',
-            status: false
-          });
-        }
+        const logName = `ปฏิเสธรูปภาพกิจกรรม: ${picture.Activity_Title} - 
+          ${picture.Student_FirstName || picture.Teacher_FirstName} ${picture.Student_LastName || picture.Teacher_LastName} (เหตุผล: ${rejectReason})`;
+        const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
+          DataEdit_SourceTable, Staff_ID, DataEditType_ID) VALUES (?, ?, 'registrationpicture', ?, 6)`;
 
-        const picture = result[0];
-
-        // ตรวจสอบว่ารูปภาพถูกอนุมัติหรือปฏิเสธแล้วหรือไม่
-        if (picture.RegistrationPictureStatus_Name === 'อนุมัติแล้ว') {
-          return res.status(400).json({
-            message: 'รูปภาพนี้ได้รับการอนุมัติแล้ว ไม่สามารถปฏิเสธได้',
-            status: false
-          });
-        }
-
-        if (picture.RegistrationPictureStatus_Name === 'ปฏิเสธ') {
-          return res.status(400).json({
-            message: 'รูปภาพนี้ถูกปฏิเสธแล้ว',
-            status: false
-          });
-        }
-
-        // อัปเดตสถานะเป็น "ปฏิเสธ" (ID = 3)
-        const rejectReason = reason ? xss(reason.trim()) : 'ไม่ระบุเหตุผล';
-
-        const updateSql = `
-          UPDATE registrationpicture 
-          SET RegistrationPictureStatus_ID = 3,
-              RegistrationPicture_RejectedBy = ?,
-              RegistrationPicture_RejectedTime = CURRENT_TIMESTAMP,
-              RegistrationPicture_RejectReason = ?
-          WHERE RegistrationPicture_ID = ?
-        `;
-
-        db.query(updateSql, [Staff_ID, rejectReason, pictureId], (err, updateResult) => {
-          if (err) {
-            console.error('Reject Picture Error:', err);
-            return res.status(500).json({
-              message: 'Database error while rejecting picture.',
-              status: false
-            });
+        db.query(logSql, [pictureId, logName, Staff_ID], (logErr) => {
+          if (logErr) {
+            console.error('Log Error:', logErr);
           }
+        });
 
-          // Log การปฏิเสธ
-          const logName = `ปฏิเสธรูปภาพกิจกรรม: ${picture.Activity_Title} - ${picture.Student_FirstName || picture.Teacher_FirstName} ${picture.Student_LastName || picture.Teacher_LastName} (เหตุผล: ${rejectReason})`;
-
-          const logSql = `
-            INSERT INTO dataedit 
-            (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
-            VALUES (?, ?, 'registrationpicture', ?, 6)
-          `;
-
-          db.query(logSql, [pictureId, logName, Staff_ID], (logErr) => {
-            if (logErr) {
-              console.error('Log Error:', logErr);
-            }
-          });
-
-          res.status(200).json({
-            message: 'ปฏิเสธรูปภาพสำเร็จ',
-            status: true,
-            data: {
-              RegistrationPicture_ID: pictureId,
-              Activity_ID: picture.Activity_ID,
-              Users_ID: picture.Users_ID,
-              reject_reason: rejectReason,
-              rejected_time: new Date()
-            }
-          });
+        res.status(200).json({
+          message: 'ปฏิเสธรูปภาพสำเร็จ',
+          status: true,
+          data: {
+            RegistrationPicture_ID: pictureId,
+            Activity_ID: picture.Activity_ID,
+            Users_ID: picture.Users_ID,
+            reject_reason: rejectReason,
+            rejected_time: new Date()
+          }
         });
       });
+    });
 
-    } catch (err) {
-      console.error('Reject Picture Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred while rejecting picture.',
-        status: false
-      });
-    }
+  } catch (err) {
+    console.error('Reject Picture Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred while rejecting picture.',
+      status: false
+    });
   }
+}
 );
 
 // API Bulk Approve Registration Pictures**
@@ -11492,17 +11075,10 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
 
   try {
     const placeholders = pictureIds.map(() => '?').join(',');
-
-    // Check pictures and get activity info
-    const checkSql = `
-      SELECT rp.RegistrationPicture_ID, rp.RegistrationPictureStatus_ID, 
-             rps.RegistrationPictureStatus_Name, rp.Users_ID, rp.Activity_ID,
-             a.Activity_Title, a.Activity_EndTime, a.Template_ID
-      FROM registrationpicture rp
-      LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-      LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID
-      WHERE rp.RegistrationPicture_ID IN (${placeholders})
-    `;
+    const checkSql = `SELECT rp.RegistrationPicture_ID, rp.RegistrationPictureStatus_ID, 
+      rps.RegistrationPictureStatus_Name, rp.Users_ID, rp.Activity_ID, a.Activity_Title, a.Activity_EndTime, a.Template_ID
+      FROM registrationpicture rp LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
+      LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID WHERE rp.RegistrationPicture_ID IN (${placeholders})`;
 
     db.query(checkSql, pictureIds, (err, results) => {
       if (err) {
@@ -11513,9 +11089,7 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
         });
       }
 
-      // Filter only pending pictures
       const pendingPictures = results.filter(r => r.RegistrationPictureStatus_ID === 1);
-
       if (pendingPictures.length === 0) {
         return res.status(400).json({
           message: 'ไม่มีรูปภาพที่รออนุมัติ',
@@ -11524,19 +11098,11 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
       }
 
       const pendingIds = pendingPictures.map(r => r.RegistrationPicture_ID);
-
-      // Bulk update approval
       const updatePlaceholders = pendingIds.map(() => '?').join(',');
-      const updateSql = `
-        UPDATE registrationpicture 
-        SET RegistrationPictureStatus_ID = 2,
-            RegistrationPicture_ApprovedBy = ?,
-            RegistrationPicture_ApprovedTime = CURRENT_TIMESTAMP,
-            RegistrationPicture_RejectReason = NULL,
-            RegistrationPicture_RejectedBy = NULL,
-            RegistrationPicture_RejectedTime = NULL
-        WHERE RegistrationPicture_ID IN (${updatePlaceholders})
-      `;
+      const updateSql = `UPDATE registrationpicture SET RegistrationPictureStatus_ID = 2,
+        RegistrationPicture_ApprovedBy = ?, RegistrationPicture_ApprovedTime = CURRENT_TIMESTAMP,
+        RegistrationPicture_RejectReason = NULL, RegistrationPicture_RejectedBy = NULL, RegistrationPicture_RejectedTime = NULL
+        WHERE RegistrationPicture_ID IN (${updatePlaceholders})`;
 
       db.query(updateSql, [Staff_ID, ...pendingIds], async (err, updateResult) => {
         if (err) {
@@ -11547,19 +11113,14 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
           });
         }
 
-        // Log approval
-        const logSql = `
-          INSERT INTO dataedit 
-          (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
-          VALUES (0, ?, 'registrationpicture', ?, 6)
-        `;
-        const logName = `อนุมัติรูปภาพจำนวน ${pendingIds.length} รูป`;
+        const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
+          DataEdit_SourceTable, Staff_ID, DataEditType_ID) VALUES (0, ?, 'registrationpicture', ?, 6)`;
 
+        const logName = `อนุมัติรูปภาพจำนวน ${pendingIds.length} รูป`;
         db.query(logSql, [logName, Staff_ID], (logErr) => {
           if (logErr) console.error('Log Error:', logErr);
         });
 
-        // Auto-generate certificates if enabled
         let certificateResults = {
           generated: 0,
           skipped: 0,
@@ -11567,7 +11128,6 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
         };
 
         if (autoGenerateCertificate) {
-          // Group by user and activity to avoid duplicates
           const userActivityMap = new Map();
           pendingPictures.forEach(pic => {
             const key = `${pic.Users_ID}_${pic.Activity_ID}`;
@@ -11576,7 +11136,6 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
             }
           });
 
-          // Generate certificates
           const certPromises = Array.from(userActivityMap.values()).map(async (pic) => {
             try {
               if (!pic.Template_ID) {
@@ -11584,13 +11143,7 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
                 return { success: false, reason: 'No template assigned' };
               }
 
-              // Check if certificate already exists
-              const checkCertSql = `
-                SELECT Certificate_ID 
-                FROM certificate 
-                WHERE Activity_ID = ? AND Users_ID = ?
-              `;
-
+              const checkCertSql = `SELECT Certificate_ID FROM certificate WHERE Activity_ID = ? AND Users_ID = ?`;
               return new Promise((resolve) => {
                 db.query(checkCertSql, [pic.Activity_ID, pic.Users_ID], (err, existing) => {
                   if (err) {
@@ -11605,15 +11158,9 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
                     return;
                   }
 
-                  // Get user details
-                  const getUserSql = `
-                    SELECT u.Users_ID, s.Student_FirstName, s.Student_LastName, 
-                           t.Teacher_FirstName, t.Teacher_LastName
-                    FROM users u 
-                    LEFT JOIN student s ON u.Users_ID = s.Users_ID 
-                    LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
-                    WHERE u.Users_ID = ?
-                  `;
+                  const getUserSql = `SELECT u.Users_ID, s.Student_FirstName, s.Student_LastName, 
+                    t.Teacher_FirstName, t.Teacher_LastName FROM users u LEFT JOIN student s ON u.Users_ID = s.Users_ID 
+                    LEFT JOIN teacher t ON u.Users_ID = t.Users_ID WHERE u.Users_ID = ?`;
 
                   db.query(getUserSql, [pic.Users_ID], (err, userResult) => {
                     if (err || userResult.length === 0) {
@@ -11631,11 +11178,8 @@ app.patch('/api/registration-pictures/bulk-approve', RateLimiter(1 * 60 * 1000, 
                       : `${user.Teacher_FirstName} ${user.Teacher_LastName}`;
 
                     const certificateFilename = `certificate_${uuidv4()}.png`;
-                    const insertCertSql = `
-                      INSERT INTO certificate 
-                      (Certificate_ImageFile, Activity_ID, Users_ID, Template_ID) 
-                      VALUES (?, ?, ?, ?)
-                    `;
+                    const insertCertSql = `INSERT INTO certificate 
+                      (Certificate_ImageFile, Activity_ID, Users_ID, Template_ID) VALUES (?, ?, ?, ?)`;
 
                     db.query(
                       insertCertSql,
@@ -11704,14 +11248,9 @@ app.get('/api/activities/:activityId/users/:userId/certificate-status', RateLimi
   const { activityId, userId } = req.params;
 
   try {
-    const checkSql = `
-        SELECT c.Certificate_ID, c.Certificate_ImageFile, c.Certificate_RegisTime,
-               a.Activity_Title, t.Template_Name
-        FROM certificate c
-        JOIN activity a ON c.Activity_ID = a.Activity_ID
-        LEFT JOIN template t ON c.Template_ID = t.Template_ID
-        WHERE c.Activity_ID = ? AND c.Users_ID = ?
-      `;
+    const checkSql = `SELECT c.Certificate_ID, c.Certificate_ImageFile, c.Certificate_RegisTime,
+      a.Activity_Title, t.Template_Name FROM certificate c JOIN activity a ON c.Activity_ID = a.Activity_ID
+      LEFT JOIN template t ON c.Template_ID = t.Template_ID WHERE c.Activity_ID = ? AND c.Users_ID = ?`;
 
     db.query(checkSql, [activityId, userId], (err, results) => {
       if (err) {
@@ -11754,18 +11293,11 @@ app.get('/api/admin/activities/:activityId/certificates', RateLimiter(1 * 60 * 1
   }
 
   try {
-    const sql = `
-        SELECT c.Certificate_ID, c.Certificate_ImageFile, c.Certificate_RegisTime,
-               c.Users_ID, s.Student_FirstName, s.Student_LastName, s.Student_Code,
-               t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
-               tmp.Template_Name
-        FROM certificate c
-        LEFT JOIN student s ON c.Users_ID = s.Users_ID
-        LEFT JOIN teacher t ON c.Users_ID = t.Users_ID
-        LEFT JOIN template tmp ON c.Template_ID = tmp.Template_ID
-        WHERE c.Activity_ID = ?
-        ORDER BY c.Certificate_RegisTime DESC
-      `;
+    const sql = `SELECT c.Certificate_ID, c.Certificate_ImageFile, c.Certificate_RegisTime,
+      c.Users_ID, s.Student_FirstName, s.Student_LastName, s.Student_Code, t.Teacher_FirstName, t.Teacher_LastName, 
+      t.Teacher_Code, tmp.Template_Name FROM certificate c LEFT JOIN student s ON c.Users_ID = s.Users_ID
+      LEFT JOIN teacher t ON c.Users_ID = t.Users_ID LEFT JOIN template tmp ON c.Template_ID = tmp.Template_ID
+      WHERE c.Activity_ID = ? ORDER BY c.Certificate_RegisTime DESC`;
 
     db.query(sql, [activityId], (err, results) => {
       if (err) {
@@ -11827,7 +11359,6 @@ app.patch('/api/registration-pictures/bulk-reject', RateLimiter(1 * 60 * 1000, 5
     });
   }
 
-  // Limit bulk operations
   if (pictureIds.length > 50) {
     return res.status(400).json({
       message: "สามารถปฏิเสธได้ครั้งละไม่เกิน 50 รูป",
@@ -11838,15 +11369,9 @@ app.patch('/api/registration-pictures/bulk-reject', RateLimiter(1 * 60 * 1000, 5
   try {
     const placeholders = pictureIds.map(() => '?').join(',');
     const rejectReason = reason || 'ไม่ระบุเหตุผล';
-
-    // Check pictures
-    const checkSql = `
-        SELECT rp.RegistrationPicture_ID, rp.RegistrationPictureStatus_ID, 
-        rps.RegistrationPictureStatus_Name
-        FROM registrationpicture rp
-        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-        WHERE rp.RegistrationPicture_ID IN (${placeholders})
-      `;
+    const checkSql = `SELECT rp.RegistrationPicture_ID, rp.RegistrationPictureStatus_ID, 
+      rps.RegistrationPictureStatus_Name FROM registrationpicture rp LEFT JOIN registrationpicturestatus 
+      rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID WHERE rp.RegistrationPicture_ID IN (${placeholders})`;
 
     db.query(checkSql, pictureIds, (err, results) => {
       if (err) {
@@ -11857,7 +11382,6 @@ app.patch('/api/registration-pictures/bulk-reject', RateLimiter(1 * 60 * 1000, 5
         });
       }
 
-      // Filter only pending pictures
       const pendingIds = results
         .filter(r => r.RegistrationPictureStatus_ID === 1)
         .map(r => r.RegistrationPicture_ID);
@@ -11869,17 +11393,11 @@ app.patch('/api/registration-pictures/bulk-reject', RateLimiter(1 * 60 * 1000, 5
         });
       }
 
-      // Bulk update
       const updatePlaceholders = pendingIds.map(() => '?').join(',');
-      const updateSql = `
-          UPDATE registrationpicture 
-          SET RegistrationPictureStatus_ID = 3,
-              RegistrationPicture_RejectReason = ?,
-              RegistrationPicture_RejectedBy = ?,
-              RegistrationPicture_RejectedTime = CURRENT_TIMESTAMP,
-              RegistrationPicture_ApprovedBy = NULL,
-              RegistrationPicture_ApprovedTime = NULL
-          WHERE RegistrationPicture_ID IN (${updatePlaceholders})
+      const updateSql = `UPDATE registrationpicture 
+        SET RegistrationPictureStatus_ID = 3, RegistrationPicture_RejectReason = ?,
+        RegistrationPicture_RejectedBy = ?, RegistrationPicture_RejectedTime = CURRENT_TIMESTAMP,
+        RegistrationPicture_ApprovedBy = NULL, RegistrationPicture_ApprovedTime = NULL WHERE RegistrationPicture_ID IN (${updatePlaceholders})
         `;
 
       db.query(updateSql, [rejectReason, Staff_ID, ...pendingIds], (err, updateResult) => {
@@ -11891,12 +11409,8 @@ app.patch('/api/registration-pictures/bulk-reject', RateLimiter(1 * 60 * 1000, 5
           });
         }
 
-        // Log
-        const logSql = `
-            INSERT INTO dataedit 
-            (DataEdit_ThisId, DataEdit_Name, DataEdit_SourceTable, Staff_ID, DataEditType_ID)
-            VALUES (0, ?, 'registrationpicture', ?, 6)
-          `;
+        const logSql = `INSERT INTO dataedit (DataEdit_ThisId, DataEdit_Name, 
+          DataEdit_SourceTable, Staff_ID, DataEditType_ID) VALUES (0, ?, 'registrationpicture', ?, 6)`;
         const logName = `ปฏิเสธรูปภาพจำนวน ${pendingIds.length} รูป (เหตุผล: ${rejectReason})`;
 
         db.query(logSql, [logName, Staff_ID], (logErr) => {
@@ -11926,83 +11440,69 @@ app.patch('/api/registration-pictures/bulk-reject', RateLimiter(1 * 60 * 1000, 5
 });
 
 // API Get Registration Picture Detail**
-app.get('/api/registration-pictures/:id',
-  RateLimiter(1 * 60 * 1000, 300),
-  VerifyTokens_Website,
-  async (req, res) => {
-    const userData = req.user;
-    const Users_Type = userData?.Users_Type;
-    const Login_Type = userData?.Login_Type;
-    const pictureId = parseInt(req.params.id);
+app.get('/api/registration-pictures/:id', RateLimiter(1 * 60 * 1000, 300), VerifyTokens_Website, async (req, res) => {
+  const userData = req.user;
+  const Users_Type = userData?.Users_Type;
+  const Login_Type = userData?.Login_Type;
+  const pictureId = parseInt(req.params.id);
 
-    if (Login_Type !== 'website') {
-      return res.status(403).json({
-        message: "Permission denied.",
-        status: false
-      });
-    }
-
-    if (Users_Type !== 'staff') {
-      return res.status(403).json({
-        message: "Only staff can access this.",
-        status: false
-      });
-    }
-
-    try {
-      const sql = `
-        SELECT 
-          rp.*,
-          rps.RegistrationPictureStatus_Name,
-          u.Users_Email,
-          s.Student_FirstName, s.Student_LastName, s.Student_Code,
-          t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
-          a.Activity_Title,
-          approver.Staff_FirstName as Approver_FirstName,
-          approver.Staff_LastName as Approver_LastName,
-          rejecter.Staff_FirstName as Rejecter_FirstName,
-          rejecter.Staff_LastName as Rejecter_LastName
-        FROM registrationpicture rp
-        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-        LEFT JOIN users u ON rp.Users_ID = u.Users_ID
-        LEFT JOIN student s ON u.Users_ID = s.Users_ID
-        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
-        LEFT JOIN activity a ON rp.Activity_ID = a.Activity_ID
-        LEFT JOIN staff approver ON rp.RegistrationPicture_ApprovedBy = approver.Staff_ID
-        LEFT JOIN staff rejecter ON rp.RegistrationPicture_RejectedBy = rejecter.Staff_ID
-        WHERE rp.RegistrationPicture_ID = ?
-      `;
-
-      db.query(sql, [pictureId], (err, results) => {
-        if (err) {
-          console.error('Get Picture Detail Error:', err);
-          return res.status(500).json({
-            message: 'Database error',
-            status: false
-          });
-        }
-
-        if (results.length === 0) {
-          return res.status(404).json({
-            message: 'Picture not found',
-            status: false
-          });
-        }
-
-        res.status(200).json({
-          message: 'Picture detail retrieved successfully.',
-          status: true,
-          data: results[0]
-        });
-      });
-    } catch (err) {
-      console.error('Get Picture Detail Error:', err);
-      res.status(500).json({
-        message: 'An unexpected error occurred.',
-        status: false
-      });
-    }
+  if (Login_Type !== 'website') {
+    return res.status(403).json({
+      message: "Permission denied.",
+      status: false
+    });
   }
+
+  if (Users_Type !== 'staff') {
+    return res.status(403).json({
+      message: "Only staff can access this.",
+      status: false
+    });
+  }
+
+  try {
+    const sql = `SELECT rp.*, rps.RegistrationPictureStatus_Name,
+      u.Users_Email, s.Student_FirstName, s.Student_LastName, s.Student_Code,
+      t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code, a.Activity_Title,
+      approver.Staff_FirstName as Approver_FirstName, approver.Staff_LastName as Approver_LastName,
+      rejecter.Staff_FirstName as Rejecter_FirstName, rejecter.Staff_LastName as Rejecter_LastName
+      FROM registrationpicture rp LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID 
+      = rps.RegistrationPictureStatus_ID LEFT JOIN users u ON rp.Users_ID = u.Users_ID LEFT JOIN student s 
+      ON u.Users_ID = s.Users_ID LEFT JOIN teacher t ON u.Users_ID = t.Users_ID LEFT JOIN activity a ON 
+      rp.Activity_ID = a.Activity_ID LEFT JOIN staff approver ON rp.RegistrationPicture_ApprovedBy 
+      = approver.Staff_ID LEFT JOIN staff rejecter ON rp.RegistrationPicture_RejectedBy = rejecter.Staff_ID
+      WHERE rp.RegistrationPicture_ID = ?`;
+
+    db.query(sql, [pictureId], (err, results) => {
+      if (err) {
+        console.error('Get Picture Detail Error:', err);
+        return res.status(500).json({
+          message: 'Database error',
+          status: false
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          message: 'Picture not found',
+          status: false
+        });
+      }
+
+      res.status(200).json({
+        message: 'Picture detail retrieved successfully.',
+        status: true,
+        data: results[0]
+      });
+    });
+  } catch (err) {
+    console.error('Get Picture Detail Error:', err);
+    res.status(500).json({
+      message: 'An unexpected error occurred.',
+      status: false
+    });
+  }
+}
 );
 
 // API Get All Registration Pictures with Approval Info**
@@ -12014,7 +11514,7 @@ app.get('/api/admin/activities/:id/pictures/all',
     const Users_Type = userData?.Users_Type;
     const Login_Type = userData?.Login_Type;
     const activityId = parseInt(req.params.id);
-    const { status } = req.query; // pending, approved, rejected
+    const { status } = req.query;
 
     if (Login_Type !== 'website') {
       return res.status(403).json({
@@ -12031,30 +11531,15 @@ app.get('/api/admin/activities/:id/pictures/all',
     }
 
     try {
-      let sql = `
-        SELECT 
-          rp.*,
-          rps.RegistrationPictureStatus_Name,
-          u.Users_Email,
-          s.Student_FirstName, s.Student_LastName, s.Student_Code,
-          t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
-          approver.Staff_FirstName as Approver_FirstName,
-          approver.Staff_LastName as Approver_LastName,
-          rejecter.Staff_FirstName as Rejecter_FirstName,
-          rejecter.Staff_LastName as Rejecter_LastName
-        FROM registrationpicture rp
-        LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = rps.RegistrationPictureStatus_ID
-        LEFT JOIN users u ON rp.Users_ID = u.Users_ID
-        LEFT JOIN student s ON u.Users_ID = s.Users_ID
-        LEFT JOIN teacher t ON u.Users_ID = t.Users_ID
-        LEFT JOIN staff approver ON rp.RegistrationPicture_ApprovedBy = approver.Staff_ID
-        LEFT JOIN staff rejecter ON rp.RegistrationPicture_RejectedBy = rejecter.Staff_ID
-        WHERE rp.Activity_ID = ?
-      `;
+      let sql = `SELECT rp.*, rps.RegistrationPictureStatus_Name, u.Users_Email,
+        s.Student_FirstName, s.Student_LastName, s.Student_Code, t.Teacher_FirstName, t.Teacher_LastName, t.Teacher_Code,
+        approver.Staff_FirstName as Approver_FirstName, approver.Staff_LastName as Approver_LastName, rejecter.Staff_FirstName as Rejecter_FirstName,
+        rejecter.Staff_LastName as Rejecter_LastName FROM registrationpicture rp LEFT JOIN registrationpicturestatus rps ON rp.RegistrationPictureStatus_ID = 
+        rps.RegistrationPictureStatus_ID LEFT JOIN users u ON rp.Users_ID = u.Users_ID LEFT JOIN student s ON u.Users_ID = s.Users_ID LEFT JOIN teacher t 
+        ON u.Users_ID = t.Users_ID LEFT JOIN staff approver ON rp.RegistrationPicture_ApprovedBy = approver.Staff_ID
+        LEFT JOIN staff rejecter ON rp.RegistrationPicture_RejectedBy = rejecter.Staff_ID WHERE rp.Activity_ID = ?`;
 
       const params = [activityId];
-
-      // Filter by status if provided
       if (status === 'pending') {
         sql += ` AND rp.RegistrationPictureStatus_ID = 1`;
       } else if (status === 'approved') {
@@ -12064,7 +11549,6 @@ app.get('/api/admin/activities/:id/pictures/all',
       }
 
       sql += ` ORDER BY rp.RegistrationPicture_RegisTime DESC`;
-
       db.query(sql, params, (err, results) => {
         if (err) {
           console.error('Get Pictures Error:', err);
@@ -12116,15 +11600,9 @@ app.get('/api/admin/activities/:id/pictures/stats',
     }
 
     try {
-      const sql = `
-        SELECT 
-          COUNT(*) as total_pictures,
-          SUM(CASE WHEN RegistrationPictureStatus_ID = 1 THEN 1 ELSE 0 END) as pending_pictures,
-          SUM(CASE WHEN RegistrationPictureStatus_ID = 2 THEN 1 ELSE 0 END) as approved_pictures,
-          SUM(CASE WHEN RegistrationPictureStatus_ID = 3 THEN 1 ELSE 0 END) as rejected_pictures
-        FROM registrationpicture
-        WHERE Activity_ID = ?
-      `;
+      const sql = `SELECT COUNT(*) as total_pictures, SUM(CASE WHEN RegistrationPictureStatus_ID = 1 
+        THEN 1 ELSE 0 END) as pending_pictures, SUM(CASE WHEN RegistrationPictureStatus_ID = 2 THEN 1 ELSE 0 END) as approved_pictures,
+        SUM(CASE WHEN RegistrationPictureStatus_ID = 3 THEN 1 ELSE 0 END) as rejected_pictures FROM registrationpicture WHERE Activity_ID = ?`;
 
       db.query(sql, [activityId], (err, results) => {
         if (err) {
@@ -12916,94 +12394,44 @@ app.get('/api/admin/dashboard/semester-report', RateLimiter(1 * 60 * 1000, 300),
       );
     }
 
-    const summarySql = `
-      SELECT 
-        COUNT(DISTINCT a.Activity_ID) as total_activities,
-        COUNT(DISTINCT r.Users_ID) as total_participants,
-        SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
-          AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_participations,
-        COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 3 THEN a.Activity_ID END) as completed_activities,
-        COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 1 THEN a.Activity_ID END) as open_activities,
-        COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 2 THEN a.Activity_ID END) as ongoing_activities,
-        SUM(TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime)) as total_hours
-      FROM activity a
-      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
-      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-      WHERE 1=1 ${dateFilter} ${departmentFilter}
-    `;
+    const summarySql = `SELECT 
+      COUNT(DISTINCT a.Activity_ID) as total_activities, COUNT(DISTINCT r.Users_ID) as total_participants,
+      SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) 
+      as completed_participations, COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 3 THEN a.Activity_ID END) as completed_activities,
+      COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 1 THEN a.Activity_ID END) as open_activities, COUNT(DISTINCT CASE WHEN a.ActivityStatus_ID = 2 
+      THEN a.Activity_ID END) as ongoing_activities, SUM(TIMESTAMPDIFF(HOUR, a.Activity_StartTime, a.Activity_EndTime)) as total_hours
+      FROM activity a LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
+      WHERE 1=1 ${dateFilter} ${departmentFilter}`;
 
-    const typeStatsSql = `
-      SELECT 
-        at.ActivityType_Name,
-        COUNT(DISTINCT a.Activity_ID) as activity_count,
-        COUNT(DISTINCT r.Users_ID) as participant_count,
-        SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
-          AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count
-      FROM activitytype at
-      LEFT JOIN activity a ON at.ActivityType_ID = a.ActivityType_ID
-      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
-      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-      WHERE 1=1 ${dateFilter} ${departmentFilter}
-      GROUP BY at.ActivityType_ID, at.ActivityType_Name
-      ORDER BY activity_count DESC
-    `;
+    const typeStatsSql = `SELECT 
+      at.ActivityType_Name, COUNT(DISTINCT a.Activity_ID) as activity_count, COUNT(DISTINCT r.Users_ID) as participant_count,
+      SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count
+      FROM activitytype at LEFT JOIN activity a ON at.ActivityType_ID = a.ActivityType_ID LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID WHERE 1=1 ${dateFilter} ${departmentFilter} GROUP BY 
+      at.ActivityType_ID, at.ActivityType_Name ORDER BY activity_count DESC`;
 
-    const departmentStatsSql = `
-      SELECT 
-        d.Department_Name,
-        f.Faculty_Name,
-        COUNT(DISTINCT a.Activity_ID) as activity_count,
-        COUNT(DISTINCT r.Users_ID) as participant_count,
-        SUM(ad.ActivityDetail_Total) as total_quota
-      FROM department d
-      LEFT JOIN faculty f ON d.Faculty_ID = f.Faculty_ID
-      LEFT JOIN activitydetail ad ON d.Department_ID = ad.Department_ID
-      LEFT JOIN activity a ON ad.ActivityDetail_ID = a.Activity_ID
-      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
-      WHERE 1=1 ${dateFilter} ${departmentFilter}
-      GROUP BY d.Department_ID, d.Department_Name, f.Faculty_Name
-      ORDER BY activity_count DESC
-    `;
+    const departmentStatsSql = `SELECT d.Department_Name, f.Faculty_Name, COUNT(DISTINCT a.Activity_ID) as activity_count,
+      COUNT(DISTINCT r.Users_ID) as participant_count, SUM(ad.ActivityDetail_Total) as total_quota FROM department d LEFT JOIN faculty f ON 
+      d.Faculty_ID = f.Faculty_ID LEFT JOIN activitydetail ad ON d.Department_ID = ad.Department_ID LEFT JOIN activity a ON ad.ActivityDetail_ID = 
+      a.Activity_ID LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID WHERE 1=1 ${dateFilter} ${departmentFilter} 
+      GROUP BY d.Department_ID, d.Department_Name, f.Faculty_Name ORDER BY activity_count DESC`;
 
-    const topActivitiesSql = `
-      SELECT 
-        a.Activity_Title,
-        a.Activity_StartTime,
-        at.ActivityType_Name,
-        COUNT(DISTINCT r.Users_ID) as participant_count,
-        SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
-          AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count,
-        GROUP_CONCAT(DISTINCT d.Department_Name SEPARATOR ', ') as departments
-      FROM activity a
-      LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID
-      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
-      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-      LEFT JOIN department d ON ad.Department_ID = d.Department_ID
-      WHERE 1=1 ${dateFilter} ${departmentFilter}
-      GROUP BY a.Activity_ID, a.Activity_Title, a.Activity_StartTime, at.ActivityType_Name
-      ORDER BY participant_count DESC
-      LIMIT 10
-    `;
+    const topActivitiesSql = `SELECT a.Activity_Title, a.Activity_StartTime,
+      at.ActivityType_Name, COUNT(DISTINCT r.Users_ID) as participant_count, SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
+      AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count, GROUP_CONCAT(DISTINCT d.Department_Name SEPARATOR ', ') as departments
+      FROM activity a LEFT JOIN activitytype at ON a.ActivityType_ID = at.ActivityType_ID LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID LEFT JOIN department d ON ad.Department_ID = d.Department_ID
+      WHERE 1=1 ${dateFilter} ${departmentFilter} GROUP BY a.Activity_ID, a.Activity_Title, a.Activity_StartTime, at.ActivityType_Name
+      ORDER BY participant_count DESC LIMIT 10`;
 
-    const monthlySql = `
-      SELECT 
-        DATE_FORMAT(a.Activity_StartTime, '%Y-%m') as month,
-        DATE_FORMAT(a.Activity_StartTime, '%M %Y') as month_name,
-        COUNT(DISTINCT a.Activity_ID) as activity_count,
-        COUNT(DISTINCT r.Users_ID) as participant_count,
-        SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL 
-          AND r.Registration_CheckOutTime IS NOT NULL THEN 1 ELSE 0 END) as completed_count
-      FROM activity a
-      LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
-      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID
-      WHERE 1=1 ${dateFilter} ${departmentFilter}
-      GROUP BY DATE_FORMAT(a.Activity_StartTime, '%Y-%m'), 
-        DATE_FORMAT(a.Activity_StartTime, '%M %Y')
-      ORDER BY month ASC
-    `;
+    const monthlySql = `SELECT DATE_FORMAT(a.Activity_StartTime, '%Y-%m') as month, 
+      DATE_FORMAT(a.Activity_StartTime, '%M %Y') as month_name, COUNT(DISTINCT a.Activity_ID) as activity_count,
+      COUNT(DISTINCT r.Users_ID) as participant_count, SUM(CASE WHEN r.Registration_CheckInTime IS NOT NULL AND r.Registration_CheckOutTime 
+      IS NOT NULL THEN 1 ELSE 0 END) as completed_count FROM activity a LEFT JOIN registration r ON a.Activity_ID = r.Activity_ID
+      LEFT JOIN activitydetail ad ON a.Activity_ID = ad.ActivityDetail_ID WHERE 1=1 ${dateFilter} ${departmentFilter}
+      GROUP BY DATE_FORMAT(a.Activity_StartTime, '%Y-%m'), DATE_FORMAT(a.Activity_StartTime, '%M %Y') ORDER BY month ASC`;
 
     const queryParams = [...dateParams, ...departmentParams];
-
     const [summaryResult, typeStatsResult, departmentStatsResult,
       topActivitiesResult, monthlyResult] = await Promise.all([
         new Promise((resolve, reject) => {
@@ -13512,22 +12940,10 @@ app.get('/api/profile/data/get', RateLimiter(0.5 * 60 * 1000, 24), VerifyTokens,
 
 app.get('/api/debug/fcm-tokens', async (req, res) => {
   try {
-    const sql = `
-      SELECT 
-        f.FCMToken_ID,
-        f.Users_ID,
-        u.Users_Email,
-        u.Users_Type,
-        f.Device_Type,
-        f.FCMToken_IsActive,
-        f.FCMToken_RegisTime,
-        f.FCMToken_UpdateTime,
-        SUBSTRING(f.FCM_Token, 1, 30) as FCM_Token_Preview
-      FROM FCMTokens f
-      LEFT JOIN users u ON f.Users_ID = u.Users_ID
-      ORDER BY f.FCMToken_UpdateTime DESC
-      LIMIT 20
-    `;
+    const sql = `SELECT f.FCMToken_ID, f.Users_ID, u.Users_Email,
+      u.Users_Type, f.Device_Type, f.FCMToken_IsActive, f.FCMToken_RegisTime,
+      f.FCMToken_UpdateTime, SUBSTRING(f.FCM_Token, 1, 30) as FCM_Token_Preview
+      FROM FCMTokens f LEFT JOIN users u ON f.Users_ID = u.Users_ID ORDER BY f.FCMToken_UpdateTime DESC LIMIT 20`;
 
     db.query(sql, (err, results) => {
       if (err) {
@@ -13542,135 +12958,6 @@ app.get('/api/debug/fcm-tokens', async (req, res) => {
       });
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-
-// ✅ Test Endpoint - ส่ง Notification ทดสอบ (GET version)
-app.get('/api/debug/test-notification/:userId', async (req, res) => {
-  try {
-    const userId = parseInt(req.params.userId);
-
-    if (!userId || isNaN(userId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid userId'
-      });
-    }
-
-    console.log(`📤 Testing notification for user ${userId}`);
-
-    // ตรวจสอบว่า user มีอยู่จริง
-    const checkUserSql = 'SELECT Users_ID, Users_Email, Users_Type FROM users WHERE Users_ID = ?';
-    db.query(checkUserSql, [userId], async (err, users) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({ success: false, error: err.message });
-      }
-
-      if (users.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: `User ${userId} not found`
-        });
-      }
-
-      const user = users[0];
-      console.log(`👤 Found user: ${user.Users_Email} (${user.Users_Type})`);
-
-      // ส่ง notification
-      const result = await sendNotificationToMultipleUsers(
-        [userId],
-        '🧪 ทดสอบการแจ้งเตือน',
-        'นี่คือการทดสอบ Push Notification จาก Busitplus',
-        {
-          type: 'test',
-          timestamp: new Date().toISOString()
-        }
-      );
-
-      console.log(`📊 Notification result:`, result);
-
-      // บันทึกลง database
-      await saveNotificationForUsers(
-        [userId],
-        '🧪 ทดสอบการแจ้งเตือน',
-        'นี่คือการทดสอบ Push Notification',
-        null,
-        'test'
-      );
-
-      res.json({
-        success: true,
-        user: {
-          id: user.Users_ID,
-          email: user.Users_Email,
-          type: user.Users_Type
-        },
-        result: result,
-        message: `✅ Sent: ${result.success} | ❌ Failed: ${result.failure} | 📱 Total: ${result.total}`
-      });
-    });
-
-  } catch (error) {
-    console.error('❌ Error sending test notification:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-// ✅ Endpoint ตรวจสอบ FCM Tokens
-app.get('/api/debug/fcm-tokens', async (req, res) => {
-  try {
-    const sql = `
-      SELECT 
-        f.FCMToken_ID,
-        f.Users_ID,
-        u.Users_Email,
-        u.Users_Type,
-        f.Device_Type,
-        f.FCMToken_IsActive,
-        f.FCMToken_RegisTime,
-        f.FCMToken_UpdateTime,
-        SUBSTRING(f.FCM_Token, 1, 50) as FCM_Token_Preview,
-        CASE 
-          WHEN f.FCM_Token IS NULL THEN '❌ NULL'
-          WHEN f.FCM_Token = '' THEN '❌ Empty'
-          WHEN LENGTH(f.FCM_Token) < 100 THEN '⚠️ Too Short'
-          ELSE '✅ Valid'
-        END as Token_Status
-      FROM FCMTokens f
-      LEFT JOIN users u ON f.Users_ID = u.Users_ID
-      ORDER BY f.FCMToken_UpdateTime DESC
-      LIMIT 50
-    `;
-
-    db.query(sql, (err, results) => {
-      if (err) {
-        console.error('❌ Error fetching FCM tokens:', err);
-        return res.status(500).json({ success: false, error: err.message });
-      }
-
-      const activeCount = results.filter(r => r.FCMToken_IsActive).length;
-      const validCount = results.filter(r => r.Token_Status === '✅ Valid').length;
-
-      res.json({
-        success: true,
-        summary: {
-          total: results.length,
-          active: activeCount,
-          valid: validCount,
-          inactive: results.length - activeCount
-        },
-        tokens: results
-      });
-    });
-  } catch (error) {
-    console.error('❌ Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

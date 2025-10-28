@@ -19,7 +19,6 @@ function validateInput(req, res, next) {
   const errors = [];
   const body = req.body;
 
-  // --- Users fields ---
   if ('Users_Email' in body) {
     if (!validator.isEmail(body.Users_Email)) {
       errors.push('Users_Email must be a valid email address');
@@ -43,15 +42,13 @@ function validateInput(req, res, next) {
   }
 
   const allowedUserTypes = ['teacher', 'student', 'staff', 'admin'];
-  
+
   if ('Users_Type' in body && body.Users_Type !== '') {
     if (!allowedUserTypes.includes(body.Users_Type)) {
       errors.push(`Users_Type must be one of: ${allowedUserTypes.join(', ')}`);
     }
   }
 
-
-  // Optional Users fields
   if ('Users_IsActive' in body) {
     const boolVal = toBoolean(body.Users_IsActive);
     if (boolVal === null) {
@@ -67,7 +64,6 @@ function validateInput(req, res, next) {
     }
   }
 
-  // --- Foreign key checks ---
   const foreignKeyFields = [
     'Users_ID', 'Department_ID', 'Teacher_ID', 'Staff_ID',
     'Faculty_ID', 'DataEditType_ID', 'TimestampType_ID',
@@ -82,7 +78,6 @@ function validateInput(req, res, next) {
     }
   });
 
-  // --- Validate Teacher ---
   if ('Teacher_Code' in body && !validator.isLength(body.Teacher_Code || '', { min: 1, max: 15 })) {
     errors.push('Teacher_Code must be no more than 15 characters');
   }
@@ -129,7 +124,6 @@ function validateInput(req, res, next) {
     }
   }
 
-  // --- Validate Student ---
   if ('Student_Code' in body && !validator.isLength(body.Student_Code || '', { min: 1, max: 15 })) {
     errors.push('Student_Code must be no more than 15 characters');
   }
@@ -173,7 +167,6 @@ function validateInput(req, res, next) {
     }
   }
 
-  // --- Validate Staff ---
   if ('Staff_Code' in body && !validator.isLength(body.Staff_Code || '', { min: 1, max: 15 })) {
     errors.push('Staff_Code must be no more than 15 characters');
   }
@@ -197,14 +190,12 @@ function validateInput(req, res, next) {
     }
   }
 
-  // --- Validate dates ---
   if ('Users_RegisTime' in body && body.Users_RegisTime) {
     if (!validator.isISO8601(body.Users_RegisTime)) {
       errors.push('Users_RegisTime must be a valid ISO8601 date string');
     }
   }
 
-  // --- Validate images and filenames ---
   ['Users_ImageFile', 'Activity_ImageFile', 'Activity_Certificate'].forEach(field => {
     if (field in body && body[field]) {
       if (!validator.isLength(body[field], { max: 255 })) {
