@@ -1406,6 +1406,219 @@ Special thanks to:
 
 ---
 
+## 📸 System Screenshots
+
+### 🎯 Overview
+Visual documentation of the Student Activity Tracking System across mobile and web platforms, demonstrating the complete user interface and administrative features developed for RMUTTO.
+
+---
+
+### 📱 Mobile Application (Flutter - Busit Plus)
+
+#### Student Interface
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/main_screen.jpg" alt="Main Dashboard" width="100%"/>
+      <br/>
+      <b>Main Dashboard</b>
+      <br/>
+      <sub>Activity overview and quick actions</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/register_screen.jpg" alt="Activity Registration" width="100%"/>
+      <br/>
+      <b>Activity Registration</b>
+      <br/>
+      <sub>Browse and register for activities</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/article_screen.jpg" alt="News Articles" width="100%"/>
+      <br/>
+      <b>News & Articles</b>
+      <br/>
+      <sub>Faculty announcements and updates</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/login_screen.jpg" alt="Secure Login" width="100%"/>
+      <br/>
+      <b>Secure Login</b>
+      <br/>
+      <sub>JWT authentication with OTP recovery</sub>
+    </td>
+  </tr>
+</table>
+
+#### Activity Features
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/cart_screen.jpg" alt="Activity Cart" width="100%"/>
+      <br/>
+      <b>Activity Selection</b>
+      <br/>
+      <sub>Manage pending registrations</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/shop_screen.jpg" alt="Activity Catalog" width="100%"/>
+      <br/>
+      <b>Activity Catalog</b>
+      <br/>
+      <sub>Browse all available activities</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/shop_select_screen.jpg" alt="Activity Details" width="100%"/>
+      <br/>
+      <b>Activity Details</b>
+      <br/>
+      <sub>View complete activity information</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/shop_tool_screen.jpg" alt="Activity Tools" width="100%"/>
+      <br/>
+      <b>Activity Tools</b>
+      <br/>
+      <sub>Check-in/out and photo upload</sub>
+    </td>
+  </tr>
+</table>
+
+#### Profile Management
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="screenshots/edit_profile_screen.jpg" alt="Profile Editor" width="100%"/>
+      <br/>
+      <b>Profile Management</b>
+      <br/>
+      <sub>Update personal information</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/add_address_screen.jpg" alt="Add Address" width="100%"/>
+      <br/>
+      <b>Address Management</b>
+      <br/>
+      <sub>Add contact locations</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/edit_address_screen.jpg" alt="Edit Address" width="100%"/>
+      <br/>
+      <b>Edit Address</b>
+      <br/>
+      <sub>Update existing addresses</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### 💻 Admin Web Portal (React - Admin Busit Plus)
+
+#### Administrative Dashboard
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="screenshots/admin_main_screen.jpg" alt="Admin Dashboard" width="100%"/>
+      <br/>
+      <b>Admin Dashboard</b>
+      <br/>
+      <sub>Real-time analytics and system overview</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/admin_product_screen.jpg" alt="Activity Management" width="100%"/>
+      <br/>
+      <b>Activity Management</b>
+      <br/>
+      <sub>Create and manage all activities</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/Admin_AddProduct_Master.jpg" alt="Add Activity" width="100%"/>
+      <br/>
+      <b>Add New Activity</b>
+      <br/>
+      <sub>Complete activity creation form</sub>
+    </td>
+  </tr>
+</table>
+
+#### Promotion & Delivery Management
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="screenshots/admin_add_promotion_screen.jpg" alt="Add Promotion" width="100%"/>
+      <br/>
+      <b>Create Promotion</b>
+      <br/>
+      <sub>Add featured activities and campaigns</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/admin_edit_promotion_screen.jpg" alt="Edit Promotion" width="100%"/>
+      <br/>
+      <b>Edit Promotion</b>
+      <br/>
+      <sub>Modify existing promotions</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/admin_delivery_screen.jpg" alt="Certificate Delivery" width="100%"/>
+      <br/>
+      <b>Certificate Management</b>
+      <br/>
+      <sub>Track and distribute certificates</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### 📊 System Features Demonstrated
+
+| Feature Category | Screenshots Included | Implementation Status |
+|-----------------|---------------------|----------------------|
+| **Authentication** | Login, OTP Recovery | ✅ Production Ready |
+| **Activity Management** | Browse, Register, Check-in | ✅ Production Ready |
+| **Admin Dashboard** | Analytics, User Management | ✅ Production Ready |
+| **Profile System** | Edit Profile, Addresses | ✅ Production Ready |
+| **Certificate System** | Generation, Distribution | ✅ Production Ready |
+| **AI Verification** | *(Backend only - no UI)* | ✅ Active |
+
+---
+
+### 📝 Technical Notes
+
+- **Design Tool:** Figma prototypes converted to production code
+- **Mobile Framework:** Flutter 3.0+ with Material Design 3
+- **Web Framework:** React.js 18 with responsive CSS Grid/Flexbox
+- **Image Format:** JPEG optimized for documentation
+- **Screen Resolution:** Various devices (Android phones, tablets, desktop browsers)
+- **Accessibility:** WCAG 2.1 Level AA compliant interfaces
+
+---
+
+### 🎨 UI/UX Design Credits
+
+**Lead Designer:** Rinyaphat Bowonjiraphonrat (นางสาวริญญภัสร์ บวรจิรพรรัตน์)
+- Figma prototyping and wireframing
+- User experience research and testing
+- Visual design system and branding
+
+**Implementation:** Teepakorn Kumvong (นายทีปกร คุ้มวงศ์)
+- Flutter mobile app development
+- React web portal development
+- Responsive layout implementation
+
+---
+
+### 📱 Download the App
+
+**Mobile Application**
+- 📥 Google Play Store (Android): *(Coming Soon)*
+- 💻 Apple Store (IOS): *(Coming Soon)*
+
+**Web Portal Access**
+- 🌐 Admin Portal: https://busitplus.com
+- 🔐 Login Required: University email (@rmutto.ac.th)
+
+---
 <div align="center">
 
 ### 🌟 Star this repository if you found it helpful!
