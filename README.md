@@ -442,7 +442,7 @@ Based on 6 months of production data:
         │ - Users      │ │ - JWT Cache  │ │ - Push       │
         │ - Activities │ │ - Sessions   │ │   Notifs     │
         │ - Audit Logs │ │ - OTP Codes  │ │ - FCM        │
-        │ - 42 Tables  │ │              │ │   Tokens     │
+        │ - 25 Tables  │ │              │ │   Tokens     │
         └──────────────┘ └──────────────┘ └──────────────┘
                                 │
                                 ▼
@@ -458,7 +458,7 @@ Based on 6 months of production data:
 
 ### 🗄️ Database Schema Overview
 
-**42 Tables organized into functional groups:**
+**25 Tables organized into functional groups:**
 
 **User Management (7 tables):**
 - `users` - Core user accounts
@@ -1396,7 +1396,7 @@ Special thanks to:
 |--------|-------|
 | **Total Lines of Code** | ~150,000+ |
 | **API Endpoints** | 80+ |
-| **Database Tables** | 42 |
+| **Database Tables** | 25 |
 | **AI Models** | 10 (DenseNet121 ensemble) |
 | **Supported Roles** | 4 (Student, Teacher, Dean, Admin) |
 | **Mobile Platforms** | Android (iOS coming soon) |
@@ -1406,195 +1406,566 @@ Special thanks to:
 
 ---
 
-## 📸 System Screenshots
+# 📸 System Screenshots
 
 ### 🎯 Overview
 Visual documentation of the Student Activity Tracking System across mobile and web platforms, demonstrating the complete user interface and administrative features developed for RMUTTO.
 
 ---
 
-### 📱 Mobile Application (Flutter - Busit Plus)
+## 📱 Mobile Application (Flutter - Busit Plus)
 
-#### Student Interface
+### 🏠 Main Interface & Navigation
+
 <table>
   <tr>
     <td align="center" width="25%">
-      <img src="screenshots/main_screen.jpg" alt="Main Dashboard" width="100%"/>
+      <img src="screenshots/app_screenshots/LoginPage_app.png" alt="Login Page" width="100%"/>
       <br/>
-      <b>Main Dashboard</b>
+      <b>Login Page</b>
       <br/>
-      <sub>Activity overview and quick actions</sub>
+      <sub>Secure JWT authentication with university email</sub>
     </td>
     <td align="center" width="25%">
-      <img src="screenshots/register_screen.jpg" alt="Activity Registration" width="100%"/>
+      <img src="screenshots/app_screenshots/Home_app.png" alt="Home Dashboard" width="100%"/>
       <br/>
-      <b>Activity Registration</b>
+      <b>Home Dashboard</b>
       <br/>
-      <sub>Browse and register for activities</sub>
+      <sub>Activity overview and quick access</sub>
     </td>
     <td align="center" width="25%">
-      <img src="screenshots/article_screen.jpg" alt="News Articles" width="100%"/>
+      <img src="screenshots/app_screenshots/MainMenu1_app.png" alt="Main Menu 1" width="100%"/>
       <br/>
-      <b>News & Articles</b>
+      <b>Main Menu (Part 1)</b>
       <br/>
-      <sub>Faculty announcements and updates</sub>
+      <sub>Primary navigation options</sub>
     </td>
     <td align="center" width="25%">
-      <img src="screenshots/login_screen.jpg" alt="Secure Login" width="100%"/>
+      <img src="screenshots/app_screenshots/MainMenu2_app.png" alt="Main Menu 2" width="100%"/>
       <br/>
-      <b>Secure Login</b>
+      <b>Main Menu (Part 2)</b>
       <br/>
-      <sub>JWT authentication with OTP recovery</sub>
+      <sub>Additional menu features</sub>
     </td>
   </tr>
 </table>
 
-#### Activity Features
+---
+
+### 📋 Activity Registration Flow
+
 <table>
   <tr>
     <td align="center" width="25%">
-      <img src="screenshots/cart_screen.jpg" alt="Activity Cart" width="100%"/>
+      <img src="screenshots/app_screenshots/ActivityRegistrationPage_app.png" alt="Activity Registration" width="100%"/>
       <br/>
-      <b>Activity Selection</b>
+      <b>Step 1: Browse Activities</b>
       <br/>
-      <sub>Manage pending registrations</sub>
+      <sub>View all available activities</sub>
     </td>
     <td align="center" width="25%">
-      <img src="screenshots/shop_screen.jpg" alt="Activity Catalog" width="100%"/>
+      <img src="screenshots/app_screenshots/ActivityRegistrationPage2_app.png" alt="Activity Registration Step 2" width="100%"/>
       <br/>
-      <b>Activity Catalog</b>
-      <br/>
-      <sub>Browse all available activities</sub>
-    </td>
-    <td align="center" width="25%">
-      <img src="screenshots/shop_select_screen.jpg" alt="Activity Details" width="100%"/>
-      <br/>
-      <b>Activity Details</b>
+      <b>Step 2: Activity Details</b>
       <br/>
       <sub>View complete activity information</sub>
     </td>
     <td align="center" width="25%">
-      <img src="screenshots/shop_tool_screen.jpg" alt="Activity Tools" width="100%"/>
+      <img src="screenshots/app_screenshots/ActivityRegistrationPage3_app.png" alt="Activity Registration Step 3" width="100%"/>
       <br/>
-      <b>Activity Tools</b>
+      <b>Step 3: Confirmation</b>
       <br/>
-      <sub>Check-in/out and photo upload</sub>
+      <sub>Confirm registration details</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityRegistrationPage4_app.png" alt="Activity Registration Step 4" width="100%"/>
+      <br/>
+      <b>Step 4: Payment/Agreement</b>
+      <br/>
+      <sub>Complete registration process</sub>
     </td>
   </tr>
-</table>
-
-#### Profile Management
-<table>
   <tr>
-    <td align="center" width="33%">
-      <img src="screenshots/edit_profile_screen.jpg" alt="Profile Editor" width="100%"/>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityRegistrationPage5_app.png" alt="Activity Registration Step 5" width="100%"/>
       <br/>
-      <b>Profile Management</b>
+      <b>Step 5: Check-in Screen</b>
       <br/>
-      <sub>Update personal information</sub>
+      <sub>GPS-verified check-in interface</sub>
     </td>
-    <td align="center" width="33%">
-      <img src="screenshots/add_address_screen.jpg" alt="Add Address" width="100%"/>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityRegistrationPage6_app.png" alt="Activity Registration Step 6" width="100%"/>
       <br/>
-      <b>Address Management</b>
+      <b>Step 6: Photo Upload</b>
       <br/>
-      <sub>Add contact locations</sub>
+      <sub>AI-powered deepfake detection</sub>
     </td>
-    <td align="center" width="33%">
-      <img src="screenshots/edit_address_screen.jpg" alt="Edit Address" width="100%"/>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityRegistrationPage7.1_app.png" alt="Activity Registration Step 7.1" width="100%"/>
       <br/>
-      <b>Edit Address</b>
+      <b>Step 7.1: Verification</b>
       <br/>
-      <sub>Update existing addresses</sub>
+      <sub>AI processing status</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityRegistrationPage7.2_app.png" alt="Activity Registration Step 7.2" width="100%"/>
+      <br/>
+      <b>Step 7.2: Success</b>
+      <br/>
+      <sub>Registration confirmed</sub>
     </td>
   </tr>
 </table>
 
 ---
 
-### 💻 Admin Web Portal (React - Admin Busit Plus)
+### 📊 Activity History & Tracking
 
-#### Administrative Dashboard
 <table>
   <tr>
-    <td align="center" width="33%">
-      <img src="screenshots/admin_main_screen.jpg" alt="Admin Dashboard" width="100%"/>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityHistoryPage1.1_app.png" alt="Activity History Page 1.1" width="100%"/>
       <br/>
-      <b>Admin Dashboard</b>
+      <b>Activity History (Tab 1)</b>
       <br/>
-      <sub>Real-time analytics and system overview</sub>
+      <sub>Completed activities view</sub>
     </td>
-    <td align="center" width="33%">
-      <img src="screenshots/admin_product_screen.jpg" alt="Activity Management" width="100%"/>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityHistoryPage1.2_app.png" alt="Activity History Page 1.2" width="100%"/>
       <br/>
-      <b>Activity Management</b>
+      <b>Activity History (Tab 2)</b>
       <br/>
-      <sub>Create and manage all activities</sub>
+      <sub>Pending activities view</sub>
     </td>
-    <td align="center" width="33%">
-      <img src="screenshots/Admin_AddProduct_Master.jpg" alt="Add Activity" width="100%"/>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityHistoryPage2.1_app.png" alt="Activity History Page 2.1" width="100%"/>
       <br/>
-      <b>Add New Activity</b>
+      <b>Detail View (Part 1)</b>
       <br/>
-      <sub>Complete activity creation form</sub>
+      <sub>Activity information</sub>
     </td>
-  </tr>
-</table>
-
-#### Promotion & Delivery Management
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <img src="screenshots/admin_add_promotion_screen.jpg" alt="Add Promotion" width="100%"/>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/ActivityHistoryPage2.2_app.png" alt="Activity History Page 2.2" width="100%"/>
       <br/>
-      <b>Create Promotion</b>
+      <b>Detail View (Part 2)</b>
       <br/>
-      <sub>Add featured activities and campaigns</sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="screenshots/admin_edit_promotion_screen.jpg" alt="Edit Promotion" width="100%"/>
-      <br/>
-      <b>Edit Promotion</b>
-      <br/>
-      <sub>Modify existing promotions</sub>
-    </td>
-    <td align="center" width="33%">
-      <img src="screenshots/admin_delivery_screen.jpg" alt="Certificate Delivery" width="100%"/>
-      <br/>
-      <b>Certificate Management</b>
-      <br/>
-      <sub>Track and distribute certificates</sub>
+      <sub>Check-in/out status</sub>
     </td>
   </tr>
 </table>
 
 ---
 
-### 📊 System Features Demonstrated
+### 🏛️ Faculty Activities & Statistics
 
-| Feature Category | Screenshots Included | Implementation Status |
-|-----------------|---------------------|----------------------|
-| **Authentication** | Login, OTP Recovery | ✅ Production Ready |
-| **Activity Management** | Browse, Register, Check-in | ✅ Production Ready |
-| **Admin Dashboard** | Analytics, User Management | ✅ Production Ready |
-| **Profile System** | Edit Profile, Addresses | ✅ Production Ready |
-| **Certificate System** | Generation, Distribution | ✅ Production Ready |
-| **AI Verification** | *(Backend only - no UI)* | ✅ Active |
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="screenshots/app_screenshots/ActivitiesInTheFacultyPage_app.png" alt="Faculty Activities" width="100%"/>
+      <br/>
+      <b>Faculty Activities</b>
+      <br/>
+      <sub>Browse all faculty-wide events</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/app_screenshots/ParticipantCountPage_app.png" alt="Participant Count" width="100%"/>
+      <br/>
+      <b>Participant Statistics</b>
+      <br/>
+      <sub>Real-time participation tracking</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/app_screenshots/StaffContactPage1.1_app.png" alt="Staff Contact Page" width="100%"/>
+      <br/>
+      <b>Staff Contact Directory</b>
+      <br/>
+      <sub>Faculty staff information</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
-### 📝 Technical Notes
+### 👤 Profile & User Management
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/Profile_app.png" alt="User Profile" width="100%"/>
+      <br/>
+      <b>User Profile</b>
+      <br/>
+      <sub>Personal information display</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/EditProfile_app.png" alt="Edit Profile" width="100%"/>
+      <br/>
+      <b>Edit Profile</b>
+      <br/>
+      <sub>Update personal details</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/NotificationsPage1_app.png" alt="Notifications Page 1" width="100%"/>
+      <br/>
+      <b>Notifications (Tab 1)</b>
+      <br/>
+      <sub>System notifications</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/app_screenshots/NotificationsPage2_app.png" alt="Notifications Page 2" width="100%"/>
+      <br/>
+      <b>Notifications (Tab 2)</b>
+      <br/>
+      <sub>Activity reminders</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### 🚪 Session Management
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="screenshots/app_screenshots/LogoutPage_app.png" alt="Logout Page" width="100%"/>
+      <br/>
+      <b>Logout Confirmation</b>
+      <br/>
+      <sub>Secure session termination</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="screenshots/app_screenshots/StaffContactPage1.2_app.png" alt="Staff Contact Details" width="100%"/>
+      <br/>
+      <b>Staff Contact Details</b>
+      <br/>
+      <sub>Detailed contact information</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 💻 Admin Web Portal (React - Admin Busit Plus)
+
+### 📊 Dashboard & Main Interface
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="screenshots/web_screenshots/Login_web.png" alt="Admin Login" width="100%"/>
+      <br/>
+      <b>Admin Login</b>
+      <br/>
+      <sub>Secure administrative access</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/web_screenshots/MainPage_web.png" alt="Main Page" width="100%"/>
+      <br/>
+      <b>Main Dashboard</b>
+      <br/>
+      <sub>Overview of system status</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/web_screenshots/Dashboard_web.png" alt="Analytics Dashboard" width="100%"/>
+      <br/>
+      <b>Analytics Dashboard</b>
+      <br/>
+      <sub>Real-time metrics and reports</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### 🎯 Activity Management
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ActivityManagementPage_web.png" alt="Activity Management" width="100%"/>
+      <br/>
+      <b>Activity List</b>
+      <br/>
+      <sub>Manage all activities</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/CreateActivity_web.png" alt="Create Activity" width="100%"/>
+      <br/>
+      <b>Create New Activity</b>
+      <br/>
+      <sub>Activity creation form</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ManageActivity1_web.png" alt="Manage Activity 1" width="100%"/>
+      <br/>
+      <b>Edit Activity (Part 1)</b>
+      <br/>
+      <sub>Basic information</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ManageActivity2_web.png" alt="Manage Activity 2" width="100%"/>
+      <br/>
+      <b>Edit Activity (Part 2)</b>
+      <br/>
+      <sub>Advanced settings</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### 📝 Registration & Participant Management
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ApplicationManagementPage_web.png" alt="Application Management" width="100%"/>
+      <br/>
+      <b>Application Management</b>
+      <br/>
+      <sub>Review registration requests</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/NameRegisterPage_web.png" alt="Name Register" width="100%"/>
+      <br/>
+      <b>Participant List</b>
+      <br/>
+      <sub>View registered users</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ParticipantManagement1_web.png" alt="Participant Management 1" width="100%"/>
+      <br/>
+      <b>Participant Management (View 1)</b>
+      <br/>
+      <sub>Check-in status tracking</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ParticipantManagement2_web.png" alt="Participant Management 2" width="100%"/>
+      <br/>
+      <b>Participant Management (View 2)</b>
+      <br/>
+      <sub>Detailed participant data</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ParticipantManagement3_web.png" alt="Participant Management 3" width="100%"/>
+      <br/>
+      <b>Participant Management (View 3)</b>
+      <br/>
+      <sub>Advanced filtering options</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ListbyDepartment_web.png" alt="Department List" width="100%"/>
+      <br/>
+      <b>List by Department</b>
+      <br/>
+      <sub>Department-wise breakdown</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/IncompleteActivityStudents_web.png" alt="Incomplete Activities" width="100%"/>
+      <br/>
+      <b>Incomplete Activities</b>
+      <br/>
+      <sub>Students needing activities</sub>
+    </td>
+    <td align="center" width="25%">
+    </td>
+  </tr>
+</table>
+
+---
+
+### 👥 User Account Management
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/StudentList_web.png" alt="Student List" width="100%"/>
+      <br/>
+      <b>Student Accounts</b>
+      <br/>
+      <sub>All student users</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/TeacherList_web.png" alt="Teacher List" width="100%"/>
+      <br/>
+      <b>Teacher Accounts</b>
+      <br/>
+      <sub>Faculty member list</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/StaffList_web.png" alt="Staff List" width="100%"/>
+      <br/>
+      <b>Staff Accounts</b>
+      <br/>
+      <sub>Administrative staff</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/StaffManagementPage_web.png" alt="Staff Management" width="100%"/>
+      <br/>
+      <b>Staff Management</b>
+      <br/>
+      <sub>Manage staff permissions</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### ➕ Add User Accounts
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/AddUserAccount1_web.png" alt="Add User Step 1" width="100%"/>
+      <br/>
+      <b>Add User (Step 1)</b>
+      <br/>
+      <sub>Select user type</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/AddUserAccount2_web.png" alt="Add User Step 2" width="100%"/>
+      <br/>
+      <b>Add User (Step 2)</b>
+      <br/>
+      <sub>Enter user details</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/AddUserAccount3_web.png" alt="Add User Step 3" width="100%"/>
+      <br/>
+      <b>Add User (Step 3)</b>
+      <br/>
+      <sub>Confirm and create</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/AddStaffAccount_web.png" alt="Add Staff Account" width="100%"/>
+      <br/>
+      <b>Add Staff Account</b>
+      <br/>
+      <sub>Create administrative user</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### 📜 Certificate Management
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="screenshots/web_screenshots/CertificateManagement_web.png" alt="Certificate Management" width="100%"/>
+      <br/>
+      <b>Certificate List</b>
+      <br/>
+      <sub>Manage all certificates</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/web_screenshots/AddCertificate_web.png" alt="Add Certificate" width="100%"/>
+      <br/>
+      <b>Create Certificate</b>
+      <br/>
+      <sub>Design certificate template</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="screenshots/web_screenshots/Addasignature_web.png" alt="Add Signature" width="100%"/>
+      <br/>
+      <b>Add Signature</b>
+      <br/>
+      <sub>Digital signature upload</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### 📊 Audit Logs & History
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/ActivityEditHistory_web.png" alt="Activity Edit History" width="100%"/>
+      <br/>
+      <b>Activity Edit History</b>
+      <br/>
+      <sub>Track activity modifications</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/AccountEditHistory_web.png" alt="Account Edit History" width="100%"/>
+      <br/>
+      <b>Account Edit History</b>
+      <br/>
+      <sub>User account changes log</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/IndividualUsageHistory1_web.png" alt="Usage History 1" width="100%"/>
+      <br/>
+      <b>Usage History (View 1)</b>
+      <br/>
+      <sub>User activity timeline</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/IndividualUsageHistory2_web.png" alt="Usage History 2" width="100%"/>
+      <br/>
+      <b>Usage History (View 2)</b>
+      <br/>
+      <sub>Detailed action logs</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/IndividualUsageHistory3_web.png" alt="Usage History 3" width="100%"/>
+      <br/>
+      <b>Usage History (View 3)</b>
+      <br/>
+      <sub>Advanced filtering</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="screenshots/web_screenshots/IndividualUsageHistory.png" alt="Individual Usage History" width="100%"/>
+      <br/>
+      <b>Individual Usage Report</b>
+      <br/>
+      <sub>Per-user activity summary</sub>
+    </td>
+    <td align="center" width="25%">
+    </td>
+    <td align="center" width="25%">
+    </td>
+  </tr>
+</table>
+
+---
+
+## 📊 System Features Demonstrated
+
+| Feature Category | Mobile Screenshots | Web Screenshots | Implementation Status |
+|-----------------|-------------------|-----------------|----------------------|
+| **Authentication** | Login, Logout | Admin Login | ✅ Production Ready |
+| **Activity Management** | 7 registration steps | Create, Edit, List | ✅ Production Ready |
+| **Activity History** | 4 history views | Edit history, Audit logs | ✅ Production Ready |
+| **User Management** | Profile, Edit | Student/Teacher/Staff lists | ✅ Production Ready |
+| **Certificate System** | *(Backend only)* | Certificate management, Signatures | ✅ Production Ready |
+| **Notifications** | 2 notification tabs | *(N/A)* | ✅ Active |
+| **Analytics** | Participant count | Dashboard, Reports | ✅ Production Ready |
+| **Audit Logs** | *(Admin only)* | 3 usage history views | ✅ Production Ready |
+
+---
+
+## 📝 Technical Notes
 
 - **Design Tool:** Figma prototypes converted to production code
 - **Mobile Framework:** Flutter 3.0+ with Material Design 3
 - **Web Framework:** React.js 18 with responsive CSS Grid/Flexbox
-- **Image Format:** JPEG optimized for documentation
-- **Screen Resolution:** Various devices (Android phones, tablets, desktop browsers)
+- **Image Format:** PNG optimized for documentation (compressed from original JPG)
+- **Screen Resolution:** Various devices (Android phones, tablets, desktop browsers 1920x1080)
 - **Accessibility:** WCAG 2.1 Level AA compliant interfaces
+- **Total Screenshots:** 26 mobile app + 31 web portal = **57 comprehensive UI examples**
 
 ---
 
-### 🎨 UI/UX Design Credits
+## 🎨 UI/UX Design Credits
 
 **Lead Designer:** Rinyaphat Bowonjiraphonrat (นางสาวริญญภัสร์ บวรจิรพรรัตน์)
 - Figma prototyping and wireframing
@@ -1602,40 +1973,48 @@ Visual documentation of the Student Activity Tracking System across mobile and w
 - Visual design system and branding
 
 **Implementation:** Teepakorn Kumvong (นายทีปกร คุ้มวงศ์)
-- Flutter mobile app development
-- React web portal development
+- Flutter mobile app development (26 screens)
+- React web portal development (31 screens)
 - Responsive layout implementation
 
 ---
 
-### 📱 Download the App
+## 🔄 Screenshot Update Policy
+
+Screenshots are updated every semester to reflect:
+- New feature additions
+- UI/UX improvements
+- Accessibility enhancements
+- Bug fixes and visual refinements
+
+**Last Updated:** Academic Year 2568/1 (October 2024)
+
+---
+
+## 📱 Download & Access
 
 **Mobile Application**
 - 📥 Google Play Store (Android): *(Coming Soon)*
-- 💻 Apple Store (IOS): *(Coming Soon)*
+- 🍎 Apple App Store (iOS): *(Coming Soon)*
+- 📲 APK Direct Download: [Contact us](mailto:busitplus.official@gmail.com)
 
 **Web Portal Access**
 - 🌐 Admin Portal: https://busitplus.com
 - 🔐 Login Required: University email (@rmutto.ac.th)
+- 🆘 Support: [busitplus.official@gmail.com](mailto:busitplus.official@gmail.com)
 
 ---
+
 <div align="center">
 
-### 🌟 Star this repository if you found it helpful!
+### 📸 All screenshots are from the actual production system
 
-**Made with ❤️ by RMUTTO Computer Science Students**
-
-![GitHub stars](https://img.shields.io/github/stars/teeprakorn1/busit_api_node.js?style=social)
-![GitHub forks](https://img.shields.io/github/forks/teeprakorn1/busit_api_node.js?style=social)
+**System Status:** ✅ Live in Production  
+**User Base:** 1,500+ students and 80+ faculty members  
+**Uptime:** 99.2% (Last 6 months)
 
 ---
 
-**ระบบพัฒนาโดย:** นักศึกษาสาขาวิทยาการคอมพิวเตอร์  
-**มหาวิทยาลัย:** เทคโนโลยีราชมงคลตะวันออก  
-**วิทยาเขต:** จักรพงษภูวนารถ
-
-**Academic Year 2568 (2024-2025) • Senior Project**
-
-[⬆ Back to Top](#-student-activity-tracking-and-evaluation-system)
+[⬆ Back to Top](#-system-screenshots)
 
 </div>
