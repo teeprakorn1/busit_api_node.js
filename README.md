@@ -2035,15 +2035,6 @@ Screenshots are updated every semester to reflect:
 | **Mobile Application** | [`teeprakorn1/busit_flutter_project`](https://github.com/teeprakorn1/busit_flutter_project) | Cross-platform Flutter app |
 | **AI Service** | [`teeprakorn1/busit_ai_python`](https://github.com/teeprakorn1/busit_ai_python) | FastAPI deepfake detection |
 
-### 🌐 Live Deployments
-
-| Platform | URL | Status |
-|----------|-----|--------|
-| **Admin Web Portal** | [busitplus.com](https://busitplus.com) | ![Status](https://img.shields.io/badge/status-online-success) |
-| **API Backend** | [api.busitplus.com](https://api.busitplus.com/api-docs) | ![Status](https://img.shields.io/badge/status-online-success) |
-| **AI Service** | [deepfake.busitplus.com](https://deepfake.busitplus.com/docs) | ![Status](https://img.shields.io/badge/status-online-success) |
-| **Mobile App (Android)** | *Coming to Play Store* | ![Status](https://img.shields.io/badge/status-pending-yellow) |
-
 ### 📚 Documentation
 
 - 📖 **API Documentation:** [Swagger UI](https://api.busitplus.com/api-docs)
