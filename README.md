@@ -633,6 +633,7 @@ http {
 ```
 A Record:   @              → Your_Server_IP (Proxied ✅)
 A Record:   www            → Your_Server_IP (Proxied ✅)
+A Record:   busitplus.com  → Your_Server_IP (Proxied ✅)
 CNAME:      api            → busitplus.com (Proxied ✅)
 CNAME:      deepfake       → busitplus.com (Proxied ✅)
 ```
@@ -696,11 +697,11 @@ test: Add tests
 |--------|-------|
 | **Total Lines of Code** | ~100,000+ |
 | **API Endpoints** | 80+ |
-| **Database Tables** | 25+ |
+| **Database Tables** | 25 |
 | **AI Models** | 10 (Ensemble) |
 | **Supported Roles** | 4 (Student, Teacher, Dean, Admin) |
 | **Mobile Platforms** | Android + iOS |
-| **Test Coverage** | 85%+ |
+| **Test Coverage** | 90%+ |
 | **Development Period** | 4 months |
 
 ---
@@ -714,9 +715,9 @@ test: Add tests
 **Department**: Information Technology  
 
 ### Expected Outcomes
-- ✅ 90% reduction in paperwork
-- ✅ 95%+ accuracy in deepfake detection
-- ✅ 50% faster activity registration process
+- ✅ 70% reduction in paperwork
+- ✅ 87%+ accuracy in deepfake detection
+- ✅ 75% faster activity registration process
 - ✅ Real-time attendance verification
 - ✅ Comprehensive audit trail and reporting
 
@@ -737,15 +738,14 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **Support Channels**
 - 📧 Email Support: busitplus.official@gmail.com
 - 🐛 Bug Reports: [GitHub Issues](https://github.com/teeprakorn1/busit_api_node.js/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/teeprakorn1/busit_api_node.js/discussions)
 
 ---
 
 ## 🙏 Acknowledgments
 
 Special thanks to:
-- RMUTTO Faculty of Business Administration and Information Technology
 - Project Advisor and University IT Department
+- Rajamangala University of Technology Tawan-Ok : Chakrabongse Bhuvanarth Campus)
 - Open Source Community (React.js, Flutter, Node.js, FastAPI, TensorFlow, MySQL, Redis, NGINX)
 
 ---
