@@ -19,112 +19,35 @@ Rajamangala University of Technology Tawan-Ok (Chakrabongse Bhuvanarth Campus)
 
 ---
 
-# 📋 Complete Table of Contents
+## 📋 Table of Contents
 
-## 🌟 [Overview](#-overview)
-- Project Introduction
-- Key Objectives
-- Target Users
+### Core Sections
+- [🌟 Overview](#-overview)
+- [🔬 Research Background](#-research-background)
+- [✨ Features](#-features)
+- [🤖 AI Deepfake Detection](#-ai-deepfake-detection)
+- [🏗 System Architecture](#-system-architecture)
+- [🛠 Technology Stack](#-technology-stack)
+- [🔒 Security Features](#-security-features)
 
-## 🔬 [Research Background](#-research-background)
-- Published Research
-- Research Methodology
-- Dataset Composition
-- CNN Models Evaluated
-- Key Research Findings
-- Research Implications
-- Academic Impact
-- Citation Information
-- Research Data
+### Setup & Deployment
+- [📥 Installation Guide](#-installation-guide)
+- [🚀 Deployment Guide](#-deployment-guide)
+- [📚 API Documentation](#-api-documentation)
 
-## ✨ [Features](#-features)
-- Authentication & Authorization
-- Mobile Application Features
-- Admin Web Portal Features
-- Notification System
+### Results & Documentation
+- [📊 Research Results](#-research-results)
+- [📸 System Screenshots](#-system-screenshots)
 
-## 🤖 [AI Deepfake Detection](#-ai-deepfake-detection)
-- Ensemble Model Architecture
-- Detection Process
-- Detection Performance by Application
-- Technical Implementation
-- Detection Statistics
-
-## 🏗 [System Architecture](#-system-architecture)
-- High-Level Architecture
-- Database Schema Overview
-
-## 🛠 [Technology Stack](#-technology-stack)
-- Mobile Application
-- Frontend (Admin Web)
-- Backend API
-- AI Service
-- Database & Cache
-- DevOps & Infrastructure
-
-## 🔒 [Security Features](#-security-features)
-- Application Security
-- Infrastructure Security
-- Attack Prevention
-- Audit & Compliance
-- Security Monitoring
-
-## 📥 [Installation Guide](#-installation-guide)
-- Prerequisites
-- Clone Repositories
-- Setup Node.js API Backend
-- Setup React Admin Web
-- Setup Python AI Service
-- Setup Flutter Mobile App
-
-## 🚀 [Deployment Guide](#-deployment-guide)
-- Production Deployment on Windows Server
-- Server Preparation
-- NGINX Configuration
-- Cloudflare DNS Configuration
-- Start Services with PM2
-
-## 📊 [Research Results](#-research-results)
-- Model Performance Comparison
-- Detection Accuracy by Application
-- Key Research Insights
-- Academic Impact
-
-## 📚 [API Documentation](#-api-documentation)
-- Access Swagger UI
-- Sample API Endpoints
-
-## 📸 [System Screenshots](#-system-screenshots)
-- Mobile Application Screenshots
-- Admin Web Portal Screenshots
-- System Features Demonstrated
-- Technical Notes
-- UI/UX Design Credits
-
-## 🤝 [Contributing](#-contributing)
-- Contribution Guidelines
-- Commit Message Convention
-
-## 👥 [Project Team](#-project-team)
-- Development Team
-- Academic Advisors
-- Committee Members
-
-## 📄 [License](#-license)
-
-## 📞 [Contact & Support](#-contact--support)
-- Project Team Contact
-- Bug Reports & Feature Requests
-- University Contact
-
-## 🙏 [Acknowledgments](#-acknowledgments)
-
-## 🗺 [Roadmap](#-roadmap)
-- Completed (Phase 1)
-- In Progress (Phase 2)
-- Future Enhancements
-
-## 📊 [Project Statistics](#-project-statistics)
+### Project Information
+- [🤝 Contributing](#-contributing)
+- [👥 Project Team](#-project-team)
+- [📄 License](#-license)
+- [📞 Contact & Support](#-contact--support)
+- [🙏 Acknowledgments](#-acknowledgments)
+- [🗺 Roadmap](#-roadmap)
+- [📊 Project Statistics](#-project-statistics)
+- [🔗 Related Links](#-related-links)
 
 ---
 
@@ -2105,54 +2028,12 @@ Screenshots are updated every semester to reflect:
 
 ### 📦 Source Code Repositories
 
-<table>
-  <tr>
-    <td align="center" width="25%">
-      <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js"/>
-      <br/>
-      <b>Backend API</b>
-      <br/>
-      <a href="https://github.com/teeprakorn1/busit_api_node.js.git">
-        <img src="https://img.shields.io/github/stars/teeprakorn1/busit_api_node.js?style=social" alt="Stars"/>
-      </a>
-      <br/>
-      <sub>RESTful API with Express.js</sub>
-    </td>
-    <td align="center" width="25%">
-      <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"/>
-      <br/>
-      <b>Admin Web Portal</b>
-      <br/>
-      <a href="https://github.com/teeprakorn1/busit_web_react.git">
-        <img src="https://img.shields.io/github/stars/teeprakorn1/busit_web_react?style=social" alt="Stars"/>
-      </a>
-      <br/>
-      <sub>React.js management dashboard</sub>
-    </td>
-    <td align="center" width="25%">
-      <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter"/>
-      <br/>
-      <b>Mobile Application</b>
-      <br/>
-      <a href="https://github.com/teeprakorn1/busit_flutter_project.git">
-        <img src="https://img.shields.io/github/stars/teeprakorn1/busit_flutter_project?style=social" alt="Stars"/>
-      </a>
-      <br/>
-      <sub>Cross-platform mobile app</sub>
-    </td>
-    <td align="center" width="25%">
-      <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-      <br/>
-      <b>AI Service</b>
-      <br/>
-      <a href="https://github.com/teeprakorn1/busit_ai_python.git">
-        <img src="https://img.shields.io/github/stars/teeprakorn1/busit_ai_python?style=social" alt="Stars"/>
-      </a>
-      <br/>
-      <sub>FastAPI deepfake detection</sub>
-    </td>
-  </tr>
-</table>
+| Repository | Path | Description |
+|------------|------|-------------|
+| **Backend API** | [`teeprakorn1/busit_api_node.js`](https://github.com/teeprakorn1/busit_api_node.js) | RESTful API with Node.js + Express |
+| **Admin Web Portal** | [`teeprakorn1/busit_web_react`](https://github.com/teeprakorn1/busit_web_react) | React.js management dashboard |
+| **Mobile Application** | [`teeprakorn1/busit_flutter_project`](https://github.com/teeprakorn1/busit_flutter_project) | Cross-platform Flutter app |
+| **AI Service** | [`teeprakorn1/busit_ai_python`](https://github.com/teeprakorn1/busit_ai_python) | FastAPI deepfake detection |
 
 ### 🌐 Live Deployments
 

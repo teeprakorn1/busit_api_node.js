@@ -4,12 +4,12 @@ Copyright (c) 2024 Student Activity Tracking and Evaluation System
 Faculty of Business Administration and Information Technology
 Rajamangala University of Technology Tawan-Ok (RMUTTO)
 
-**Project Team:**
-- Teepakorn Kumvong (นายทีปกร คุ้มวงศ์)
-- Suphawat Baebkhuntod (นายศุภวัทน์ แบบขุนทด)
-- Rinyaphat Bowonjiraphonrat (นางสาวริญญภัสร์ บวรจิรพรรัตน์)
+Project Team:
+- Teepakorn Kumvong (นายทีปกร คุ้มวงศ์) - teepakorn.kum@rmutto.ac.th
+- Suphawat Baebkhuntod (นายศุภวัทน์ แบบขุนทด) - suphawat.bae@rmutto.ac.th
+- Rinyaphat Bowonjiraphonrat (นางสาวริญญภัสร์ บวรจิรพรรัตน์) - rinyaphat.bow@rmutto.ac.th
 
-**Project Advisor:**
+Project Advisor:
 - Pichai Jodpimai (อาจารย์พิชัย จอดพิมาย)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,40 +30,127 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
----
+================================================================================
+ADDITIONAL TERMS FOR ACADEMIC USE
+================================================================================
 
-## Additional Terms for Academic Use
+This project was developed as a Senior Project (ภาคนิพนธ์) for academic 
+purposes at Rajamangala University of Technology Tawan-Ok during Academic 
+Year 2568/1 (2024-2025).
 
-This project was developed as a Senior Project (ภาคนิพนธ์) for academic purposes at Rajamangala University of Technology Tawan-Ok. 
+--------------------------------------------------------------------------------
+Academic Citation
+--------------------------------------------------------------------------------
 
-**Research Paper:**
 If you use this software or its AI models in academic research, please cite:
 
-```bibtex
 @thesis{kumvong2024imageforgerystudent,
-  author = {Kumvong, Teepakorn and Baebkhuntod, Suphawat and Bowonjiraphonrat, Rinyaphat},
-  title = {Image Forgery Detection in Student Activities Based on Convolutional Neural Networks},
+  author = {Kumvong, Teepakorn and Baebkhuntod, Suphawat and 
+            Bowonjiraphonrat, Rinyaphat},
+  title = {Image Forgery Detection in Student Activities Based on 
+           Convolutional Neural Networks},
   school = {Rajamangala University of Technology Tawan-Ok},
   year = {2024},
   type = {Senior Project},
-  advisor = {Pichai Jodpimai}
+  advisor = {Pichai Jodpimai},
+  address = {Bangkok, Thailand}
 }
-```
 
-**Trained AI Models:**
-The 10 pre-trained DenseNet121 models included in this repository are provided under the same MIT License terms. These models are trained on anonymized student activity data and should be used responsibly in accordance with data privacy regulations.
+--------------------------------------------------------------------------------
+AI Models & Training Data
+--------------------------------------------------------------------------------
 
-**University Branding:**
-- RMUTTO logo and branding materials remain property of Rajamangala University of Technology Tawan-Ok
-- Permission required for commercial use of university branding
+The 10 pre-trained DenseNet121 models included in this repository are 
+provided under the same MIT License terms with the following conditions:
 
-**Contact:**
-- Project Email: busitplus.official@gmail.com
-- University Website: https://www.rmutto.ac.th
-- Project Website: https://busitplus.com
+1. Models are trained on anonymized student activity data collected with 
+   proper consent and ethical approval
+2. Users must comply with applicable data privacy regulations (PDPA, GDPR, etc.)
+3. Models should not be used to identify or track individuals
+4. Commercial deployment requires additional validation and compliance checks
+5. Model accuracy (83.1% overall) is provided "as-is" without performance 
+   guarantees in production environments
 
----
+Dataset Composition:
+- 500 authentic student activity photos
+- 500 manipulated photos (ProKnockout, Meitu, Magic Eraser, Photoshop, Canva)
+- All personal information anonymized
+- Research ethics approval obtained from RMUTTO
 
-**Version:** 1.0.0  
-**Release Date:** October 2024  
-**Academic Year:** 2568/1 (2024-2025)
+--------------------------------------------------------------------------------
+University Intellectual Property
+--------------------------------------------------------------------------------
+
+1. RMUTTO Logo & Branding:
+   - Remains property of Rajamangala University of Technology Tawan-Ok
+   - Permission required for commercial use or misrepresentation
+   - Must not imply university endorsement without authorization
+
+2. University Data & Resources:
+   - Access to production university data requires separate authorization
+   - This open-source release contains anonymized/synthetic data only
+   - Contact RMUTTO IT department for institutional deployment
+
+--------------------------------------------------------------------------------
+Third-Party Components
+--------------------------------------------------------------------------------
+
+This project includes open-source components under their respective licenses:
+- Node.js, Express.js (MIT License)
+- React.js (MIT License)
+- Flutter (BSD 3-Clause License)
+- TensorFlow, FastAPI (Apache 2.0 License)
+- MySQL (GPL v2 with FOSS Exception)
+- Redis (BSD 3-Clause License)
+- Other dependencies: See package.json, pubspec.yaml, requirements.txt
+
+All third-party licenses remain in full effect.
+
+--------------------------------------------------------------------------------
+Warranty Disclaimer & Liability Limitation
+--------------------------------------------------------------------------------
+
+IMPORTANT: This software was developed as an educational project. While 
+efforts have been made to ensure quality and security:
+
+1. The AI deepfake detection system has limitations (see Research Results)
+2. No warranty for production use in critical systems
+3. Users are responsible for security audits before deployment
+4. Authors and RMUTTO are not liable for damages from software use
+5. Users must comply with all applicable laws and regulations
+
+For production deployment, conduct thorough testing and security reviews.
+
+--------------------------------------------------------------------------------
+Contact Information
+--------------------------------------------------------------------------------
+
+Project Team: busitplus.official@gmail.com
+Project Website: https://busitplus.com
+API Documentation: https://api.busitplus.com/api-docs
+
+University Contact:
+Faculty of Business Administration and Information Technology
+Rajamangala University of Technology Tawan-Ok
+Chakrabongse Bhuvanarth Campus
+Bangkok, Thailand
+Website: https://www.rmutto.ac.th
+
+GitHub Repositories:
+- Backend API: https://github.com/teeprakorn1/busit_api_node.js
+- Admin Web: https://github.com/teeprakorn1/busit_web_react
+- Mobile App: https://github.com/teeprakorn1/busit_flutter_project
+- AI Service: https://github.com/teeprakorn1/busit_ai_python
+
+--------------------------------------------------------------------------------
+Version Information
+--------------------------------------------------------------------------------
+
+Version: 1.0.0
+Release Date: October 2024
+Academic Year: 2568/1 (2024-2025)
+Last Updated: November 2024
+
+================================================================================
+END OF LICENSE
+================================================================================
