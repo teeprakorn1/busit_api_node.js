@@ -19,22 +19,119 @@ Rajamangala University of Technology Tawan-Ok (Chakrabongse Bhuvanarth Campus)
 
 ---
 
-## 📋 Table of Contents
+# 📋 Complete Table of Contents
 
-- [Overview](#-overview)
-- [Research Background](#-research-background)
-- [Features](#-features)
-- [AI Deepfake Detection](#-ai-deepfake-detection)
-- [System Architecture](#-system-architecture)
-- [Technology Stack](#-technology-stack)
-- [Security Features](#-security-features)
-- [Installation Guide](#-installation-guide)
-- [Deployment](#-deployment-guide)
-- [Research Results](#-research-results)
-- [Contributing](#-contributing)
-- [Project Team](#-project-team)
+## 🌟 [Overview](#-overview)
+- Project Introduction
+- Key Objectives
+- Target Users
+
+## 🔬 [Research Background](#-research-background)
+- Published Research
+- Research Methodology
+- Dataset Composition
+- CNN Models Evaluated
+- Key Research Findings
+- Research Implications
+- Academic Impact
+- Citation Information
+- Research Data
+
+## ✨ [Features](#-features)
+- Authentication & Authorization
+- Mobile Application Features
+- Admin Web Portal Features
+- Notification System
+
+## 🤖 [AI Deepfake Detection](#-ai-deepfake-detection)
+- Ensemble Model Architecture
+- Detection Process
+- Detection Performance by Application
+- Technical Implementation
+- Detection Statistics
+
+## 🏗 [System Architecture](#-system-architecture)
+- High-Level Architecture
+- Database Schema Overview
+
+## 🛠 [Technology Stack](#-technology-stack)
+- Mobile Application
+- Frontend (Admin Web)
+- Backend API
+- AI Service
+- Database & Cache
+- DevOps & Infrastructure
+
+## 🔒 [Security Features](#-security-features)
+- Application Security
+- Infrastructure Security
+- Attack Prevention
+- Audit & Compliance
+- Security Monitoring
+
+## 📥 [Installation Guide](#-installation-guide)
+- Prerequisites
+- Clone Repositories
+- Setup Node.js API Backend
+- Setup React Admin Web
+- Setup Python AI Service
+- Setup Flutter Mobile App
+
+## 🚀 [Deployment Guide](#-deployment-guide)
+- Production Deployment on Windows Server
+- Server Preparation
+- NGINX Configuration
+- Cloudflare DNS Configuration
+- Start Services with PM2
+
+## 📊 [Research Results](#-research-results)
+- Model Performance Comparison
+- Detection Accuracy by Application
+- Key Research Insights
+- Academic Impact
+
+## 📚 [API Documentation](#-api-documentation)
+- Access Swagger UI
+- Sample API Endpoints
+
+## 📸 [System Screenshots](#-system-screenshots)
+- Mobile Application Screenshots
+- Admin Web Portal Screenshots
+- System Features Demonstrated
+- Technical Notes
+- UI/UX Design Credits
+
+## 🤝 [Contributing](#-contributing)
+- Contribution Guidelines
+- Commit Message Convention
+
+## 👥 [Project Team](#-project-team)
+- Development Team
+- Academic Advisors
+- Committee Members
+
+## 📄 [License](#-license)
+
+## 📞 [Contact & Support](#-contact--support)
+- Project Team Contact
+- Bug Reports & Feature Requests
+- University Contact
+
+## 🙏 [Acknowledgments](#-acknowledgments)
+
+## 🗺 [Roadmap](#-roadmap)
+- Completed (Phase 1)
+- In Progress (Phase 2)
+- Future Enhancements
+
+## 📊 [Project Statistics](#-project-statistics)
 
 ---
+
+**Total Sections:** 21 major sections  
+**Documentation Type:** Technical + Academic Research  
+**Target Audience:** Developers, Researchers, University Administrators  
+**Last Updated:** Academic Year 2568/1 (2024-2025)
 
 ## 🌟 Overview
 
@@ -1996,7 +2093,6 @@ Screenshots are updated every semester to reflect:
 **Mobile Application**
 - 📥 Google Play Store (Android): *(Coming Soon)*
 - 🍎 Apple App Store (iOS): *(Coming Soon)*
-- 📲 APK Direct Download: [Contact us](mailto:busitplus.official@gmail.com)
 
 **Web Portal Access**
 - 🌐 Admin Portal: https://busitplus.com
@@ -2005,16 +2101,82 @@ Screenshots are updated every semester to reflect:
 
 ---
 
-<div align="center">
+## 🔗 Related Links
 
-### 📸 All screenshots are from the actual production system
+### 📦 Source Code Repositories
 
-**System Status:** ✅ Live in Production  
-**User Base:** 1,500+ students and 80+ faculty members  
-**Uptime:** 99.2% (Last 6 months)
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js"/>
+      <br/>
+      <b>Backend API</b>
+      <br/>
+      <a href="https://github.com/teeprakorn1/busit_api_node.js.git">
+        <img src="https://img.shields.io/github/stars/teeprakorn1/busit_api_node.js?style=social" alt="Stars"/>
+      </a>
+      <br/>
+      <sub>RESTful API with Express.js</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"/>
+      <br/>
+      <b>Admin Web Portal</b>
+      <br/>
+      <a href="https://github.com/teeprakorn1/busit_web_react.git">
+        <img src="https://img.shields.io/github/stars/teeprakorn1/busit_web_react?style=social" alt="Stars"/>
+      </a>
+      <br/>
+      <sub>React.js management dashboard</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter"/>
+      <br/>
+      <b>Mobile Application</b>
+      <br/>
+      <a href="https://github.com/teeprakorn1/busit_flutter_project.git">
+        <img src="https://img.shields.io/github/stars/teeprakorn1/busit_flutter_project?style=social" alt="Stars"/>
+      </a>
+      <br/>
+      <sub>Cross-platform mobile app</sub>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+      <br/>
+      <b>AI Service</b>
+      <br/>
+      <a href="https://github.com/teeprakorn1/busit_ai_python.git">
+        <img src="https://img.shields.io/github/stars/teeprakorn1/busit_ai_python?style=social" alt="Stars"/>
+      </a>
+      <br/>
+      <sub>FastAPI deepfake detection</sub>
+    </td>
+  </tr>
+</table>
+
+### 🌐 Live Deployments
+
+| Platform | URL | Status |
+|----------|-----|--------|
+| **Admin Web Portal** | [busitplus.com](https://busitplus.com) | ![Status](https://img.shields.io/badge/status-online-success) |
+| **API Backend** | [api.busitplus.com](https://api.busitplus.com/api-docs) | ![Status](https://img.shields.io/badge/status-online-success) |
+| **AI Service** | [deepfake.busitplus.com](https://deepfake.busitplus.com/docs) | ![Status](https://img.shields.io/badge/status-online-success) |
+| **Mobile App (Android)** | *Coming to Play Store* | ![Status](https://img.shields.io/badge/status-pending-yellow) |
+
+### 📚 Documentation
+
+- 📖 **API Documentation:** [Swagger UI](https://api.busitplus.com/api-docs)
+- 🤖 **AI API Docs:** [FastAPI Docs](https://deepfake.busitplus.com/docs)
+- 💻 **Developer Guide:** See [Installation Guide](#-installation-guide)
+- 🔒 **Security Policy:** See [Security Features](#-security-features)
 
 ---
 
-[⬆ Back to Top](#-system-screenshots)
+<div align="center">
+
+**Built with ❤️ by RMUTTO Computer Science Students**  
+*Academic Year 2568 (2024-2025) Senior Project*
+
+[⬆ Back to Top](#-student-activity-tracking-and-evaluation-system)
 
 </div>
