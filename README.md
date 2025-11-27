@@ -442,15 +442,15 @@ Based on 6 months of production data:
 │                    Windows Server + NGINX                       │
 │              (Reverse Proxy + Let's Encrypt SSL)                │
 │                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │   React Web  │  │  Node.js API │  │ FastAPI (AI) │         │
-│  │  :443 (SSL)  │  │  :3000       │  │  :8000       │         │
-│  │              │  │              │  │              │         │
-│  │ - Dashboard  │  │ - REST API   │  │ - Deepfake   │         │
-│  │ - User Mgmt  │  │ - Auth       │  │   Detection  │         │
-│  │ - Reports    │  │ - Business   │  │ - 10 Models  │         │
-│  │              │  │   Logic      │  │ - Ensemble   │         │
-│  └──────────────┘  └──────────────┘  └──────────────┘         │
+│    ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
+│    │   React Web  │  │  Node.js API │  │ FastAPI (AI) │         │
+│    │  :443 (SSL)  │  │  :3000       │  │  :8000       │         │
+│    │              │  │              │  │              │         │
+│    │ - Dashboard  │  │ - REST API   │  │ - Deepfake   │         │
+│    │ - User Mgmt  │  │ - Auth       │  │   Detection  │         │
+│    │ - Reports    │  │ - Business   │  │ - 10 Models  │         │
+│    │              │  │   Logic      │  │ - Ensemble   │         │
+│    └──────────────┘  └──────────────┘  └──────────────┘         │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                 ┌───────────────┼───────────────┐
